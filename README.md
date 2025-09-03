@@ -271,11 +271,11 @@ Agradezco especialmente a mi directora de tesis, a los docentes de la carrera, y
 -  Análisis de dependencias (SCA)
 -  Integración con más herramientas SAST/DAST
 
-## 📄 Licencia
+## Licencia
 
 MIT License - Ver archivo LICENSE para más detalles.
 
-## 🤝 Contribución
+## Contribución
 
 1. Fork el proyecto
 2. Crear branch para feature (`git checkout -b feature/AmazingFeature`)
@@ -283,7 +283,7 @@ MIT License - Ver archivo LICENSE para más detalles.
 4. Push al branch (`git push origin feature/AmazingFeature`)
 5. Abrir Pull Request
 
-## 📞 Soporte
+## Soporte
 
 Para reportar bugs o solicitar features, por favor crea un issue en GitHub.
 
