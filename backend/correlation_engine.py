@@ -100,10 +100,14 @@ class VulnerabilityCorrelator:
         - Interpretabilidad: Permite feature importance analysis
         - Robustez: Maneja bien datos mixtos (categóricos + numéricos)
         - Validación: F1=0.909, Accuracy=0.913 en test set
+        
+        Returns:
+            bool: True si se inicializó correctamente, False en caso contrario
         """
         try:
             from sklearn.ensemble import RandomForestClassifier
             from sklearn.feature_extraction.text import TfidfVectorizer
+            import joblib
             
             # Parámetros optimizados via Grid Search
             self.ml_classifier = RandomForestClassifier(
@@ -121,21 +125,70 @@ class VulnerabilityCorrelator:
                 ngram_range=(1, 2)
             )
             
+            # Entrenar con datos sintéticos iniciales
+            self._train_initial_model()
+            
             # Cargar modelo pre-entrenado si existe
             model_path = "models/correlation_model.joblib"
             if os.path.exists(model_path):
-                import joblib
                 loaded_model = joblib.load(model_path)
                 self.ml_classifier = loaded_model['classifier']
                 self.tfidf_vectorizer = loaded_model['vectorizer']
                 print(f"✅ Modelo ML cargado: {model_path}")
                 return True
                 
+            print("✅ Modelo ML inicializado con datos sintéticos")
+            return True
+                
         except ImportError:
             print("⚠️  Scikit-learn no disponible, usando correlación determinística")
-            return None
+            return False
+        except Exception as e:
+            print(f"❌ Error inicializando modelo ML: {str(e)}")
+            return False
+    
+    def _train_initial_model(self):
+        """Entrena el modelo con datos sintéticos para inicialización"""
+        try:
+            # Generar datos sintéticos de entrenamiento
+            n_samples = 1000
+            features = []
+            labels = []
             
-        return None
+            for i in range(n_samples):
+                # Simular características de correlación
+                endpoint_sim = np.random.uniform(0, 1)
+                type_match = np.random.choice([0, 1])
+                severity_sim = np.random.uniform(0, 1)
+                cwe_match = np.random.choice([0, 1])
+                
+                # Feature vector
+                feature_vector = [endpoint_sim, type_match, severity_sim, cwe_match]
+                features.append(feature_vector)
+                
+                # Label: correlación válida si múltiples factores coinciden
+                is_valid_correlation = (endpoint_sim > 0.7 and type_match == 1) or \
+                                     (endpoint_sim > 0.5 and type_match == 1 and cwe_match == 1)
+                labels.append(1 if is_valid_correlation else 0)
+            
+            # Entrenar el modelo
+            X = np.array(features)
+            y = np.array(labels)
+            self.ml_classifier.fit(X, y)
+            
+            # Entrenar TF-IDF con textos sintéticos
+            synthetic_texts = [
+                f"sql injection vulnerability endpoint {i}" if i % 2 == 0 
+                else f"xss cross site scripting {i}" 
+                for i in range(100)
+            ]
+            self.tfidf_vectorizer.fit(synthetic_texts)
+            
+            print("✅ Modelo entrenado con datos sintéticos")
+            
+        except Exception as e:
+            print(f"❌ Error entrenando modelo inicial: {str(e)}")
+            self.ml_classifier = None
     
     def _extract_ml_features(self, sast_vuln: Vulnerability, dast_vuln: Vulnerability) -> np.array:
         """
@@ -259,16 +312,27 @@ class VulnerabilityCorrelator:
             
         # Factor 3: Análisis contextual con ML (15% del peso)
         # Justificación: Random Forest captura patrones complejos no detectables por reglas
-        if self.ml_model and hasattr(self, 'ml_model'):
+        ml_confidence = 0.0
+        if hasattr(self, 'ml_classifier') and self.ml_classifier is not None:
             try:
-                features = self._extract_ml_features(sast_vuln, dast_vuln)
-                ml_confidence = self.ml_model.predict_proba([features])[0][1]  # Prob de correlación positiva
+                # Crear feature vector simplificado para el modelo
+                feature_vector = [
+                    endpoint_similarity,
+                    1.0 if sast_vuln.type == dast_vuln.type else 0.0,
+                    severity_similarity,
+                    1.0 if sast_vuln.cwe_id == dast_vuln.cwe_id else 0.0
+                ]
+                
+                # Obtener probabilidad de correlación válida
+                ml_confidence = self.ml_classifier.predict_proba([feature_vector])[0][1]
                 score += ml_confidence * 0.15
-            except Exception:
+            except Exception as e:
+                print(f"⚠️ Error en ML, usando fallback: {str(e)}")
                 # Fallback a análisis de patrones contextuales determinísticos
                 context_score = self._analyze_context_patterns(sast_vuln, dast_vuln)
                 score += context_score * 0.15
         else:
+            # Fallback cuando ML no está disponible
             context_score = self._analyze_context_patterns(sast_vuln, dast_vuln)
             score += context_score * 0.15
         

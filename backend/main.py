@@ -7,8 +7,25 @@ import sys
 import subprocess
 import uuid
 import mimetypes
+import magic
+import logging
+import tempfile
+import shutil
 from pathlib import Path
 from typing import Optional
+from datetime import datetime
+import json
+
+# Configurar logging estructurado
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(funcName)s:%(lineno)d - %(message)s',
+    handlers=[
+        logging.FileHandler('hybridscan_audit.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
 
 # Add the database directory to the path
 database_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'database')
@@ -47,9 +64,272 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Allowed file extensions for security
+# Configuración de seguridad
 ALLOWED_EXTENSIONS = {'.py', '.js', '.ts', '.tsx', '.java', '.cpp', '.c', '.go', '.php', '.rb', '.cs'}
-MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
+ALLOWED_MIME_TYPES = {
+    'text/plain', 'text/x-python', 'application/javascript', 
+    'text/typescript', 'text/x-java-source', 'text/x-c', 'application/json'
+}
+
+# Directorios seguros para escaneos
+SECURE_SCAN_BASE = Path(tempfile.gettempdir()) / "hybridscan_secure"
+SECURE_SCAN_BASE.mkdir(exist_ok=True)
+
+def validate_scan_path(target_path: str) -> Optional[Path]:
+    """
+    Valida y normaliza rutas para prevenir path traversal attacks.
+    
+    Security Features:
+    - Path normalization and resolution
+    - Dangerous pattern detection
+    - Whitelist of allowed directories
+    - Secure temporary directory creation
+    
+    Args:
+        target_path: Path to validate
+        
+    Returns:
+        Validated Path object or None if invalid
+    """
+    try:
+        # Normalizar y resolver ruta
+        normalized_path = Path(target_path).resolve()
+        logger.info(f"Validando ruta: {target_path} -> {normalized_path}")
+        
+        # Detectar patrones peligrosos
+        dangerous_patterns = ['..', '~', '/etc', '/var', '/root', '/home', '/usr', '/boot']
+        str_path = str(normalized_path).lower()
+        
+        for pattern in dangerous_patterns:
+            if pattern in str_path and pattern not in ['/home/oscar', '/tmp', '/var/tmp']:
+                logger.warning(f"🚨 SECURITY: Ruta rechazada por patrón peligroso '{pattern}': {target_path}")
+                return None
+        
+        # Verificar que la ruta existe y es accesible
+        if not normalized_path.exists():
+            logger.warning(f"Ruta no existe: {normalized_path}")
+            return None
+        
+        # Crear directorio seguro temporal para el escaneo
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        secure_dir = SECURE_SCAN_BASE / f"scan_{timestamp}_{uuid.uuid4().hex[:8]}"
+        secure_dir.mkdir(exist_ok=True)
+        
+        # Si es un archivo, copiarlo al directorio seguro
+        if normalized_path.is_file():
+            secure_file = secure_dir / normalized_path.name
+            shutil.copy2(normalized_path, secure_file)
+            logger.info(f"Archivo copiado a directorio seguro: {secure_file}")
+            return secure_file
+        
+        # Si es un directorio, validar que esté en directorios permitidos
+        allowed_prefixes = [
+            Path.cwd(),
+            Path("/tmp"),
+            Path("/var/tmp"), 
+            Path.home() / "Documentos",
+            Path.home() / "Downloads"
+        ]
+        
+        is_allowed = any(
+            str(normalized_path).startswith(str(prefix)) 
+            for prefix in allowed_prefixes
+        )
+        
+        if not is_allowed:
+            logger.warning(f"🚨 SECURITY: Ruta fuera de directorios permitidos: {target_path}")
+            return None
+        
+        # Copiar directorio al área segura (solo archivos permitidos)
+        secure_target = secure_dir / "target"
+        secure_target.mkdir()
+        
+        for file_path in normalized_path.rglob("*"):
+            if file_path.is_file() and file_path.suffix.lower() in ALLOWED_EXTENSIONS:
+                relative_path = file_path.relative_to(normalized_path)
+                target_file = secure_target / relative_path
+                target_file.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(file_path, target_file)
+        
+        logger.info(f"Directorio copiado a área segura: {secure_target}")
+        return secure_target
+        
+    except Exception as e:
+        logger.error(f"❌ Error validando ruta {target_path}: {str(e)}")
+        return None
+
+async def validate_uploaded_file(file: UploadFile) -> dict:
+    """
+    Valida archivo subido de forma segura.
+    
+    Security validations:
+    - Real file size calculation
+    - MIME type validation using magic numbers
+    - Filename sanitization
+    - Content inspection
+    
+    Args:
+        file: UploadFile object from FastAPI
+        
+    Returns:
+        dict: File information if valid
+        
+    Raises:
+        HTTPException: If validation fails
+    """
+    try:
+        logger.info(f"Validando archivo subido: {file.filename}")
+        
+        # Leer contenido completo para calcular tamaño real
+        content = await file.read()
+        file_size = len(content)
+        
+        # Resetear posición del archivo
+        await file.seek(0)
+        
+        logger.info(f"Tamaño real del archivo: {file_size} bytes")
+        
+        # Validar tamaño
+        if file_size > MAX_FILE_SIZE:
+            logger.warning(f"🚨 SECURITY: Archivo demasiado grande: {file_size} bytes")
+            raise HTTPException(
+                status_code=413,
+                detail=f"Archivo demasiado grande: {file_size} bytes. Máximo: {MAX_FILE_SIZE} bytes"
+            )
+        
+        # Validar que el archivo no esté vacío
+        if file_size == 0:
+            raise HTTPException(status_code=400, detail="El archivo está vacío")
+        
+        # Validar tipo de archivo usando magic numbers (primeros 1024 bytes)
+        try:
+            detected_mime = magic.from_buffer(content[:1024], mime=True)
+            logger.info(f"MIME type detectado: {detected_mime}")
+        except:
+            # Fallback si python-magic no está disponible
+            detected_mime = mimetypes.guess_type(file.filename)[0] or 'application/octet-stream'
+            logger.warning(f"Usando fallback MIME detection: {detected_mime}")
+        
+        if detected_mime not in ALLOWED_MIME_TYPES and not detected_mime.startswith('text/'):
+            logger.warning(f"🚨 SECURITY: Tipo de archivo no permitido: {detected_mime}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Tipo de archivo no permitido: {detected_mime}"
+            )
+        
+        # Validar nombre de archivo
+        if not file.filename or '..' in file.filename or '/' in file.filename:
+            logger.warning(f"🚨 SECURITY: Nombre de archivo no válido: {file.filename}")
+            raise HTTPException(status_code=400, detail="Nombre de archivo no válido")
+        
+        # Validar extensión
+        file_extension = Path(file.filename).suffix.lower()
+        if file_extension not in ALLOWED_EXTENSIONS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Extensión no permitida: {file_extension}. Permitidas: {', '.join(ALLOWED_EXTENSIONS)}"
+            )
+        
+        logger.info(f"✅ Archivo validado correctamente: {file.filename}")
+        return {
+            'size': file_size,
+            'mime_type': detected_mime,
+            'filename': file.filename,
+            'extension': file_extension,
+            'content': content
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Error validando archivo: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error interno validando archivo")
+
+def update_scan_result(scan_result, results: dict, status: str = "completed", error: str = None):
+    """
+    Actualiza resultado de escaneo con metadatos completos.
+    
+    Args:
+        scan_result: Objeto ScanResult a actualizar
+        results: Diccionario con resultados del escaneo  
+        status: Estado final del escaneo
+        error: Mensaje de error si aplica
+    """
+    try:
+        scan_result.results = results
+        scan_result.status = status
+        
+        if error:
+            scan_result.error_message = error
+            scan_result.status = "failed"
+            logger.error(f"Escaneo fallido - ID: {scan_result.id}, Error: {error}")
+        
+        # Agregar metadatos útiles para análisis
+        if results and isinstance(results, dict):
+            duration = (datetime.utcnow() - scan_result.timestamp).total_seconds()
+            vulnerabilities = results.get("vulnerabilities", results.get("results", []))
+            
+            scan_result.results.update({
+                "scan_duration_seconds": duration,
+                "vulnerabilities_found": len(vulnerabilities) if isinstance(vulnerabilities, list) else 0,
+                "severity_breakdown": _calculate_severity_breakdown(results),
+                "scan_completed_at": datetime.utcnow().isoformat(),
+                "metadata": {
+                    "scan_version": "2.0",
+                    "engine": "HybridSecScan",
+                    "owasp_categories_detected": _extract_owasp_categories(results)
+                }
+            })
+            
+        logger.info(f"✅ Scan result actualizado - ID: {scan_result.id}, Status: {status}")
+        
+    except Exception as e:
+        logger.error(f"❌ Error actualizando scan result {scan_result.id}: {str(e)}")
+        scan_result.status = "error"
+        scan_result.error_message = f"Error interno: {str(e)}"
+
+def _calculate_severity_breakdown(results: dict) -> dict:
+    """Calcula distribución de severidades encontradas"""
+    breakdown = {"critical": 0, "high": 0, "medium": 0, "low": 0, "info": 0}
+    
+    vulnerabilities = results.get("vulnerabilities", results.get("results", []))
+    
+    if isinstance(vulnerabilities, list):
+        for vuln in vulnerabilities:
+            if isinstance(vuln, dict):
+                severity = vuln.get("severity", vuln.get("level", "info")).lower()
+                if severity in breakdown:
+                    breakdown[severity] += 1
+                elif severity == "warning":
+                    breakdown["medium"] += 1
+                elif severity == "error":
+                    breakdown["high"] += 1
+    
+    return breakdown
+
+def _extract_owasp_categories(results: dict) -> list:
+    """Extrae categorías OWASP detectadas"""
+    categories = set()
+    vulnerabilities = results.get("vulnerabilities", results.get("results", []))
+    
+    if isinstance(vulnerabilities, list):
+        for vuln in vulnerabilities:
+            if isinstance(vuln, dict):
+                owasp = vuln.get("owasp", vuln.get("category", ""))
+                if owasp:
+                    categories.add(owasp)
+                    
+                # Mapeo de CWE a OWASP API Top 10
+                cwe = vuln.get("cwe", "")
+                if "89" in str(cwe):  # SQL Injection
+                    categories.add("API3:2023")
+                elif "79" in str(cwe):  # XSS
+                    categories.add("API8:2023")
+                elif "22" in str(cwe):  # Path Traversal
+                    categories.add("API1:2023")
+    
+    return list(categories)
 
 # Dependencia para obtener la sesión de base de datos
 def get_db():
@@ -80,47 +360,138 @@ def get_scan_results(db: Session = Depends(get_db)):
 def run_sast_scan(target_path: str = Form(...), tool: str = Form(...), db: Session = Depends(get_db)):
     """
     Ejecuta un análisis SAST usando Bandit o Semgrep sobre el código fuente indicado.
+    
+    Security Features:
+    - Path traversal prevention
+    - Input validation and sanitization  
+    - Secure temporary directories
+    - Complete audit logging
+    - Error handling and recovery
     """
-    # Validate tool parameter
-    if tool not in ["bandit", "semgrep"]:
-        raise HTTPException(status_code=400, detail="Herramienta SAST no soportada. Use 'bandit' o 'semgrep'")
-    
-    # Validate target path exists and is secure
-    if not os.path.exists(target_path):
-        raise HTTPException(status_code=400, detail="La ruta del código fuente no existe")
-    
-    # Generate unique report filename
-    report_id = str(uuid.uuid4())
-    
     try:
-        if tool == "bandit":
-            report_path = os.path.join(BASE_DIR, "reports", f"bandit_report_{report_id}.json")
-            os.makedirs(os.path.dirname(report_path), exist_ok=True)
-            result = subprocess.run([
-                sys.executable, '-m', 'bandit', '-r', target_path, '-f', 'json', '-o', report_path
-            ], capture_output=True, text=True, timeout=300)
-            
-        elif tool == "semgrep":
-            report_path = os.path.join(BASE_DIR, "reports", f"semgrep_report_{report_id}.json")
-            os.makedirs(os.path.dirname(report_path), exist_ok=True)
-            result = subprocess.run([
-                'semgrep', '--config', 'auto', target_path, '--json', '--output', report_path
-            ], capture_output=True, text=True, timeout=300)
+        logger.info(f"🔍 Iniciando escaneo SAST - Tool: {tool}, Target: {target_path}")
         
-        # Check if the command was successful
-        if result.returncode != 0 and result.returncode != 1:  # Bandit returns 1 if issues found
-            raise HTTPException(status_code=500, detail=f"Error ejecutando {tool}: {result.stderr}")
+        # Validar herramienta
+        if tool not in ["bandit", "semgrep"]:
+            logger.warning(f"🚨 Herramienta SAST no soportada: {tool}")
+            raise HTTPException(
+                status_code=400, 
+                detail="Herramienta SAST no soportada. Use 'bandit' o 'semgrep'"
+            )
         
-        scan_result = ScanResult(scan_type="SAST", tool=tool, result_path=report_path)
+        # Validar y asegurar la ruta de destino
+        validated_path = validate_scan_path(target_path)
+        if validated_path is None:
+            logger.warning(f"🚨 SECURITY: Ruta rechazada por validación de seguridad: {target_path}")
+            raise HTTPException(
+                status_code=400,
+                detail="Ruta no válida, fuera de directorios permitidos o contiene patrones peligrosos"
+            )
+        
+        # Crear registro inicial del escaneo
+        scan_result = ScanResult(
+            scan_type="SAST",
+            tool=tool,
+            target=str(target_path),  # Ruta original para auditoría
+            status="running",
+            timestamp=datetime.utcnow()
+        )
         db.add(scan_result)
         db.commit()
         db.refresh(scan_result)
-        return {"message": f"Análisis SAST con {tool} completado.", "result_id": scan_result.id, "report_path": report_path}
         
-    except subprocess.TimeoutExpired:
-        raise HTTPException(status_code=500, detail=f"Timeout ejecutando análisis con {tool}")
+        logger.info(f"📝 Escaneo registrado - ID: {scan_result.id}, Ruta segura: {validated_path}")
+        
+        # Generar reporte con ID único
+        report_id = str(uuid.uuid4())
+        report_dir = Path(BASE_DIR) / "reports"
+        report_dir.mkdir(exist_ok=True)
+        
+        try:
+            if tool == "bandit":
+                report_path = report_dir / f"bandit_report_{report_id}.json"
+                
+                logger.info(f"🔧 Ejecutando Bandit en: {validated_path}")
+                result = subprocess.run([
+                    sys.executable, '-m', 'bandit', '-r', str(validated_path), 
+                    '-f', 'json', '-o', str(report_path)
+                ], capture_output=True, text=True, timeout=300)
+                
+            elif tool == "semgrep":
+                report_path = report_dir / f"semgrep_report_{report_id}.json"
+                
+                logger.info(f"🔧 Ejecutando Semgrep en: {validated_path}")
+                result = subprocess.run([
+                    'semgrep', '--config', 'auto', str(validated_path), 
+                    '--json', '--output', str(report_path)
+                ], capture_output=True, text=True, timeout=300)
+            
+            # Verificar ejecución exitosa
+            # Nota: Bandit retorna 1 si encuentra issues, pero no es error
+            if result.returncode not in [0, 1]:
+                error_msg = f"Error ejecutando {tool}: {result.stderr}"
+                logger.error(f"❌ {error_msg}")
+                update_scan_result(scan_result, {}, "failed", error_msg)
+                db.commit()
+                raise HTTPException(status_code=500, detail=error_msg)
+            
+            # Cargar y procesar resultados
+            try:
+                if report_path.exists():
+                    with open(report_path, 'r') as f:
+                        scan_results = json.load(f)
+                else:
+                    scan_results = {"results": [], "message": "No se generó archivo de reporte"}
+                
+                logger.info(f"📊 Resultados cargados desde: {report_path}")
+                
+            except json.JSONDecodeError as e:
+                logger.error(f"❌ Error parseando JSON del reporte: {str(e)}")
+                scan_results = {"error": "Error parseando resultados", "raw_output": result.stdout}
+            
+            # Actualizar resultado con metadatos completos
+            update_scan_result(scan_result, scan_results, "completed")
+            scan_result.result_path = str(report_path)
+            db.commit()
+            
+            # Limpiar directorio temporal de seguridad
+            try:
+                if validated_path.parent.name.startswith("scan_"):
+                    shutil.rmtree(validated_path.parent)
+                    logger.info(f"🧹 Directorio temporal limpiado: {validated_path.parent}")
+            except Exception as cleanup_error:
+                logger.warning(f"⚠️ No se pudo limpiar directorio temporal: {cleanup_error}")
+            
+            logger.info(f"✅ Escaneo SAST completado - ID: {scan_result.id}, Vulnerabilidades: {len(scan_results.get('results', []))}")
+            
+            return {
+                "message": f"Análisis SAST con {tool} completado exitosamente",
+                "result_id": scan_result.id,
+                "report_path": str(report_path),
+                "vulnerabilities_found": len(scan_results.get("results", [])),
+                "scan_duration": scan_results.get("scan_duration_seconds", 0),
+                "severity_breakdown": scan_results.get("severity_breakdown", {}),
+                "owasp_categories": scan_results.get("metadata", {}).get("owasp_categories_detected", [])
+            }
+            
+        except subprocess.TimeoutExpired:
+            error_msg = f"Timeout ejecutando análisis con {tool} (>5 minutos)"
+            logger.error(f"⏰ {error_msg}")
+            update_scan_result(scan_result, {}, "timeout", error_msg)
+            db.commit()
+            raise HTTPException(status_code=408, detail=error_msg)
+            
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error inesperado: {str(e)}")
+        error_msg = f"Error inesperado en escaneo SAST: {str(e)}"
+        logger.error(f"❌ {error_msg}")
+        
+        if 'scan_result' in locals():
+            update_scan_result(scan_result, {}, "error", error_msg)
+            db.commit()
+            
+        raise HTTPException(status_code=500, detail=error_msg)
 
 @app.post("/scan/dast")
 def run_dast_scan(target_url: str = Form(...), db: Session = Depends(get_db)):
@@ -160,41 +531,101 @@ def run_dast_scan(target_url: str = Form(...), db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Error inesperado: {str(e)}")
 
 @app.post("/upload/")
-def upload_code(file: UploadFile = File(...)):
+async def upload_code(file: UploadFile = File(...), db: Session = Depends(get_db)):
     """
     Permite subir un archivo de código fuente para análisis.
+    
+    Security Features:
+    - Real file size validation (not just headers)
+    - MIME type validation using magic numbers  
+    - Filename sanitization and path traversal prevention
+    - Secure file storage with UUID naming
+    - Complete audit trail
     """
-    # Validate file size
-    if file.size > MAX_FILE_SIZE:
-        raise HTTPException(status_code=413, detail="Archivo muy grande. Máximo 10MB permitido")
-    
-    # Validate file extension
-    file_extension = Path(file.filename).suffix.lower()
-    if file_extension not in ALLOWED_EXTENSIONS:
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Tipo de archivo no permitido. Extensiones permitidas: {', '.join(ALLOWED_EXTENSIONS)}"
-        )
-    
-    # Generate secure filename
-    secure_filename = f"{uuid.uuid4()}{file_extension}"
-    upload_dir = os.path.join(BASE_DIR, "uploads")
-    os.makedirs(upload_dir, exist_ok=True)
-    file_path = os.path.join(upload_dir, secure_filename)
-    
     try:
-        with open(file_path, "wb") as f:
-            content = file.file.read()
-            f.write(content)
+        logger.info(f"📁 Iniciando subida de archivo: {file.filename}")
         
-        return {
-            "message": "Archivo subido correctamente", 
-            "file_path": file_path,
-            "original_filename": file.filename,
-            "secure_filename": secure_filename
-        }
+        # Validar archivo de forma segura
+        file_info = await validate_uploaded_file(file)
+        
+        # Crear registro inicial de subida
+        scan_result = ScanResult(
+            scan_type="FILE_UPLOAD",
+            tool="upload_service",
+            target=file_info['filename'],
+            status="uploading",
+            timestamp=datetime.utcnow()
+        )
+        db.add(scan_result)
+        db.commit()
+        db.refresh(scan_result)
+        
+        # Generar nombre de archivo seguro y único
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        safe_filename = f"{timestamp}_{uuid.uuid4().hex[:8]}{file_info['extension']}"
+        
+        # Crear directorio de uploads
+        upload_dir = Path(BASE_DIR) / "uploads"
+        upload_dir.mkdir(exist_ok=True)
+        file_path = upload_dir / safe_filename
+        
+        # Guardar archivo de forma segura
+        try:
+            with open(file_path, "wb") as buffer:
+                buffer.write(file_info['content'])
+                
+            logger.info(f"💾 Archivo guardado: {file_path}")
+            
+            # Validar que el archivo se guardó correctamente
+            if not file_path.exists() or file_path.stat().st_size != file_info['size']:
+                raise Exception("Error verificando integridad del archivo guardado")
+            
+            # Actualizar resultado con información completa
+            upload_results = {
+                "original_filename": file_info['filename'],
+                "secure_filename": safe_filename,
+                "file_size": file_info['size'],
+                "mime_type": file_info['mime_type'],
+                "file_extension": file_info['extension'],
+                "upload_path": str(file_path),
+                "integrity_verified": True
+            }
+            
+            update_scan_result(scan_result, upload_results, "uploaded")
+            scan_result.result_path = str(file_path)
+            db.commit()
+            
+            logger.info(f"✅ Archivo subido exitosamente - ID: {scan_result.id}, Size: {file_info['size']} bytes")
+            
+            return {
+                "message": "Archivo subido correctamente",
+                "result_id": scan_result.id,
+                "file_path": str(file_path),
+                "original_filename": file_info['filename'],
+                "secure_filename": safe_filename,
+                "file_size": file_info['size'],
+                "mime_type": file_info['mime_type'],
+                "ready_for_scan": True
+            }
+            
+        except IOError as e:
+            error_msg = f"Error de E/S guardando archivo: {str(e)}"
+            logger.error(f"💾 {error_msg}")
+            update_scan_result(scan_result, {}, "failed", error_msg)
+            db.commit()
+            raise HTTPException(status_code=500, detail=error_msg)
+            
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error guardando archivo: {str(e)}")
+        error_msg = f"Error inesperado en subida de archivo: {str(e)}"
+        logger.error(f"❌ {error_msg}")
+        
+        if 'scan_result' in locals():
+            update_scan_result(scan_result, {}, "error", error_msg)
+            db.commit()
+            
+        raise HTTPException(status_code=500, detail=error_msg)
 
 @app.get("/health")
 def health_check():

@@ -1,10 +1,46 @@
+# HybridSecScan - Sistema de Auditoría Híbrida SAST+DAST
+# Dependencias principales para funcionalidad completa y segura
+
+# FastAPI y servidor web
 fastapi==0.115.6
 uvicorn[standard]==0.34.0
+
+# Base de datos ORM
 sqlalchemy==2.0.36
+
+# Utilidades FastAPI  
 python-multipart==0.0.16
+
+# Seguridad y validación de archivos
+python-magic==0.4.27
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# Herramientas SAST integradas
 bandit==1.8.0
+
+# Machine Learning para correlación inteligente
 scikit-learn>=1.4.0
 numpy>=1.26.0
 pandas>=2.0.0
 joblib>=1.3.0
 scipy>=1.11.0
+
+# HTTP requests para integraciones DAST
+requests>=2.31.0
+httpx>=0.25.0
+
+# Configuración y environment
+python-dotenv>=1.0.0
+
+# Testing y calidad de código (desarrollo)
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+black>=23.0.0
+flake8>=6.0.0
+
+# Logging estructurado
+structlog>=23.1.0
+
+# Análisis adicionales (opcional - requiere instalación manual)
+# semgrep==1.45.0  # Descomenta si tienes semgrep instalado
