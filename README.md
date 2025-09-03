@@ -233,43 +233,43 @@ El desarrollo de este trabajo de grado se ha realizado siguiendo principios éti
 
 ## Información Académica
 
-**Autor**: Oscar [Apellido]  
-**Institución**: [Universidad] - Facultad de Ingeniería  
-**Carrera**: Ingeniería de Sistemas  
+**Autor**: Oscar Laguna Santa Cruz
+**Institución**: Universidad Nacional Mayor de San Marcos - Facultad de Ingeniería de Sistemas e Informática 
+**Carrera**: Ingeniería de Software 
 **Proyecto**: Tesis de Grado / Proyecto de Titulación  
-**Director**: [Nombre del Director]  
-**Año**: 2024
+**Director**: Dra. Luzmila
+**Año**: 2025
 
 Para consultas académicas o sobre el funcionamiento del sistema, puede contactar a través de los canales oficiales de la universidad.
 
 ## Reconocimientos
 
-Agradezco especialmente a mi director de tesis, a los docentes de la carrera, y a la comunidad open source por sus contribuciones que han hecho posible este proyecto de grado.
+Agradezco especialmente a mi directora de tesis, a los docentes de la carrera, y a la comunidad open source por sus contribuciones que han hecho posible este proyecto de grado.
 
 ---
 
 *Este trabajo representa una contribución al campo de la ciberseguridad para APIs REST, desarrollado como proyecto de tesis para optar al título de Ingeniero de Sistemas.*
 
-## 🐛 Problemas Solucionados
+## Problemas Solucionados
 
-- ✅ Configuración CORS para comunicación frontend-backend
-- ✅ Manejo de errores en subprocess calls
-- ✅ Validación de seguridad en subida de archivos
-- ✅ Timeouts para evitar procesos colgados
-- ✅ Estructura de directorios corregida
-- ✅ Scripts con rutas absolutas
-- ✅ Modelo de base de datos mejorado
-- ✅ Interfaz de usuario más robusta
+-  Configuración CORS para comunicación frontend-backend
+-  Manejo de errores en subprocess calls
+-  Validación de seguridad en subida de archivos
+-  Timeouts para evitar procesos colgados
+-  Estructura de directorios corregida
+-  Scripts con rutas absolutas
+-  Modelo de base de datos mejorado
+-  Interfaz de usuario más robusta
 
-## 🔮 Mejoras Futuras
+##  Mejoras Futuras
 
-- [ ] Autenticación y autorización de usuarios
-- [ ] Análisis de contenedores Docker
-- [ ] Integración con CI/CD pipelines
-- [ ] Reportes en PDF
-- [ ] Dashboard de métricas avanzado
-- [ ] Análisis de dependencias (SCA)
-- [ ] Integración con más herramientas SAST/DAST
+-  Autenticación y autorización de usuarios
+-  Análisis de contenedores Docker
+-  Integración con CI/CD pipelines
+-  Reportes en PDF
+-  Dashboard de métricas avanzado
+-  Análisis de dependencias (SCA)
+-  Integración con más herramientas SAST/DAST
 
 ## 📄 Licencia
 
