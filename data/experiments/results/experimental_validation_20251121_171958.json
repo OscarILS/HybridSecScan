@@ -1,0 +1,670 @@
+{
+  "experiment_date": "2025-11-21T17:19:20.568777",
+  "total_applications": 4,
+  "results": [
+    {
+      "application": {
+        "name": "OWASP WebGoat",
+        "url": "https://github.com/WebGoat/WebGoat",
+        "language": "Java",
+        "framework": "Spring Boot",
+        "documented_vulnerabilities": 23,
+        "description": "Aplicación educativa con vulnerabilidades intencionales",
+        "ground_truth_file": "webgoat_ground_truth.json"
+      },
+      "timestamp": "2025-11-21T17:19:20.569383",
+      "sast_results": {
+        "bandit": {
+          "tool": "bandit",
+          "findings": [],
+          "duration": 0.6844482421875,
+          "report_path": "C:\\Users\\oscar\\OneDrive\\Documentos\\GitHub\\HybridSecScan\\data\\experiments\\results\\sast_bandit_owasp_webgoat_20251121_171920.json",
+          "success": true
+        },
+        "semgrep": {
+          "tool": "semgrep",
+          "findings": [],
+          "duration": 0,
+          "success": false,
+          "error": "[WinError 2] El sistema no puede encontrar el archivo especificado"
+        }
+      },
+      "dast_results": {
+        "findings": [
+          {
+            "id": "DAST_SIM_001",
+            "type": "sql_injection",
+            "severity": "HIGH",
+            "endpoint": "/login",
+            "description": "Possible SQL Injection detected",
+            "evidence": "SQL error message in response",
+            "cwe_id": "CWE-89"
+          },
+          {
+            "id": "DAST_SIM_002",
+            "type": "xss",
+            "severity": "MEDIUM",
+            "endpoint": "/search",
+            "description": "XSS vulnerability detected",
+            "evidence": "Script tag reflected in response",
+            "cwe_id": "CWE-79"
+          }
+        ]
+      },
+      "hybrid_results": {
+        "findings": []
+      },
+      "metrics_comparison": {
+        "sast": {
+          "tool": "SAST",
+          "scan_type": "SAST",
+          "total_findings": 0,
+          "true_positives": 0,
+          "false_positives": 0,
+          "false_negatives": 5,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0,
+          "accuracy": 0.0,
+          "scan_duration": 0.0
+        },
+        "dast": {
+          "tool": "DAST",
+          "scan_type": "DAST",
+          "total_findings": 2,
+          "true_positives": 0,
+          "false_positives": 2,
+          "false_negatives": 5,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0,
+          "accuracy": 0.2222,
+          "scan_duration": 0.0
+        },
+        "hybrid": {
+          "tool": "HYBRID",
+          "scan_type": "HYBRID",
+          "total_findings": 0,
+          "true_positives": 0,
+          "false_positives": 0,
+          "false_negatives": 5,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0,
+          "accuracy": 0.0,
+          "scan_duration": 0.0
+        }
+      },
+      "ground_truth": [
+        {
+          "id": "WG_001",
+          "type": "sql_injection",
+          "cwe_id": "CWE-89",
+          "owasp_category": "API3:2023",
+          "severity": "HIGH",
+          "file_path": "src/main/java/org/owasp/webgoat/lessons/sqlinjection/introduction/SqlInjectionLesson5a.java",
+          "line_number": 45,
+          "endpoint": "/WebGoat/SqlInjection/attack5a",
+          "description": "SQL Injection vulnerability in authentication bypass lesson",
+          "source": "official_documentation"
+        },
+        {
+          "id": "WG_002",
+          "type": "xss",
+          "cwe_id": "CWE-79",
+          "owasp_category": "API8:2023",
+          "severity": "MEDIUM",
+          "file_path": "src/main/java/org/owasp/webgoat/lessons/xss/CrossSiteScriptingLesson5a.java",
+          "line_number": 78,
+          "endpoint": "/WebGoat/CrossSiteScripting/attack5a",
+          "description": "Reflected XSS in feedback form",
+          "source": "official_documentation"
+        },
+        {
+          "id": "WG_003",
+          "type": "broken_authentication",
+          "cwe_id": "CWE-287",
+          "owasp_category": "API2:2023",
+          "severity": "CRITICAL",
+          "file_path": "src/main/java/org/owasp/webgoat/lessons/authentication/AuthenticationBypass.java",
+          "line_number": 120,
+          "endpoint": "/WebGoat/auth/login",
+          "description": "Authentication bypass through JWT manipulation",
+          "source": "official_documentation"
+        },
+        {
+          "id": "WG_004",
+          "type": "path_traversal",
+          "cwe_id": "CWE-22",
+          "owasp_category": "API1:2023",
+          "severity": "HIGH",
+          "file_path": "src/main/java/org/owasp/webgoat/lessons/pathtraversal/PathTraversal.java",
+          "line_number": 56,
+          "endpoint": "/WebGoat/PathTraversal/profiles",
+          "description": "Directory traversal in file download functionality",
+          "source": "official_documentation"
+        },
+        {
+          "id": "WG_005",
+          "type": "xxe",
+          "cwe_id": "CWE-611",
+          "owasp_category": "API8:2023",
+          "severity": "HIGH",
+          "file_path": "src/main/java/org/owasp/webgoat/lessons/xxe/XXE.java",
+          "line_number": 89,
+          "endpoint": "/WebGoat/XXE/attack",
+          "description": "XML External Entity injection",
+          "source": "official_documentation"
+        }
+      ],
+      "false_positive_reduction": {
+        "absolute": 0,
+        "percentage": 0.0
+      }
+    },
+    {
+      "application": {
+        "name": "DVWA",
+        "url": "https://github.com/digininja/DVWA",
+        "language": "PHP",
+        "framework": "None",
+        "documented_vulnerabilities": 12,
+        "description": "Damn Vulnerable Web Application",
+        "ground_truth_file": "dvwa_ground_truth.json"
+      },
+      "timestamp": "2025-11-21T17:19:21.272096",
+      "sast_results": {
+        "bandit": {
+          "tool": "bandit",
+          "findings": [],
+          "duration": 0.6310539245605469,
+          "report_path": "C:\\Users\\oscar\\OneDrive\\Documentos\\GitHub\\HybridSecScan\\data\\experiments\\results\\sast_bandit_dvwa_20251121_171921.json",
+          "success": true
+        },
+        "semgrep": {
+          "tool": "semgrep",
+          "findings": [],
+          "duration": 0,
+          "success": false,
+          "error": "[WinError 2] El sistema no puede encontrar el archivo especificado"
+        }
+      },
+      "dast_results": {
+        "findings": [
+          {
+            "id": "DAST_SIM_001",
+            "type": "sql_injection",
+            "severity": "HIGH",
+            "endpoint": "/login",
+            "description": "Possible SQL Injection detected",
+            "evidence": "SQL error message in response",
+            "cwe_id": "CWE-89"
+          },
+          {
+            "id": "DAST_SIM_002",
+            "type": "xss",
+            "severity": "MEDIUM",
+            "endpoint": "/search",
+            "description": "XSS vulnerability detected",
+            "evidence": "Script tag reflected in response",
+            "cwe_id": "CWE-79"
+          }
+        ]
+      },
+      "hybrid_results": {
+        "findings": []
+      },
+      "metrics_comparison": {
+        "sast": {
+          "tool": "SAST",
+          "scan_type": "SAST",
+          "total_findings": 0,
+          "true_positives": 0,
+          "false_positives": 0,
+          "false_negatives": 5,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0,
+          "accuracy": 0.0,
+          "scan_duration": 0.0
+        },
+        "dast": {
+          "tool": "DAST",
+          "scan_type": "DAST",
+          "total_findings": 2,
+          "true_positives": 1,
+          "false_positives": 1,
+          "false_negatives": 5,
+          "precision": 0.5,
+          "recall": 0.1667,
+          "f1_score": 0.25,
+          "accuracy": 0.4,
+          "scan_duration": 0.0
+        },
+        "hybrid": {
+          "tool": "HYBRID",
+          "scan_type": "HYBRID",
+          "total_findings": 0,
+          "true_positives": 0,
+          "false_positives": 0,
+          "false_negatives": 5,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0,
+          "accuracy": 0.0,
+          "scan_duration": 0.0
+        }
+      },
+      "ground_truth": [
+        {
+          "id": "DVWA_001",
+          "type": "sql_injection",
+          "cwe_id": "CWE-89",
+          "owasp_category": "API3:2023",
+          "severity": "HIGH",
+          "file_path": "vulnerabilities/sqli/source/low.php",
+          "line_number": 15,
+          "endpoint": "/vulnerabilities/sqli/",
+          "description": "SQL Injection in user ID parameter (low security)",
+          "source": "official_documentation"
+        },
+        {
+          "id": "DVWA_002",
+          "type": "xss",
+          "cwe_id": "CWE-79",
+          "owasp_category": "API8:2023",
+          "severity": "MEDIUM",
+          "file_path": "vulnerabilities/xss_r/source/low.php",
+          "line_number": 8,
+          "endpoint": "/vulnerabilities/xss_r/",
+          "description": "Reflected XSS in name parameter",
+          "source": "official_documentation"
+        },
+        {
+          "id": "DVWA_003",
+          "type": "command_injection",
+          "cwe_id": "CWE-78",
+          "owasp_category": "API7:2023",
+          "severity": "CRITICAL",
+          "file_path": "vulnerabilities/exec/source/low.php",
+          "line_number": 12,
+          "endpoint": "/vulnerabilities/exec/",
+          "description": "OS Command Injection in ping utility",
+          "source": "official_documentation"
+        },
+        {
+          "id": "DVWA_004",
+          "type": "file_inclusion",
+          "cwe_id": "CWE-98",
+          "owasp_category": "API1:2023",
+          "severity": "HIGH",
+          "file_path": "vulnerabilities/fi/source/low.php",
+          "line_number": 9,
+          "endpoint": "/vulnerabilities/fi/",
+          "description": "Local File Inclusion vulnerability",
+          "source": "official_documentation"
+        },
+        {
+          "id": "DVWA_005",
+          "type": "csrf",
+          "cwe_id": "CWE-352",
+          "owasp_category": "API8:2023",
+          "severity": "MEDIUM",
+          "file_path": "vulnerabilities/csrf/source/low.php",
+          "line_number": 14,
+          "endpoint": "/vulnerabilities/csrf/",
+          "description": "Cross-Site Request Forgery in password change",
+          "source": "official_documentation"
+        }
+      ],
+      "false_positive_reduction": {
+        "absolute": 0,
+        "percentage": 0.0
+      }
+    },
+    {
+      "application": {
+        "name": "NodeGoat",
+        "url": "https://github.com/OWASP/NodeGoat",
+        "language": "JavaScript",
+        "framework": "Node.js/Express",
+        "documented_vulnerabilities": 15,
+        "description": "Aplicación Node.js vulnerable educativa",
+        "ground_truth_file": "nodegoat_ground_truth.json"
+      },
+      "timestamp": "2025-11-21T17:19:21.919792",
+      "sast_results": {
+        "bandit": {
+          "tool": "bandit",
+          "findings": [],
+          "duration": 0.659214973449707,
+          "report_path": "C:\\Users\\oscar\\OneDrive\\Documentos\\GitHub\\HybridSecScan\\data\\experiments\\results\\sast_bandit_nodegoat_20251121_171957.json",
+          "success": true
+        },
+        "semgrep": {
+          "tool": "semgrep",
+          "findings": [],
+          "duration": 0,
+          "success": false,
+          "error": "[WinError 2] El sistema no puede encontrar el archivo especificado"
+        }
+      },
+      "dast_results": {
+        "findings": [
+          {
+            "id": "DAST_SIM_001",
+            "type": "sql_injection",
+            "severity": "HIGH",
+            "endpoint": "/login",
+            "description": "Possible SQL Injection detected",
+            "evidence": "SQL error message in response",
+            "cwe_id": "CWE-89"
+          },
+          {
+            "id": "DAST_SIM_002",
+            "type": "xss",
+            "severity": "MEDIUM",
+            "endpoint": "/search",
+            "description": "XSS vulnerability detected",
+            "evidence": "Script tag reflected in response",
+            "cwe_id": "CWE-79"
+          }
+        ]
+      },
+      "hybrid_results": {
+        "findings": []
+      },
+      "metrics_comparison": {
+        "sast": {
+          "tool": "SAST",
+          "scan_type": "SAST",
+          "total_findings": 0,
+          "true_positives": 0,
+          "false_positives": 0,
+          "false_negatives": 5,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0,
+          "accuracy": 0.0,
+          "scan_duration": 0.0
+        },
+        "dast": {
+          "tool": "DAST",
+          "scan_type": "DAST",
+          "total_findings": 2,
+          "true_positives": 1,
+          "false_positives": 1,
+          "false_negatives": 5,
+          "precision": 0.5,
+          "recall": 0.1667,
+          "f1_score": 0.25,
+          "accuracy": 0.4,
+          "scan_duration": 0.0
+        },
+        "hybrid": {
+          "tool": "HYBRID",
+          "scan_type": "HYBRID",
+          "total_findings": 0,
+          "true_positives": 0,
+          "false_positives": 0,
+          "false_negatives": 5,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0,
+          "accuracy": 0.0,
+          "scan_duration": 0.0
+        }
+      },
+      "ground_truth": [
+        {
+          "id": "NG_001",
+          "type": "nosql_injection",
+          "cwe_id": "CWE-943",
+          "owasp_category": "API3:2023",
+          "severity": "HIGH",
+          "file_path": "app/routes/session.js",
+          "line_number": 56,
+          "endpoint": "/login",
+          "description": "NoSQL Injection in MongoDB authentication query",
+          "source": "official_documentation"
+        },
+        {
+          "id": "NG_002",
+          "type": "insecure_deserialization",
+          "cwe_id": "CWE-502",
+          "owasp_category": "API8:2023",
+          "severity": "CRITICAL",
+          "file_path": "app/routes/profile.js",
+          "line_number": 89,
+          "endpoint": "/profile",
+          "description": "Insecure deserialization of user session data",
+          "source": "official_documentation"
+        },
+        {
+          "id": "NG_003",
+          "type": "sensitive_data_exposure",
+          "cwe_id": "CWE-798",
+          "owasp_category": "API7:2023",
+          "severity": "HIGH",
+          "file_path": "config/env/development.js",
+          "line_number": 5,
+          "endpoint": "/",
+          "description": "Hardcoded database credentials in configuration",
+          "source": "official_documentation"
+        },
+        {
+          "id": "NG_004",
+          "type": "xss",
+          "cwe_id": "CWE-79",
+          "owasp_category": "API8:2023",
+          "severity": "MEDIUM",
+          "file_path": "app/views/memos.html",
+          "line_number": 34,
+          "endpoint": "/memos",
+          "description": "Stored XSS in memo content",
+          "source": "official_documentation"
+        },
+        {
+          "id": "NG_005",
+          "type": "broken_access_control",
+          "cwe_id": "CWE-639",
+          "owasp_category": "API1:2023",
+          "severity": "HIGH",
+          "file_path": "app/routes/allocations.js",
+          "line_number": 67,
+          "endpoint": "/allocations/:id",
+          "description": "IDOR in allocations viewing",
+          "source": "official_documentation"
+        }
+      ],
+      "false_positive_reduction": {
+        "absolute": 0,
+        "percentage": 0.0
+      }
+    },
+    {
+      "application": {
+        "name": "juice-shop",
+        "url": "https://github.com/juice-shop/juice-shop",
+        "language": "TypeScript",
+        "framework": "Angular/Express",
+        "documented_vulnerabilities": 20,
+        "description": "OWASP Juice Shop - Modern vulnerable app",
+        "ground_truth_file": "juiceshop_ground_truth.json"
+      },
+      "timestamp": "2025-11-21T17:19:58.282385",
+      "sast_results": {
+        "bandit": {
+          "tool": "bandit",
+          "findings": [],
+          "duration": 0.6777729988098145,
+          "report_path": "C:\\Users\\oscar\\OneDrive\\Documentos\\GitHub\\HybridSecScan\\data\\experiments\\results\\sast_bandit_juice-shop_20251121_171958.json",
+          "success": true
+        },
+        "semgrep": {
+          "tool": "semgrep",
+          "findings": [],
+          "duration": 0,
+          "success": false,
+          "error": "[WinError 2] El sistema no puede encontrar el archivo especificado"
+        }
+      },
+      "dast_results": {
+        "findings": [
+          {
+            "id": "DAST_SIM_001",
+            "type": "sql_injection",
+            "severity": "HIGH",
+            "endpoint": "/login",
+            "description": "Possible SQL Injection detected",
+            "evidence": "SQL error message in response",
+            "cwe_id": "CWE-89"
+          },
+          {
+            "id": "DAST_SIM_002",
+            "type": "xss",
+            "severity": "MEDIUM",
+            "endpoint": "/search",
+            "description": "XSS vulnerability detected",
+            "evidence": "Script tag reflected in response",
+            "cwe_id": "CWE-79"
+          }
+        ]
+      },
+      "hybrid_results": {
+        "findings": []
+      },
+      "metrics_comparison": {
+        "sast": {
+          "tool": "SAST",
+          "scan_type": "SAST",
+          "total_findings": 0,
+          "true_positives": 0,
+          "false_positives": 0,
+          "false_negatives": 5,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0,
+          "accuracy": 0.0,
+          "scan_duration": 0.0
+        },
+        "dast": {
+          "tool": "DAST",
+          "scan_type": "DAST",
+          "total_findings": 2,
+          "true_positives": 2,
+          "false_positives": 0,
+          "false_negatives": 5,
+          "precision": 1.0,
+          "recall": 0.2857,
+          "f1_score": 0.4444,
+          "accuracy": 0.5455,
+          "scan_duration": 0.0
+        },
+        "hybrid": {
+          "tool": "HYBRID",
+          "scan_type": "HYBRID",
+          "total_findings": 0,
+          "true_positives": 0,
+          "false_positives": 0,
+          "false_negatives": 5,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0,
+          "accuracy": 0.0,
+          "scan_duration": 0.0
+        }
+      },
+      "ground_truth": [
+        {
+          "id": "JS_001",
+          "type": "sql_injection",
+          "cwe_id": "CWE-89",
+          "owasp_category": "API3:2023",
+          "severity": "HIGH",
+          "file_path": "routes/login.ts",
+          "line_number": 23,
+          "endpoint": "/rest/user/login",
+          "description": "SQL Injection in authentication bypass (Admin login)",
+          "source": "official_documentation"
+        },
+        {
+          "id": "JS_002",
+          "type": "broken_access_control",
+          "cwe_id": "CWE-639",
+          "owasp_category": "API1:2023",
+          "severity": "HIGH",
+          "file_path": "routes/basket.ts",
+          "line_number": 67,
+          "endpoint": "/rest/basket/:id",
+          "description": "IDOR vulnerability in basket access",
+          "source": "official_documentation"
+        },
+        {
+          "id": "JS_003",
+          "type": "xss",
+          "cwe_id": "CWE-79",
+          "owasp_category": "API8:2023",
+          "severity": "MEDIUM",
+          "file_path": "routes/search.ts",
+          "line_number": 45,
+          "endpoint": "/rest/products/search",
+          "description": "DOM-based XSS in product search",
+          "source": "official_documentation"
+        },
+        {
+          "id": "JS_004",
+          "type": "sensitive_data_exposure",
+          "cwe_id": "CWE-200",
+          "owasp_category": "API7:2023",
+          "severity": "MEDIUM",
+          "file_path": "ftp/",
+          "line_number": 0,
+          "endpoint": "/ftp",
+          "description": "Sensitive files exposed through directory listing",
+          "source": "official_documentation"
+        },
+        {
+          "id": "JS_005",
+          "type": "jwt_manipulation",
+          "cwe_id": "CWE-287",
+          "owasp_category": "API2:2023",
+          "severity": "HIGH",
+          "file_path": "lib/insecurity.ts",
+          "line_number": 89,
+          "endpoint": "/rest/user/whoami",
+          "description": "JWT token manipulation allows privilege escalation",
+          "source": "official_documentation"
+        }
+      ],
+      "false_positive_reduction": {
+        "absolute": 0,
+        "percentage": 0.0
+      }
+    }
+  ],
+  "aggregate_metrics": {
+    "sast": {
+      "avg_precision": 0.0,
+      "avg_recall": 0.0,
+      "avg_f1_score": 0.0,
+      "avg_false_positives": 0.0
+    },
+    "dast": {
+      "avg_precision": 0.5,
+      "avg_recall": 0.1548,
+      "avg_f1_score": 0.2361,
+      "avg_false_positives": 1.0
+    },
+    "hybrid": {
+      "avg_precision": 0.0,
+      "avg_recall": 0.0,
+      "avg_f1_score": 0.0,
+      "avg_false_positives": 0.0
+    },
+    "false_positive_reduction": {
+      "avg_percentage": 0.0,
+      "total_experiments": 4
+    }
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "errors": [],
+  "generated_at": "2025-11-21T22:28:59Z",
+  "metrics": {
+    "C:\\Users\\oscar\\OneDrive\\Documentos\\GitHub\\HybridSecScan\\data\\experiments\\test_apps\\dvwa\\tests\\test_url.py": {
+      "CONFIDENCE.HIGH": 1,
+      "CONFIDENCE.LOW": 1,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 1,
+      "SEVERITY.MEDIUM": 1,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 61,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "_totals": {
+      "CONFIDENCE.HIGH": 1,
+      "CONFIDENCE.LOW": 1,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 1,
+      "SEVERITY.MEDIUM": 1,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 61,
+      "nosec": 0,
+      "skipped_tests": 0
+    }
+  },
+  "results": [
+    {
+      "code": "31         }\n32         response = requests.get(url, headers=headers)\n33     except requests.exceptions.ConnectionError:\n",
+      "col_offset": 19,
+      "end_col_offset": 53,
+      "filename": "C:\\Users\\oscar\\OneDrive\\Documentos\\GitHub\\HybridSecScan\\data\\experiments\\test_apps\\dvwa\\tests\\test_url.py",
+      "issue_confidence": "LOW",
+      "issue_cwe": {
+        "id": 400,
+        "link": "https://cwe.mitre.org/data/definitions/400.html"
+      },
+      "issue_severity": "MEDIUM",
+      "issue_text": "Call to requests without timeout",
+      "line_number": 32,
+      "line_range": [
+        32
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.8.0/plugins/b113_request_without_timeout.html",
+      "test_id": "B113",
+      "test_name": "request_without_timeout"
+    },
+    {
+      "code": "89 \n90     assert len(broken_urls) == 0, \"Broken URLs Detected.\"\n",
+      "col_offset": 4,
+      "end_col_offset": 57,
+      "filename": "C:\\Users\\oscar\\OneDrive\\Documentos\\GitHub\\HybridSecScan\\data\\experiments\\test_apps\\dvwa\\tests\\test_url.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 703,
+        "link": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
+      "line_number": 90,
+      "line_range": [
+        90
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.8.0/plugins/b101_assert_used.html",
+      "test_id": "B101",
+      "test_name": "assert_used"
+    }
+  ]
+}

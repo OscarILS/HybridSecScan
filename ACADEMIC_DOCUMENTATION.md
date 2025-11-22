@@ -177,6 +177,12 @@ El sistema implementa una arquitectura modular con separación clara de responsa
 - **Scoring**: Cálculo de métricas de confianza
 - **Optimización**: Filtrado de resultados duplicados
 
+#### 4. Sistema de Evaluación (BenchmarkSuite)
+- **Evaluación comparativa**: Benchmarking automatizado de herramientas SAST/DAST
+- **Métricas estandarizadas**: Precisión, Recall, F1-Score, Accuracy, FPR
+- **Generación de reportes**: Reportes JSON con análisis estadístico completo
+- **Validación experimental**: Suite de casos de prueba con ground truth
+
 ### Stack Tecnológico Utilizado
 
 #### Backend

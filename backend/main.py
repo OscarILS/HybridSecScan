@@ -1,5 +1,6 @@
-from fastapi import FastAPI, Depends, UploadFile, File, Form, HTTPException
+from fastapi import FastAPI, Depends, UploadFile, File, Form, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 import os
@@ -7,14 +8,22 @@ import sys
 import subprocess
 import uuid
 import mimetypes
-import magic
 import logging
 import tempfile
 import shutil
 from pathlib import Path
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 import json
+from pydantic import BaseModel, EmailStr
+
+# Try to import python-magic, fallback to mimetypes if not available
+try:
+    import magic
+    MAGIC_AVAILABLE = True
+except ImportError:
+    MAGIC_AVAILABLE = False
+    logging.warning("python-magic not available, using mimetypes for file type detection")
 
 # Configurar logging estructurado
 logging.basicConfig(
@@ -203,13 +212,18 @@ async def validate_uploaded_file(file: UploadFile) -> dict:
             raise HTTPException(status_code=400, detail="El archivo está vacío")
         
         # Validar tipo de archivo usando magic numbers (primeros 1024 bytes)
-        try:
-            detected_mime = magic.from_buffer(content[:1024], mime=True)
-            logger.info(f"MIME type detectado: {detected_mime}")
-        except:
+        if MAGIC_AVAILABLE:
+            try:
+                detected_mime = magic.from_buffer(content[:1024], mime=True)
+                logger.info(f"MIME type detectado: {detected_mime}")
+            except Exception as e:
+                logger.warning(f"Error usando python-magic: {e}")
+                detected_mime = mimetypes.guess_type(file.filename)[0] or 'application/octet-stream'
+                logger.warning(f"Usando fallback MIME detection: {detected_mime}")
+        else:
             # Fallback si python-magic no está disponible
             detected_mime = mimetypes.guess_type(file.filename)[0] or 'application/octet-stream'
-            logger.warning(f"Usando fallback MIME detection: {detected_mime}")
+            logger.info(f"Usando mimetypes para detección: {detected_mime}")
         
         if detected_mime not in ALLOWED_MIME_TYPES and not detected_mime.startswith('text/'):
             logger.warning(f"🚨 SECURITY: Tipo de archivo no permitido: {detected_mime}")
@@ -267,14 +281,14 @@ def update_scan_result(scan_result, results: dict, status: str = "completed", er
         
         # Agregar metadatos útiles para análisis
         if results and isinstance(results, dict):
-            duration = (datetime.utcnow() - scan_result.timestamp).total_seconds()
+            duration = (datetime.now(timezone.utc) - scan_result.timestamp).total_seconds()
             vulnerabilities = results.get("vulnerabilities", results.get("results", []))
             
             scan_result.results.update({
                 "scan_duration_seconds": duration,
                 "vulnerabilities_found": len(vulnerabilities) if isinstance(vulnerabilities, list) else 0,
                 "severity_breakdown": _calculate_severity_breakdown(results),
-                "scan_completed_at": datetime.utcnow().isoformat(),
+                "scan_completed_at": datetime.now(timezone.utc).isoformat(),
                 "metadata": {
                     "scan_version": "2.0",
                     "engine": "HybridSecScan",
@@ -394,7 +408,7 @@ def run_sast_scan(target_path: str = Form(...), tool: str = Form(...), db: Sessi
             tool=tool,
             target=str(target_path),  # Ruta original para auditoría
             status="running",
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(timezone.utc)
         )
         db.add(scan_result)
         db.commit()
@@ -554,7 +568,7 @@ async def upload_code(file: UploadFile = File(...), db: Session = Depends(get_db
             tool="upload_service",
             target=file_info['filename'],
             status="uploading",
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(timezone.utc)
         )
         db.add(scan_result)
         db.commit()
@@ -571,14 +585,14 @@ async def upload_code(file: UploadFile = File(...), db: Session = Depends(get_db
         
         # Guardar archivo de forma segura
         try:
-            with open(file_path, "wb") as buffer:
-                buffer.write(file_info['content'])
+            # Escribir archivo de forma síncrona en async context
+            file_path.write_bytes(file_info['content'])
                 
             logger.info(f"💾 Archivo guardado: {file_path}")
             
             # Validar que el archivo se guardó correctamente
             if not file_path.exists() or file_path.stat().st_size != file_info['size']:
-                raise Exception("Error verificando integridad del archivo guardado")
+                raise IOError(f"Error verificando integridad del archivo guardado: {file_path}")
             
             # Actualizar resultado con información completa
             upload_results = {
@@ -631,3 +645,173 @@ async def upload_code(file: UploadFile = File(...), db: Session = Depends(get_db
 def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "message": "HybridSecScan API funcionando correctamente"}
+
+
+# ============= AUTHENTICATION ENDPOINTS =============
+
+class UserRegister(BaseModel):
+    """Modelo para registro de usuario."""
+    username: str
+    email: EmailStr
+    password: str
+    full_name: Optional[str] = None
+
+
+class UserLogin(BaseModel):
+    """Modelo para respuesta de login."""
+    access_token: str
+    token_type: str
+    user: dict
+
+
+class UserResponse(BaseModel):
+    """Modelo para respuesta de información de usuario."""
+    id: int
+    username: str
+    email: str
+    full_name: Optional[str]
+    is_active: bool
+    is_admin: bool
+    created_at: str
+
+
+@app.post("/auth/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+async def register_user(user_data: UserRegister, db: Session = Depends(get_db)):
+    """
+    Registra un nuevo usuario en el sistema.
+    
+    Args:
+        user_data: Datos del usuario a registrar
+        db: Sesión de base de datos
+        
+    Returns:
+        Usuario creado
+        
+    Raises:
+        HTTPException: Si el usuario o email ya existe
+    """
+    from database.models import User
+    from backend.auth import get_password_hash
+    
+    # Verificar si el usuario ya existe
+    existing_user = db.query(User).filter(
+        (User.username == user_data.username) | (User.email == user_data.email)
+    ).first()
+    
+    if existing_user:
+        if existing_user.username == user_data.username:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="El nombre de usuario ya está registrado"
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="El correo electrónico ya está registrado"
+            )
+    
+    # Crear nuevo usuario
+    new_user = User(
+        username=user_data.username,
+        email=user_data.email,
+        hashed_password=get_password_hash(user_data.password),
+        full_name=user_data.full_name,
+        is_active=True,
+        is_admin=False
+    )
+    
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    
+    logger.info(f"✅ Usuario registrado: {new_user.username} (ID: {new_user.id})")
+    
+    return UserResponse(
+        id=new_user.id,
+        username=new_user.username,
+        email=new_user.email,
+        full_name=new_user.full_name,
+        is_active=new_user.is_active,
+        is_admin=new_user.is_admin,
+        created_at=new_user.created_at.isoformat() if new_user.created_at else ""
+    )
+
+
+@app.post("/auth/login", response_model=UserLogin)
+async def login_user(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db)
+):
+    """
+    Autentica un usuario y devuelve un token JWT.
+    
+    Args:
+        form_data: Credenciales del usuario (username y password)
+        db: Sesión de base de datos
+        
+    Returns:
+        Token de acceso JWT
+        
+    Raises:
+        HTTPException: Si las credenciales son inválidas
+    """
+    from backend.auth import authenticate_user, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
+    from database.models import User
+    
+    user = authenticate_user(db, form_data.username, form_data.password)
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Credenciales incorrectas",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # Actualizar último login
+    user.last_login = datetime.now(timezone.utc)
+    db.commit()
+    
+    # Crear token de acceso
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.username},
+        expires_delta=access_token_expires
+    )
+    
+    logger.info(f"✅ Usuario autenticado: {user.username} (ID: {user.id})")
+    
+    return UserLogin(
+        access_token=access_token,
+        token_type="bearer",
+        user={
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "full_name": user.full_name,
+            "is_admin": user.is_admin
+        }
+    )
+
+
+@app.get("/auth/me", response_model=UserResponse)
+async def get_current_user_info(
+    current_user = Depends(lambda: __import__('backend.auth', fromlist=['get_current_active_user']).get_current_active_user)
+):
+    """
+    Obtiene la información del usuario autenticado actual.
+    
+    Args:
+        current_user: Usuario actual obtenido del token JWT
+        
+    Returns:
+        Información del usuario
+    """
+    return UserResponse(
+        id=current_user.id,
+        username=current_user.username,
+        email=current_user.email,
+        full_name=current_user.full_name,
+        is_active=current_user.is_active,
+        is_admin=current_user.is_admin,
+        created_at=current_user.created_at.isoformat() if current_user.created_at else ""
+    )

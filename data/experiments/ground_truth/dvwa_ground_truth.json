@@ -1,0 +1,68 @@
+{
+  "application": "DVWA",
+  "version": "2.2",
+  "source": "Official Documentation",
+  "last_updated": "2025-11-21",
+  "vulnerabilities": [
+    {
+      "id": "DVWA_001",
+      "type": "sql_injection",
+      "cwe_id": "CWE-89",
+      "owasp_category": "API3:2023",
+      "severity": "HIGH",
+      "file_path": "vulnerabilities/sqli/source/low.php",
+      "line_number": 15,
+      "endpoint": "/vulnerabilities/sqli/",
+      "description": "SQL Injection in user ID parameter (low security)",
+      "source": "official_documentation"
+    },
+    {
+      "id": "DVWA_002",
+      "type": "xss",
+      "cwe_id": "CWE-79",
+      "owasp_category": "API8:2023",
+      "severity": "MEDIUM",
+      "file_path": "vulnerabilities/xss_r/source/low.php",
+      "line_number": 8,
+      "endpoint": "/vulnerabilities/xss_r/",
+      "description": "Reflected XSS in name parameter",
+      "source": "official_documentation"
+    },
+    {
+      "id": "DVWA_003",
+      "type": "command_injection",
+      "cwe_id": "CWE-78",
+      "owasp_category": "API7:2023",
+      "severity": "CRITICAL",
+      "file_path": "vulnerabilities/exec/source/low.php",
+      "line_number": 12,
+      "endpoint": "/vulnerabilities/exec/",
+      "description": "OS Command Injection in ping utility",
+      "source": "official_documentation"
+    },
+    {
+      "id": "DVWA_004",
+      "type": "file_inclusion",
+      "cwe_id": "CWE-98",
+      "owasp_category": "API1:2023",
+      "severity": "HIGH",
+      "file_path": "vulnerabilities/fi/source/low.php",
+      "line_number": 9,
+      "endpoint": "/vulnerabilities/fi/",
+      "description": "Local File Inclusion vulnerability",
+      "source": "official_documentation"
+    },
+    {
+      "id": "DVWA_005",
+      "type": "csrf",
+      "cwe_id": "CWE-352",
+      "owasp_category": "API8:2023",
+      "severity": "MEDIUM",
+      "file_path": "vulnerabilities/csrf/source/low.php",
+      "line_number": 14,
+      "endpoint": "/vulnerabilities/csrf/",
+      "description": "Cross-Site Request Forgery in password change",
+      "source": "official_documentation"
+    }
+  ]
+}

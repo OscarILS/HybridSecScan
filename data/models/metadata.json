@@ -1,0 +1,29 @@
+{
+  "validation": {
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "roc_auc": 1.0
+  },
+  "test": {
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "roc_auc": 1.0
+  },
+  "confusion_matrix": {
+    "TN": 3923,
+    "FP": 0,
+    "FN": 0,
+    "TP": 5776
+  },
+  "training_info": {
+    "n_train_samples": 77586,
+    "n_val_samples": 9698,
+    "n_test_samples": 9699,
+    "n_features": 517,
+    "trained_at": "2025-11-21T15:38:55.845893"
+  }
+}

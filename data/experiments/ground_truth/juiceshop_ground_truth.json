@@ -1,0 +1,68 @@
+{
+  "application": "OWASP Juice Shop",
+  "version": "15.0",
+  "source": "Official Challenges Documentation",
+  "last_updated": "2025-11-21",
+  "vulnerabilities": [
+    {
+      "id": "JS_001",
+      "type": "sql_injection",
+      "cwe_id": "CWE-89",
+      "owasp_category": "API3:2023",
+      "severity": "HIGH",
+      "file_path": "routes/login.ts",
+      "line_number": 23,
+      "endpoint": "/rest/user/login",
+      "description": "SQL Injection in authentication bypass (Admin login)",
+      "source": "official_documentation"
+    },
+    {
+      "id": "JS_002",
+      "type": "broken_access_control",
+      "cwe_id": "CWE-639",
+      "owasp_category": "API1:2023",
+      "severity": "HIGH",
+      "file_path": "routes/basket.ts",
+      "line_number": 67,
+      "endpoint": "/rest/basket/:id",
+      "description": "IDOR vulnerability in basket access",
+      "source": "official_documentation"
+    },
+    {
+      "id": "JS_003",
+      "type": "xss",
+      "cwe_id": "CWE-79",
+      "owasp_category": "API8:2023",
+      "severity": "MEDIUM",
+      "file_path": "routes/search.ts",
+      "line_number": 45,
+      "endpoint": "/rest/products/search",
+      "description": "DOM-based XSS in product search",
+      "source": "official_documentation"
+    },
+    {
+      "id": "JS_004",
+      "type": "sensitive_data_exposure",
+      "cwe_id": "CWE-200",
+      "owasp_category": "API7:2023",
+      "severity": "MEDIUM",
+      "file_path": "ftp/",
+      "line_number": 0,
+      "endpoint": "/ftp",
+      "description": "Sensitive files exposed through directory listing",
+      "source": "official_documentation"
+    },
+    {
+      "id": "JS_005",
+      "type": "jwt_manipulation",
+      "cwe_id": "CWE-287",
+      "owasp_category": "API2:2023",
+      "severity": "HIGH",
+      "file_path": "lib/insecurity.ts",
+      "line_number": 89,
+      "endpoint": "/rest/user/whoami",
+      "description": "JWT token manipulation allows privilege escalation",
+      "source": "official_documentation"
+    }
+  ]
+}

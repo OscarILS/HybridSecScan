@@ -1,0 +1,23 @@
+# Ignorar datos crudos (pueden ser muy grandes)
+raw/
+
+# Permitir estructura de carpetas
+!raw/.gitkeep
+!raw/nvd/.gitkeep
+!raw/owasp/.gitkeep
+!raw/juliet/.gitkeep
+!raw/sard/.gitkeep
+!raw/sonar/.gitkeep
+
+# Permitir datasets procesados pequeños (<10MB)
+!processed/*.csv
+processed/*_large.csv
+
+# Ignorar modelos entrenados (grandes)
+models/*.pkl
+models/*.h5
+models/*.pt
+
+# Permitir metadata de modelos
+!models/metadata.json
+!models/README.md

@@ -76,8 +76,8 @@ def run_semgrep_analysis(target_path: str) -> Dict:
 
 | Herramienta | API1 BOLA | API2 Auth | API3 Prop Auth | API7 SSRF | API8 Config |
 |-------------|-----------|-----------|----------------|-----------|-------------|
-| Bandit      | ✅        | ✅        | ⚠️             | ✅        | ✅          |
-| Semgrep     | ✅        | ✅        | ✅             | ✅        | ✅          |
+| Bandit      | Sí        | Sí        | Parcial        | Sí        | Sí          |
+| Semgrep     | Sí        | Sí        | Sí             | Sí        | Sí          |
 
 ## 4.3 Motor de Análisis Dinámico (DAST)
 
@@ -310,60 +310,226 @@ interface ResearchMetrics {
 }
 ```
 
-## 4.7 Validación Experimental
+## 4.7 Sistema de Evaluación Comparativa
 
-### 4.7.1 Casos de Prueba
+### 4.7.1 Arquitectura del Módulo de Evaluación
 
-El sistema se valida usando:
+El sistema incluye un módulo especializado de evaluación (`evaluation_system.py`) que permite realizar benchmarks comparativos entre herramientas individuales y el sistema híbrido propuesto.
 
-1. **OWASP Juice Shop**: API vulnerable para e-learning
-2. **DVWA REST API**: APIs intencionalmente vulnerables  
-3. **Real-world APIs**: Selección de GitHub con vulnerabilidades conocidas
-4. **Synthetic test cases**: APIs generadas específicamente para testing
+```python
+class BenchmarkSuite:
+    """
+    Suite de evaluación que ejecuta análisis comparativos
+    entre herramientas SAST/DAST individuales vs. sistema híbrido
+    """
+    def __init__(self):
+        self.test_cases = self._load_test_cases()
+        self.baseline_tools = ["bandit", "semgrep", "zap"]
+        
+    def run_comparative_evaluation(self) -> Dict[str, EvaluationMetrics]:
+        """
+        Ejecuta evaluación completa comparando:
+        - Bandit (SAST Python)
+        - Semgrep (SAST Multi-lenguaje)
+        - OWASP ZAP (DAST)
+        - Sistema Híbrido HybridSecScan
+        
+        Returns:
+            Diccionario con métricas por herramienta
+        """
+        results = {}
+        
+        # Evaluar herramientas individuales
+        for tool in self.baseline_tools:
+            results[tool] = self._evaluate_tool(tool)
+        
+        # Evaluar sistema híbrido
+        results["hybrid_system"] = self._evaluate_hybrid_system()
+        
+        return results
+```
 
 ### 4.7.2 Métricas de Evaluación
 
 ```python
-class ValidationMetrics:
-    @staticmethod
-    def calculate_effectiveness_metrics(results: List[Dict]) -> Dict:
-        """Calcula métricas estándar de ML para validación"""
-        tp = len([r for r in results if r['actual'] == True and r['predicted'] == True])
-        fp = len([r for r in results if r['actual'] == False and r['predicted'] == True])
-        tn = len([r for r in results if r['actual'] == False and r['predicted'] == False])
-        fn = len([r for r in results if r['actual'] == True and r['predicted'] == False])
-        
-        precision = tp / (tp + fp) if (tp + fp) > 0 else 0
-        recall = tp / (tp + fn) if (tp + fn) > 0 else 0
-        f1_score = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
-        accuracy = (tp + tn) / (tp + tn + fp + fn)
-        
-        return {
-            'precision': precision,
-            'recall': recall,
-            'f1_score': f1_score,
-            'accuracy': accuracy,
-            'true_positives': tp,
-            'false_positives': fp,
-            'true_negatives': tn,
-            'false_negatives': fn
-        }
+@dataclass
+class EvaluationMetrics:
+    """
+    Métricas estándar de Machine Learning aplicadas
+    a detección de vulnerabilidades
+    """
+    true_positives: int = 0
+    false_positives: int = 0
+    true_negatives: int = 0
+    false_negatives: int = 0
+    detection_time_seconds: float = 0.0
+    coverage_percentage: float = 0.0
+    
+    @property
+    def precision(self) -> float:
+        """Precisión = TP / (TP + FP)"""
+        denominator = self.true_positives + self.false_positives
+        return self.true_positives / denominator if denominator > 0 else 0.0
+    
+    @property
+    def recall(self) -> float:
+        """Recall (Sensibilidad) = TP / (TP + FN)"""
+        denominator = self.true_positives + self.false_negatives
+        return self.true_positives / denominator if denominator > 0 else 0.0
+    
+    @property
+    def f1_score(self) -> float:
+        """F1-Score (Media armónica de precisión y recall)"""
+        p = self.precision
+        r = self.recall
+        return 2 * (p * r) / (p + r) if (p + r) > 0 else 0.0
+    
+    @property
+    def accuracy(self) -> float:
+        """Exactitud = (TP + TN) / Total"""
+        total = (self.true_positives + self.true_negatives + 
+                self.false_positives + self.false_negatives)
+        return (self.true_positives + self.true_negatives) / total if total > 0 else 0.0
+    
+    @property
+    def false_positive_rate(self) -> float:
+        """Tasa de Falsos Positivos = FP / (FP + TN)"""
+        denominator = self.false_positives + self.true_negatives
+        return self.false_positives / denominator if denominator > 0 else 0.0
 ```
 
-## 4.8 Contribuciones Técnicas Principales
+### 4.7.3 Casos de Prueba Estandarizados
 
-### 4.8.1 Innovaciones del Sistema
+El sistema incluye casos de prueba basados en vulnerabilidades reales del OWASP API Top 10:
+
+```python
+test_cases = [
+    {
+        "id": "TC_001",
+        "name": "SQL Injection in Authentication",
+        "vulnerability_type": "sql_injection",
+        "severity": "high",
+        "cwe_id": "CWE-89",
+        "owasp_category": "API3-2023",
+        "expected_detection": True
+    },
+    {
+        "id": "TC_002",
+        "name": "XSS in Comment System",
+        "vulnerability_type": "xss",
+        "severity": "medium",
+        "cwe_id": "CWE-79",
+        "owasp_category": "API10-2023",
+        "expected_detection": True
+    },
+    {
+        "id": "TC_003",
+        "name": "Broken Authentication Token",
+        "vulnerability_type": "broken_authentication",
+        "severity": "critical",
+        "cwe_id": "CWE-287",
+        "owasp_category": "API2-2023",
+        "expected_detection": True
+    }
+]
+```
+
+### 4.7.4 Generación de Reportes de Evaluación
+
+```python
+def generate_evaluation_report(results: Dict[str, EvaluationMetrics]) -> Dict:
+    """
+    Genera reporte académico completo con:
+    - Métricas detalladas por herramienta
+    - Análisis comparativo
+    - Matrices de confusión
+    - Recomendaciones
+    """
+    report = {
+        "evaluation_date": datetime.now().isoformat(),
+        "detailed_metrics": {},
+        "comparative_analysis": {},
+        "recommendations": []
+    }
+    
+    # Métricas por herramienta
+    for tool_name, metrics in results.items():
+        report["detailed_metrics"][tool_name] = {
+            "precision": round(metrics.precision, 3),
+            "recall": round(metrics.recall, 3),
+            "f1_score": round(metrics.f1_score, 3),
+            "accuracy": round(metrics.accuracy, 3),
+            "false_positive_rate": round(metrics.false_positive_rate, 3),
+            "detection_time_seconds": round(metrics.detection_time_seconds, 3),
+            "confusion_matrix": {
+                "true_positives": metrics.true_positives,
+                "false_positives": metrics.false_positives,
+                "true_negatives": metrics.true_negatives,
+                "false_negatives": metrics.false_negatives
+            }
+        }
+    
+    # Análisis comparativo
+    if "hybrid_system" in results:
+        hybrid = results["hybrid_system"]
+        best_individual_f1 = max([m.f1_score for n, m in results.items() 
+                                  if n != "hybrid_system"])
+        
+        improvement = ((hybrid.f1_score - best_individual_f1) / 
+                      best_individual_f1 * 100)
+        
+        report["comparative_analysis"] = {
+            "f1_improvement_percentage": round(improvement, 1),
+            "false_positive_reduction": _calculate_fp_reduction(hybrid, results)
+        }
+    
+    return report
+```
+
+## 4.8 Validación Experimental
+
+### 4.8.1 Aplicaciones de Prueba
+
+El sistema se valida usando aplicaciones deliberadamente vulnerables:
+
+1. **OWASP Juice Shop**: Aplicación de e-commerce con vulnerabilidades TypeScript/Angular
+2. **DVWA (Damn Vulnerable Web Application)**: Aplicación PHP con múltiples vulnerabilidades
+3. **NodeGoat**: Aplicación Node.js con vulnerabilidades JavaScript
+4. **WebGoat**: Aplicación Java/Spring Boot con vulnerabilidades OWASP
+
+### 4.8.2 Ground Truth Dataset
+
+Se mantiene un dataset de "verdad fundamental" con vulnerabilidades documentadas:
+
+```json
+{
+  "vulnerability_id": "VUL_DVWA_001",
+  "file_path": "vulnerabilities/sqli/source/high.php",
+  "line_number": 45,
+  "vulnerability_type": "sql_injection",
+  "severity": "critical",
+  "cwe_id": "CWE-89",
+  "owasp_category": "API3-2023",
+  "description": "SQL injection en parámetro 'id' sin sanitización",
+  "exploitation_verified": true
+}
+```
+
+## 4.9 Contribuciones Técnicas Principales
+
+### 4.9.1 Innovaciones del Sistema
 
 1. **Algoritmo de Correlación Híbrida**: Primer sistema que correlaciona automáticamente hallazgos SAST y DAST para APIs REST
 2. **Reducción de Falsos Positivos**: Mejora documentada del 60%+ vs herramientas individuales
 3. **Análisis Contextual con ML**: Uso de Random Forest para predicción de correlaciones verdaderas
 4. **Cobertura OWASP Completa**: 95% de cobertura del OWASP API Security Top 10
-5. **Framework de Evaluación**: Sistema replicable para comparación de herramientas de seguridad
+5. **Framework de Evaluación Automatizado**: Sistema replicable para comparación rigurosa de herramientas SAST/DAST con métricas estandarizadas (Precision, Recall, F1-Score, FPR)
 
-### 4.8.2 Arquitectura Escalable
+### 4.9.2 Arquitectura Escalable
 
 - **Microservicios**: Componentes independientes y escalables
 - **API REST**: Interfaz estándar para integración con terceros  
 - **Containerización**: Docker para deployment consistente
 - **Base de Datos**: SQLite para desarrollo, PostgreSQL para producción
 - **Frontend Moderno**: React + TypeScript para dashboard interactivo
+- **Sistema de Evaluación**: Módulo especializado para benchmarking comparativo automatizado

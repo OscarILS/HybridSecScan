@@ -34,32 +34,32 @@ class EvaluationMetrics:
     
     @property
     def precision(self) -> float:
-        """Precision = TP / (TP + FP)"""
+        """Calculate precision metric."""
         denominator = self.true_positives + self.false_positives
         return self.true_positives / denominator if denominator > 0 else 0.0
     
     @property
     def recall(self) -> float:
-        """Recall = TP / (TP + FN)"""
+        """Calculate recall metric."""
         denominator = self.true_positives + self.false_negatives
         return self.true_positives / denominator if denominator > 0 else 0.0
     
     @property
     def f1_score(self) -> float:
-        """F1 Score = 2 * (Precision * Recall) / (Precision + Recall)"""
+        """Calculate F1 score metric."""
         p = self.precision
         r = self.recall
         return 2 * (p * r) / (p + r) if (p + r) > 0 else 0.0
     
     @property
     def accuracy(self) -> float:
-        """Accuracy = (TP + TN) / (TP + TN + FP + FN)"""
+        """Calculate accuracy metric."""
         total = self.true_positives + self.true_negatives + self.false_positives + self.false_negatives
         return (self.true_positives + self.true_negatives) / total if total > 0 else 0.0
     
     @property
     def false_positive_rate(self) -> float:
-        """FPR = FP / (FP + TN)"""
+        """Calculate false positive rate."""
         denominator = self.false_positives + self.true_negatives
         return self.false_positives / denominator if denominator > 0 else 0.0
 

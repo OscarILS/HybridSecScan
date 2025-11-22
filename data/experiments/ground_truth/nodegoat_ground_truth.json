@@ -1,0 +1,68 @@
+{
+  "application": "NodeGoat",
+  "version": "1.4",
+  "source": "OWASP Documentation",
+  "last_updated": "2025-11-21",
+  "vulnerabilities": [
+    {
+      "id": "NG_001",
+      "type": "nosql_injection",
+      "cwe_id": "CWE-943",
+      "owasp_category": "API3:2023",
+      "severity": "HIGH",
+      "file_path": "app/routes/session.js",
+      "line_number": 56,
+      "endpoint": "/login",
+      "description": "NoSQL Injection in MongoDB authentication query",
+      "source": "official_documentation"
+    },
+    {
+      "id": "NG_002",
+      "type": "insecure_deserialization",
+      "cwe_id": "CWE-502",
+      "owasp_category": "API8:2023",
+      "severity": "CRITICAL",
+      "file_path": "app/routes/profile.js",
+      "line_number": 89,
+      "endpoint": "/profile",
+      "description": "Insecure deserialization of user session data",
+      "source": "official_documentation"
+    },
+    {
+      "id": "NG_003",
+      "type": "sensitive_data_exposure",
+      "cwe_id": "CWE-798",
+      "owasp_category": "API7:2023",
+      "severity": "HIGH",
+      "file_path": "config/env/development.js",
+      "line_number": 5,
+      "endpoint": "/",
+      "description": "Hardcoded database credentials in configuration",
+      "source": "official_documentation"
+    },
+    {
+      "id": "NG_004",
+      "type": "xss",
+      "cwe_id": "CWE-79",
+      "owasp_category": "API8:2023",
+      "severity": "MEDIUM",
+      "file_path": "app/views/memos.html",
+      "line_number": 34,
+      "endpoint": "/memos",
+      "description": "Stored XSS in memo content",
+      "source": "official_documentation"
+    },
+    {
+      "id": "NG_005",
+      "type": "broken_access_control",
+      "cwe_id": "CWE-639",
+      "owasp_category": "API1:2023",
+      "severity": "HIGH",
+      "file_path": "app/routes/allocations.js",
+      "line_number": 67,
+      "endpoint": "/allocations/:id",
+      "description": "IDOR in allocations viewing",
+      "source": "official_documentation"
+    }
+  ]
+}

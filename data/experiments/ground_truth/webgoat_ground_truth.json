@@ -1,0 +1,68 @@
+{
+  "application": "OWASP WebGoat",
+  "version": "8.2.0",
+  "source": "Official Documentation + CVE Database",
+  "last_updated": "2025-11-21",
+  "vulnerabilities": [
+    {
+      "id": "WG_001",
+      "type": "sql_injection",
+      "cwe_id": "CWE-89",
+      "owasp_category": "API3:2023",
+      "severity": "HIGH",
+      "file_path": "src/main/java/org/owasp/webgoat/lessons/sqlinjection/introduction/SqlInjectionLesson5a.java",
+      "line_number": 45,
+      "endpoint": "/WebGoat/SqlInjection/attack5a",
+      "description": "SQL Injection vulnerability in authentication bypass lesson",
+      "source": "official_documentation"
+    },
+    {
+      "id": "WG_002",
+      "type": "xss",
+      "cwe_id": "CWE-79",
+      "owasp_category": "API8:2023",
+      "severity": "MEDIUM",
+      "file_path": "src/main/java/org/owasp/webgoat/lessons/xss/CrossSiteScriptingLesson5a.java",
+      "line_number": 78,
+      "endpoint": "/WebGoat/CrossSiteScripting/attack5a",
+      "description": "Reflected XSS in feedback form",
+      "source": "official_documentation"
+    },
+    {
+      "id": "WG_003",
+      "type": "broken_authentication",
+      "cwe_id": "CWE-287",
+      "owasp_category": "API2:2023",
+      "severity": "CRITICAL",
+      "file_path": "src/main/java/org/owasp/webgoat/lessons/authentication/AuthenticationBypass.java",
+      "line_number": 120,
+      "endpoint": "/WebGoat/auth/login",
+      "description": "Authentication bypass through JWT manipulation",
+      "source": "official_documentation"
+    },
+    {
+      "id": "WG_004",
+      "type": "path_traversal",
+      "cwe_id": "CWE-22",
+      "owasp_category": "API1:2023",
+      "severity": "HIGH",
+      "file_path": "src/main/java/org/owasp/webgoat/lessons/pathtraversal/PathTraversal.java",
+      "line_number": 56,
+      "endpoint": "/WebGoat/PathTraversal/profiles",
+      "description": "Directory traversal in file download functionality",
+      "source": "official_documentation"
+    },
+    {
+      "id": "WG_005",
+      "type": "xxe",
+      "cwe_id": "CWE-611",
+      "owasp_category": "API8:2023",
+      "severity": "HIGH",
+      "file_path": "src/main/java/org/owasp/webgoat/lessons/xxe/XXE.java",
+      "line_number": 89,
+      "endpoint": "/WebGoat/XXE/attack",
+      "description": "XML External Entity injection",
+      "source": "official_documentation"
+    }
+  ]
+}

@@ -137,7 +137,8 @@ HybridSecScan/
 ├── backend/                 # Núcleo de la API FastAPI
 │   ├── __init__.py
 │   ├── main.py             # Servidor principal y endpoints
-│   └── correlation_engine.py # Motor de correlación ML
+│   ├── correlation_engine.py # Motor de correlación ML
+│   └── evaluation_system.py  # Sistema de evaluación comparativa
 ├── database/               # Capa de persistencia
 │   ├── __init__.py
 │   ├── models.py           # Modelos de datos SQLAlchemy
@@ -156,6 +157,7 @@ HybridSecScan/
 │   └── run_zap.py         # Ejecutor de análisis OWASP ZAP
 ├── uploads/               # Almacenamiento temporal de archivos
 ├── docs/                  # Documentación académica
+│   └── uml/               # Diagramas UML del sistema
 ├── tests/                 # Suite de pruebas unitarias
 ├── requirements.txt       # Dependencias de Python
 └── README.md             # Este documento
@@ -241,6 +243,17 @@ El desarrollo de este trabajo de grado se ha realizado siguiendo principios éti
 **Año**: 2025
 
 Para consultas académicas o sobre el funcionamiento del sistema, puede contactar a través de los canales oficiales de la universidad.
+
+## 📚 Documentación Completa
+
+Toda la documentación del proyecto está organizada en la carpeta [`docs/`](docs/):
+
+- **[Índice de Documentación](docs/README.md)** - Índice completo de toda la documentación disponible
+- **[Documentación Académica](docs/academic-documentation.md)** - Documentación completa para tesis
+- **[Propuesta del Sistema](docs/propuesta-sistema-cap4.md)** - Capítulo 4: Arquitectura y diseño
+- **[Validación Experimental](docs/validacion-experimental-cap5.md)** - Capítulo 5: Resultados experimentales
+- **[Diagramas UML](docs/uml/)** - Arquitectura completa del sistema
+- **[Configuración SAST](docs/configuracion-herramientas-sast.md)** - Resultados de validación con herramientas
 
 ## Reconocimientos
 

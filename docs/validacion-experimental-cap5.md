@@ -325,7 +325,7 @@ def statistical_significance_test(baseline_results, hybrid_results):
 ### 5.6.1 Hipótesis Principal
 **H1**: "Un sistema híbrido que combine análisis estático (SAST) y dinámico (DAST) con un algoritmo de correlación inteligente puede detectar un mayor número de vulnerabilidades OWASP API Top 10 con menor tasa de falsos positivos que las herramientas individuales."
 
-**Resultado**: ✅ **CONFIRMADA**
+**Resultado**: **CONFIRMADA**
 - F1-Score mejoró 25.7% vs mejor herramienta individual
 - Falsos positivos reducidos en 65%
 - Cobertura OWASP API Top 10: 95% vs 70% promedio individual
@@ -333,14 +333,14 @@ def statistical_significance_test(baseline_results, hybrid_results):
 ### 5.6.2 Hipótesis Secundaria 1
 **H2**: "El algoritmo de correlación puede identificar correctamente relaciones entre hallazgos SAST y DAST con una precisión superior al 85%."
 
-**Resultado**: ✅ **CONFIRMADA**  
+**Resultado**: **CONFIRMADA**  
 - Precisión de correlación: 86.0%
 - Modelo ML alcanza 91.3% accuracy en validación
 
 ### 5.6.3 Hipótesis Secundaria 2
 **H3**: "El sistema híbrido puede procesar APIs REST de manera escalable manteniendo throughput constante."
 
-**Resultado**: ✅ **CONFIRMADA**
+**Resultado**: **CONFIRMADA**
 - Throughput estable 1.2-1.4 endpoints/segundo
 - Complejidad O(n log n) es aceptable para casos de uso reales
 - Memoria escala linealmente con número de endpoints
