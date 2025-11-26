@@ -117,6 +117,26 @@ Esta carpeta contiene toda la documentación UML del sistema HybridSecScan, orga
 
 ---
 
+### 7️⃣ **Diagrama de Proceso Completo**
+📄 [`07_PROCESS_FLOW_DIAGRAM.md`](07_PROCESS_FLOW_DIAGRAM.md)
+
+**Contenido:**
+- ✅ Flujo end-to-end completo de la aplicación
+- ✅ Interacción entre todos los módulos del sistema
+- ✅ Diagrama de secuencia simplificado
+- ✅ 9 fases del proceso (desde autenticación hasta reportes)
+- ✅ Tiempos estimados por fase
+- ✅ Casos de uso detallados
+- ✅ Métricas de rendimiento y recursos
+
+**¿Cuándo usar este diagrama?**
+- Para entender el flujo completo de la aplicación
+- Para documentar el proceso en la **Sección 4.6** de la tesis
+- Para presentaciones y defensa de tesis (vista general)
+- Para onboarding de nuevos desarrolladores
+
+---
+
 ## 🎯 Guía de Uso para Tesis
 
 ### Capítulo 3: Marco Teórico
@@ -130,6 +150,7 @@ Esta carpeta contiene toda la documentación UML del sistema HybridSecScan, orga
 3. ✅ **04_API_ENDPOINTS.md** → Sección 4.3 (API REST)
 4. ✅ **05_DATABASE_SCHEMA.md** → Sección 4.4 (Base de Datos)
 5. ✅ **06_FRONTEND_COMPONENTS.md** → Sección 4.5 (Interfaz de Usuario)
+6. ✅ **07_PROCESS_FLOW_DIAGRAM.md** → Sección 4.6 (Flujo de Proceso Completo)
 
 ### Capítulo 5: Validación Experimental
 **Diagramas recomendados:**
@@ -176,9 +197,10 @@ https://mermaid.live/
 | 04_API_ENDPOINTS | - | - | 🔄 Pendiente |
 | 05_DATABASE_SCHEMA | 300+ | 10+ | ✅ Completo |
 | 06_FRONTEND_COMPONENTS | - | - | 🔄 Pendiente |
+| 07_PROCESS_FLOW_DIAGRAM | 850+ | 60+ | ✅ Completo |
 
-**Total:** 3,658+ líneas de documentación UML  
-**Completado:** 4/6 diagramas (66.7%)
+**Total:** 4,508+ líneas de documentación UML  
+**Completado:** 5/7 diagramas (71.4%)
 
 ---
 

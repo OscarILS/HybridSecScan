@@ -44,23 +44,23 @@ El sistema HybridSecScan implementa un pipeline de Machine Learning para entrena
 
 ```mermaid
 flowchart TB
-    Start([🚀 Inicio Pipeline ML])
+    Start([Inicio Pipeline ML])
     
     %% ======================
     %% FASE 1: DESCARGA DATOS
     %% ======================
     subgraph Phase1["FASE 1: ADQUISICIÓN DE DATOS"]
-        Download[📥 Descargar CVEs desde NVD<br/>Archivos JSON 2002-2025<br/>Total: 24 archivos]
-        ValidateJSON{✅ ¿Archivos<br/>válidos?}
-        ErrorDownload[❌ Error de Descarga<br/>Reintentar o usar backup]
+        Download[ Descargar CVEs desde NVD<br/>Archivos JSON 2002-2025<br/>Total: 24 archivos]
+        ValidateJSON{ ¿Archivos<br/>válidos?}
+        ErrorDownload[ Error de Descarga<br/>Reintentar o usar backup]
     end
     
     %% ======================
     %% FASE 2: PROCESAMIENTO
     %% ======================
     subgraph Phase2["FASE 2: PROCESAMIENTO DE DATOS"]
-        LoadJSON[📂 Cargar JSON Files<br/>data/raw/nvd/*.json]
-        ParseCVE[🔍 Parsear CVE Items<br/>Extraer: ID, CWE, Severidad,<br/>Descripción, Referencias]
+        LoadJSON[ Cargar JSON Files<br/>data/raw/nvd/*.json]
+        ParseCVE[ Parsear CVE Items<br/>Extraer: ID, CWE, Severidad,<br/>Descripción, Referencias]
         
         subgraph ExtractFeatures["Extracción de Características"]
             ExtractCWE[Extraer CWE-IDs<br/>Ej: CWE-89, CWE-79]
@@ -69,7 +69,7 @@ flowchart TB
             NormalizeSeverity[Normalizar Severidad<br/>CRITICAL → HIGH<br/>NONE → INFO]
         end
         
-        GenerateCorrelations[🔄 Generar Correlaciones<br/>SAST-DAST Sintéticas<br/>Basadas en CWE patterns]
+        GenerateCorrelations[ Generar Correlaciones<br/>SAST-DAST Sintéticas<br/>Basadas en CWE patterns]
         
         subgraph CorrelationLogic["Lógica de Correlación"]
             CheckSAST{¿CWE detectable<br/>por SAST?}
@@ -78,35 +78,35 @@ flowchart TB
             CalcConfidence[Calcular Confidence<br/>Score: 0.0-1.0]
         end
         
-        CreateDataFrame[📊 Crear DataFrame<br/>Pandas con 18 columnas]
+        CreateDataFrame[ Crear DataFrame<br/>Pandas con 18 columnas]
         
-        ValidateData{✅ ¿Datos<br/>consistentes?}
-        ErrorProcess[❌ Error de Procesamiento<br/>Revisar formato JSON]
+        ValidateData{ ¿Datos<br/>consistentes?}
+        ErrorProcess[ Error de Procesamiento<br/>Revisar formato JSON]
     end
     
     %% ======================
     %% FASE 3: SPLIT DATASET
     %% ======================
     subgraph Phase3["FASE 3: DIVISIÓN DE DATOS"]
-        ShuffleData[🔀 Shuffle Dataset<br/>random_state=42]
-        SplitData[✂️ Split 80/10/10<br/>Train/Val/Test]
+        ShuffleData[ Shuffle Dataset<br/>random_state=42]
+        SplitData[ Split 80/10/10<br/>Train/Val/Test]
         
         subgraph Splits["Conjuntos Resultantes"]
-            TrainSet[📚 Training Set<br/>77,586 muestras 80%]
-            ValSet[📝 Validation Set<br/>9,698 muestras 10%]
-            TestSet[🧪 Test Set<br/>9,699 muestras 10%]
+            TrainSet[ Training Set<br/>77,586 muestras 80%]
+            ValSet[ Validation Set<br/>9,698 muestras 10%]
+            TestSet[ Test Set<br/>9,699 muestras 10%]
         end
         
-        SaveCSV[💾 Guardar CSV<br/>data/processed/]
+        SaveCSV[ Guardar CSV<br/>data/processed/]
         
-        ValidateSplit{✅ ¿Split<br/>balanceado?}
+        ValidateSplit{ ¿Split<br/>balanceado?}
     end
     
     %% ======================
     %% FASE 4: FEATURE ENGINEERING
     %% ======================
     subgraph Phase4["FASE 4: INGENIERÍA DE FEATURES"]
-        LoadCSV[📂 Cargar CSVs<br/>Training/Validation/Test]
+        LoadCSV[ Cargar CSVs<br/>Training/Validation/Test]
         
         subgraph TextFeatures["Features Textuales"]
             CombineText[Combinar Descripciones<br/>SAST + DAST]
@@ -135,17 +135,17 @@ flowchart TB
         
         ConcatFeatures[🔗 Concatenar Features<br/>TF-IDF + Categorical + Numeric<br/>Total: 517 features]
         
-        ValidateFeatures{✅ ¿Todas las<br/>features válidas?}
-        ErrorFeatures[❌ Error en Features<br/>Revisar NaN/Inf]
+        ValidateFeatures{ ¿Todas las<br/>features válidas?}
+        ErrorFeatures[ Error en Features<br/>Revisar NaN/Inf]
     end
     
     %% ======================
     %% FASE 5: ENTRENAMIENTO
     %% ======================
     subgraph Phase5["FASE 5: ENTRENAMIENTO DEL MODELO"]
-        InitRF[🌲 Inicializar Random Forest<br/>n_estimators=200<br/>max_depth=20<br/>class_weight=balanced]
+        InitRF[ Inicializar Random Forest<br/>n_estimators=200<br/>max_depth=20<br/>class_weight=balanced]
         
-        FitModel[📚 Entrenar Modelo<br/>X_train, y_train<br/>n_jobs=-1 paralelo]
+        FitModel[ Entrenar Modelo<br/>X_train, y_train<br/>n_jobs=-1 paralelo]
         
         subgraph Training["Proceso de Entrenamiento"]
             BuildTrees[Construir 200 Árboles<br/>Bootstrap sampling]
@@ -154,15 +154,15 @@ flowchart TB
             PruneTree[Pruning<br/>min_samples_leaf=5]
         end
         
-        ModelTrained[✅ Modelo Entrenado<br/>200 árboles completos]
+        ModelTrained[ Modelo Entrenado<br/>200 árboles completos]
     end
     
     %% ======================
     %% FASE 6: EVALUACIÓN
     %% ======================
     subgraph Phase6["FASE 6: EVALUACIÓN Y VALIDACIÓN"]
-        PredictVal[🔮 Predicción Validation<br/>y_val_pred]
-        PredictTest[🔮 Predicción Test<br/>y_test_pred]
+        PredictVal[ Predicción Validation<br/>y_val_pred]
+        PredictTest[ Predicción Test<br/>y_test_pred]
         
         subgraph Metrics["Cálculo de Métricas"]
             CalcAccuracy[Accuracy Score]
@@ -173,27 +173,27 @@ flowchart TB
             ConfMatrix[Confusion Matrix<br/>TP/TN/FP/FN]
         end
         
-        ValidateMetrics{✅ Métricas<br/>aceptables?<br/>F1 > 0.85}
+        ValidateMetrics{ Métricas<br/>aceptables?<br/>F1 > 0.85}
         
-        AcceptModel[✅ Modelo Aceptado<br/>F1=1.00, AUC=1.00]
-        RejectModel[❌ Modelo Rechazado<br/>Ajustar hiperparámetros]
+        AcceptModel[ Modelo Aceptado<br/>F1=1.00, AUC=1.00]
+        RejectModel[ Modelo Rechazado<br/>Ajustar hiperparámetros]
         
-        FeatureImportance[📊 Feature Importance<br/>Top 15 features más importantes]
-        GenerateReport[📝 Generar Reporte<br/>Classification Report]
+        FeatureImportance[ Feature Importance<br/>Top 15 features más importantes]
+        GenerateReport[ Generar Reporte<br/>Classification Report]
     end
     
     %% ======================
     %% FASE 7: PERSISTENCIA
     %% ======================
     subgraph Phase7["FASE 7: GUARDADO DEL MODELO"]
-        PackageModel[📦 Empaquetar Modelo<br/>classifier + vectorizer<br/>+ encoders + metadata]
+        PackageModel[ Empaquetar Modelo<br/>classifier + vectorizer<br/>+ encoders + metadata]
         
-        SaveModel[💾 Guardar PKL<br/>rf_correlator_v1.pkl<br/>usando joblib]
+        SaveModel[ Guardar PKL<br/>rf_correlator_v1.pkl<br/>usando joblib]
         
-        SaveMetadata[💾 Guardar Metadata<br/>metadata.json<br/>métricas + info]
+        SaveMetadata[ Guardar Metadata<br/>metadata.json<br/>métricas + info]
         
-        ValidateSave{✅ ¿Guardado<br/>exitoso?}
-        ErrorSave[❌ Error al Guardar<br/>Verificar permisos]
+        ValidateSave{ ¿Guardado<br/>exitoso?}
+        ErrorSave[ Error al Guardar<br/>Verificar permisos]
     end
     
     %% ======================

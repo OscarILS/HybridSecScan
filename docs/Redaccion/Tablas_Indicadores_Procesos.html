@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Tablas_Indicadores_Procesos.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="tablas-de-indicadores-y-mapeo-de-procesos">TABLAS DE INDICADORES Y MAPEO DE PROCESOS</h1>
+<h2 id="sistema-hybridsecscan---auditoria-hibrida-sast--dast">Sistema HybridSecScan - Auditoria Hibrida SAST + DAST</h2>
+<blockquote>
+<p><strong>Proyecto:</strong> Sistema de Auditoria Automatizada Hibrida para APIs REST<br>
+<strong>Autor:</strong> Oscar Isaac Laguna Santa Cruz<br>
+<strong>Universidad:</strong> UNMSM - Facultad de Ingenieria de Sistemas e Informatica<br>
+<strong>Fecha:</strong> Noviembre 2024</p>
+</blockquote>
+<hr>
+<h1 id="tabla-1-indicadores-cuantitativos">TABLA 1: INDICADORES CUANTITATIVOS</h1>
+<h2 id="tabla-1">Tabla 1</h2>
+<h3 id="indicadores-cuantitativos-del-sistema">Indicadores Cuantitativos del Sistema</h3>
+<table>
+<thead>
+<tr>
+<th><strong>Indicadores</strong></th>
+<th><strong>Valor</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tasa de deteccion de vulnerabilidades OWASP API Top 10</td>
+<td>&gt;= 85%</td>
+</tr>
+<tr>
+<td>Tasa de falsos positivos generados por el sistema</td>
+<td>&lt;= 15%</td>
+</tr>
+<tr>
+<td>Tiempo promedio de analisis completo (SAST + DAST)</td>
+<td>&lt;= 20 min</td>
+</tr>
+<tr>
+<td>Cobertura de categorias OWASP API Security Top 10</td>
+<td>100% (10/10)</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="descripcion-de-indicadores">DESCRIPCION DE INDICADORES</h2>
+<h3 id="1-tasa-de-deteccion-de-vulnerabilidades-owasp-api-top-10">1. Tasa de deteccion de vulnerabilidades OWASP API Top 10</h3>
+<p><strong>Definicion:</strong> Porcentaje de vulnerabilidades reales identificadas por el sistema hibrido en relacion al total de vulnerabilidades presentes en APIs de prueba documentadas.</p>
+<p><strong>Formula:</strong></p>
+<pre class="hljs"><code><div>Tasa de deteccion = (Vulnerabilidades detectadas / Vulnerabilidades totales conocidas) × 100
+</div></code></pre>
+<p><strong>Valor objetivo:</strong> &gt;= 85%</p>
+<p><strong>Metodo de medicion:</strong> Analisis experimental con APIs vulnerables documentadas (OWASP Juice Shop API, VAmPI, crAPI).</p>
+<hr>
+<h3 id="2-tasa-de-falsos-positivos-generados-por-el-sistema">2. Tasa de falsos positivos generados por el sistema</h3>
+<p><strong>Definicion:</strong> Proporcion de alertas incorrectas reportadas que no corresponden a vulnerabilidades reales, generando trabajo innecesario para desarrolladores.</p>
+<p><strong>Formula:</strong></p>
+<pre class="hljs"><code><div>Tasa de FP = (Numero de falsos positivos / Total de hallazgos reportados) × 100
+</div></code></pre>
+<p><strong>Valor objetivo:</strong> &lt;= 15%</p>
+<p><strong>Metodo de medicion:</strong> Verificacion manual por experto en seguridad + Validacion mediante intentos de explotacion.</p>
+<hr>
+<h3 id="3-tiempo-promedio-de-analisis-completo-sast--dast">3. Tiempo promedio de analisis completo (SAST + DAST)</h3>
+<p><strong>Definicion:</strong> Duracion total del proceso de auditoria hibrida desde la carga de la especificacion OpenAPI hasta la generacion del reporte final en formatos PDF y JSON.</p>
+<p><strong>Formula:</strong></p>
+<pre class="hljs"><code><div>Tiempo promedio = Suma(tiempos de analisis individuales) / Numero de analisis ejecutados
+</div></code></pre>
+<p><strong>Valor objetivo:</strong> &lt;= 20 minutos</p>
+<p><strong>Metodo de medicion:</strong> Logs del sistema con timestamps de inicio/fin + Modulo de monitoreo de rendimiento.</p>
+<p><strong>Desglose:</strong></p>
+<ul>
+<li>SAST (analisis estatico): 1-2 min</li>
+<li>Correlacion ML: 0.5-1 min</li>
+<li>DAST (analisis dinamico): 10-15 min</li>
+<li>Consolidacion y reportes: 1-2 min</li>
+</ul>
+<hr>
+<h3 id="4-cobertura-de-categorias-owasp-api-security-top-10">4. Cobertura de categorias OWASP API Security Top 10</h3>
+<p><strong>Definicion:</strong> Cantidad de categorias del estandar OWASP API Security Top 10 (2023) que el sistema es capaz de detectar mediante analisis hibrido.</p>
+<p><strong>Formula:</strong></p>
+<pre class="hljs"><code><div>Cobertura = (Categorias OWASP detectadas / 10 categorias totales) × 100
+</div></code></pre>
+<p><strong>Valor objetivo:</strong> 100% (10/10 categorias)</p>
+<p><strong>Metodo de medicion:</strong> Analisis de clasificacion en reportes JSON/PDF + Validacion con matriz de trazabilidad OWASP.</p>
+<p><strong>Categorias evaluadas:</strong></p>
+<ol>
+<li>API1:2023 - Broken Object Level Authorization (BOLA)</li>
+<li>API2:2023 - Broken Authentication</li>
+<li>API3:2023 - Broken Object Property Level Authorization</li>
+<li>API4:2023 - Unrestricted Resource Consumption</li>
+<li>API5:2023 - Broken Function Level Authorization</li>
+<li>API6:2023 - Unrestricted Access to Sensitive Business Flows</li>
+<li>API7:2023 - Server Side Request Forgery (SSRF)</li>
+<li>API8:2023 - Security Misconfiguration</li>
+<li>API9:2023 - Improper Inventory Management</li>
+<li>API10:2023 - Unsafe Consumption of APIs</li>
+</ol>
+<hr>
+<h2 id="justificacion-de-valores-objetivo">JUSTIFICACION DE VALORES OBJETIVO</h2>
+<table>
+<thead>
+<tr>
+<th><strong>Indicador</strong></th>
+<th><strong>Linea Base (Herramientas Actuales)</strong></th>
+<th><strong>Valor Objetivo HybridSecScan</strong></th>
+<th><strong>Mejora Esperada</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tasa de deteccion</td>
+<td>65% (OWASP ZAP solo)</td>
+<td>&gt;= 85%</td>
+<td>+20 puntos porcentuales</td>
+</tr>
+<tr>
+<td>Tasa de falsos positivos</td>
+<td>35% (OWASP ZAP solo)</td>
+<td>&lt;= 15%</td>
+<td>-20 puntos porcentuales</td>
+</tr>
+<tr>
+<td>Tiempo de analisis</td>
+<td>25 min (analisis manual)</td>
+<td>&lt;= 20 min</td>
+<td>-5 minutos (-20%)</td>
+</tr>
+<tr>
+<td>Cobertura OWASP</td>
+<td>70% (7/10 categorias)</td>
+<td>100%</td>
+<td>+30 puntos porcentuales</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="instrumentos-de-medicion">INSTRUMENTOS DE MEDICION</h2>
+<h3 id="apis-de-prueba-documentadas">APIs de Prueba Documentadas</h3>
+<ul>
+<li><strong>OWASP Juice Shop API</strong> - Vulnerabilidades intencionadas documentadas</li>
+<li><strong>VAmPI</strong> (Vulnerable API) - API REST vulnerable para pruebas</li>
+<li><strong>crAPI</strong> (Completely Ridiculous API) - Proyecto OWASP para testing</li>
+<li><strong>DVWA REST API</strong> - Damn Vulnerable Web Application con endpoints REST</li>
+<li><strong>APIs custom</strong> - Desarrolladas especificamente con vulnerabilidades OWASP API Top 10</li>
+</ul>
+<h3 id="herramientas-de-validacion">Herramientas de Validacion</h3>
+<ul>
+<li>Verificacion manual por experto en seguridad</li>
+<li>Intentos de explotacion controlados</li>
+<li>Analisis de logs del sistema</li>
+<li>Modulo de monitoreo de rendimiento</li>
+<li>Comparacion con reportes de herramientas tradicionales (OWASP ZAP, Burp Suite)</li>
+</ul>
+<hr>
+<h2 id="plan-de-validacion-experimental">PLAN DE VALIDACION EXPERIMENTAL</h2>
+<h3 id="fase-1-preparacion-1-semana">Fase 1: Preparacion (1 semana)</h3>
+<ul>
+<li>Seleccionar 5 APIs de prueba con vulnerabilidades documentadas</li>
+<li>Configurar entorno de experimentacion (Docker, base de datos, servidores de prueba)</li>
+<li>Preparar plantillas de recoleccion de datos</li>
+</ul>
+<h3 id="fase-2-ejecucion-2-3-semanas">Fase 2: Ejecucion (2-3 semanas)</h3>
+<ul>
+<li>Ejecutar 10 analisis por cada API (50 analisis totales)</li>
+<li>Registrar metricas de los 4 indicadores</li>
+<li>Documentar observaciones y anomalias</li>
+</ul>
+<h3 id="fase-3-validacion-1-semana">Fase 3: Validacion (1 semana)</h3>
+<ul>
+<li>Verificar manualmente todos los hallazgos</li>
+<li>Calcular promedios y desviaciones estandar</li>
+<li>Comparar contra linea base de herramientas tradicionales</li>
+</ul>
+<h3 id="fase-4-analisis-estadistico-1-semana">Fase 4: Analisis Estadistico (1 semana)</h3>
+<ul>
+<li>Pruebas de hipotesis (t-test para IND-01 e IND-02)</li>
+<li>Calculo de intervalos de confianza (95%)</li>
+<li>Generacion de graficos comparativos</li>
+</ul>
+<hr>
+<h2 id="matriz-de-trazabilidad-indicadores-vs-objetivos">MATRIZ DE TRAZABILIDAD INDICADORES VS OBJETIVOS</h2>
+<table>
+<thead>
+<tr>
+<th><strong>Indicador</strong></th>
+<th><strong>Objetivo Especifico de la Tesis</strong></th>
+<th><strong>Aporte al Sistema</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IND-01: Tasa de deteccion</td>
+<td>OE5: Evaluacion experimental y comparativa</td>
+<td>Demuestra efectividad del enfoque hibrido</td>
+</tr>
+<tr>
+<td>IND-02: Tasa de FP</td>
+<td>OE5: Evaluacion experimental y comparativa</td>
+<td>Valida precision y usabilidad practica</td>
+</tr>
+<tr>
+<td>IND-03: Tiempo de analisis</td>
+<td>OE4: Definicion de metodologia de validacion</td>
+<td>Confirma viabilidad para CI/CD</td>
+</tr>
+<tr>
+<td>IND-04: Cobertura OWASP</td>
+<td>OE1: Analisis del estado del arte</td>
+<td>Garantiza cumplimiento de estandar</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="ejemplo-de-resultados-esperados">EJEMPLO DE RESULTADOS ESPERADOS</h2>
+<h3 id="caso-de-prueba-owasp-juice-shop-api">Caso de Prueba: OWASP Juice Shop API</h3>
+<p><strong>Configuracion:</strong></p>
+<ul>
+<li>Endpoints analizados: 42</li>
+<li>Vulnerabilidades conocidas documentadas: 20</li>
+<li>Tipo de analisis: Hibrido (SAST + DAST)</li>
+</ul>
+<p><strong>Resultados:</strong></p>
+<table>
+<thead>
+<tr>
+<th><strong>Indicador</strong></th>
+<th><strong>Resultado Obtenido</strong></th>
+<th><strong>Cumple Objetivo</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tasa de deteccion</td>
+<td>18/20 = 90%</td>
+<td>Si (&gt;=85%)</td>
+</tr>
+<tr>
+<td>Tasa de falsos positivos</td>
+<td>3/21 = 14.3%</td>
+<td>Si (&lt;=15%)</td>
+</tr>
+<tr>
+<td>Tiempo de analisis</td>
+<td>17 minutos</td>
+<td>Si (&lt;=20 min)</td>
+</tr>
+<tr>
+<td>Cobertura OWASP</td>
+<td>10/10 = 100%</td>
+<td>Si (100%)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Clasificacion de Vulnerabilidades Detectadas:</strong></p>
+<ul>
+<li>API1:2023 (BOLA): 4 vulnerabilidades</li>
+<li>API2:2023 (Broken Auth): 2 vulnerabilidades</li>
+<li>API3:2023 (Mass Assignment): 3 vulnerabilidades</li>
+<li>API5:2023 (BFLA): 2 vulnerabilidades</li>
+<li>API8:2023 (Security Misconfiguration): 5 vulnerabilidades</li>
+<li>API10:2023 (Unsafe Consumption): 2 vulnerabilidades</li>
+</ul>
+<hr>
+<h1 id="tabla-2-mapeo-de-procesos">TABLA 2: MAPEO DE PROCESOS</h1>
+<h2 id="tabla-2">Tabla 2</h2>
+<h3 id="mapeo-de-procesos-del-sistema-de-auditoria-automatizada">Mapeo de Procesos del Sistema de Auditoria Automatizada</h3>
+<table>
+<thead>
+<tr>
+<th><strong>Proceso</strong></th>
+<th><strong>Subproceso</strong></th>
+<th><strong>Entrada</strong></th>
+<th><strong>Salida</strong></th>
+<th><strong>Responsable</strong></th>
+<th><strong>Tiempo Estimado</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1. Autenticacion y Configuracion</strong></td>
+<td>1.1 Login de usuario</td>
+<td>Credenciales (usuario/contrasena)</td>
+<td>Token JWT valido</td>
+<td>Modulo de Autenticacion</td>
+<td>2-5 seg</td>
+</tr>
+<tr>
+<td></td>
+<td>1.2 Seleccion de tipo de analisis</td>
+<td>Opcion seleccionada (SAST/DAST/Hibrido)</td>
+<td>Configuracion de analisis</td>
+<td>Frontend Web</td>
+<td>10-20 seg</td>
+</tr>
+<tr>
+<td></td>
+<td>1.3 Carga de especificacion OpenAPI</td>
+<td>Archivo OpenAPI/Swagger (YAML/JSON)</td>
+<td>Archivo validado y parseado</td>
+<td>API Gateway</td>
+<td>5-10 seg</td>
+</tr>
+<tr>
+<td></td>
+<td>1.4 Configuracion de parametros</td>
+<td>Parametros de escaneo (URL, tokens, etc.)</td>
+<td>Configuracion guardada en BD</td>
+<td>API Gateway</td>
+<td>15-30 seg</td>
+</tr>
+<tr>
+<td><strong>2. Validacion de Entrada</strong></td>
+<td>2.1 Validacion de archivo OpenAPI</td>
+<td>Archivo cargado</td>
+<td>Esquema validado sintacticamente</td>
+<td>Modulo de Validacion</td>
+<td>5-10 seg</td>
+</tr>
+<tr>
+<td></td>
+<td>2.2 Extraccion de endpoints</td>
+<td>Especificacion OpenAPI</td>
+<td>Lista de endpoints y parametros</td>
+<td>Parser OpenAPI</td>
+<td>10-20 seg</td>
+</tr>
+<tr>
+<td></td>
+<td>2.3 Almacenamiento de metadatos</td>
+<td>Endpoints extraidos</td>
+<td>Metadatos en base de datos</td>
+<td>Sistema de Persistencia</td>
+<td>2-5 seg</td>
+</tr>
+<tr>
+<td><strong>3. Analisis Estatico (SAST)</strong></td>
+<td>3.1 Inicializacion de Semgrep</td>
+<td>Configuracion SAST</td>
+<td>Motor Semgrep listo</td>
+<td>Modulo SAST</td>
+<td>5-10 seg</td>
+</tr>
+<tr>
+<td></td>
+<td>3.2 Analisis sintactico y semantico</td>
+<td>Especificacion OpenAPI</td>
+<td>Estructura analizada</td>
+<td>Semgrep Engine</td>
+<td>20-40 seg</td>
+</tr>
+<tr>
+<td></td>
+<td>3.3 Deteccion de vulnerabilidades</td>
+<td>Estructura analizada</td>
+<td>Vulnerabilidades identificadas</td>
+<td>Semgrep Rules</td>
+<td>30-60 seg</td>
+</tr>
+<tr>
+<td></td>
+<td>3.4 Generacion de hallazgos SAST</td>
+<td>Vulnerabilidades identificadas</td>
+<td>Reporte JSON con hallazgos</td>
+<td>Modulo SAST</td>
+<td>10-15 seg</td>
+</tr>
+<tr>
+<td><strong>4. Correlacion con Machine Learning</strong></td>
+<td>4.1 Carga de modelo Random Forest</td>
+<td>Modelo entrenado (.pkl)</td>
+<td>Modelo cargado en memoria</td>
+<td>Motor de Correlacion ML</td>
+<td>3-5 seg</td>
+</tr>
+<tr>
+<td></td>
+<td>4.2 Extraccion de caracteristicas</td>
+<td>Hallazgos SAST + metadatos</td>
+<td>15 features por endpoint</td>
+<td>Feature Extractor</td>
+<td>10-20 seg</td>
+</tr>
+<tr>
+<td></td>
+<td>4.3 Prediccion de correlacion</td>
+<td>Features extraidas</td>
+<td>Probabilidad de vulnerabilidad (0-1)</td>
+<td>Modelo Random Forest</td>
+<td>5-15 seg</td>
+</tr>
+<tr>
+<td></td>
+<td>4.4 Priorizacion de endpoints</td>
+<td>Probabilidades calculadas</td>
+<td>Lista priorizada de endpoints</td>
+<td>Ranking Algorithm</td>
+<td>5-10 seg</td>
+</tr>
+<tr>
+<td><strong>5. Analisis Dinamico (DAST)</strong></td>
+<td>5.1 Inicializacion de Docker ZAP</td>
+<td>Comando Docker</td>
+<td>Contenedor OWASP ZAP activo</td>
+<td>Modulo DAST</td>
+<td>30-60 seg</td>
+</tr>
+<tr>
+<td></td>
+<td>5.2 Configuracion de contexto</td>
+<td>URL base + autenticacion</td>
+<td>Contexto configurado en ZAP</td>
+<td>ZAP Context Manager</td>
+<td>10-20 seg</td>
+</tr>
+<tr>
+<td></td>
+<td>5.3 Importacion de OpenAPI a ZAP</td>
+<td>Especificacion OpenAPI</td>
+<td>Arbol de endpoints en ZAP</td>
+<td>ZAP OpenAPI Plugin</td>
+<td>15-30 seg</td>
+</tr>
+<tr>
+<td></td>
+<td>5.4 Generacion de casos de prueba</td>
+<td>Endpoints priorizados</td>
+<td>Test cases de ataque</td>
+<td>ZAP Test Generator</td>
+<td>20-40 seg</td>
+</tr>
+<tr>
+<td></td>
+<td>5.5 Ejecucion de ataques</td>
+<td>Test cases generados</td>
+<td>Alertas de vulnerabilidades</td>
+<td>ZAP Active Scanner</td>
+<td>10-15 min</td>
+</tr>
+<tr>
+<td></td>
+<td>5.6 Obtencion de resultados</td>
+<td>Escaneo completado</td>
+<td>Reporte XML/JSON de ZAP</td>
+<td>ZAP API Client</td>
+<td>10-20 seg</td>
+</tr>
+<tr>
+<td><strong>6. Consolidacion de Resultados</strong></td>
+<td>6.1 Unificacion SAST + DAST</td>
+<td>Reporte SAST + Reporte DAST</td>
+<td>Reporte unificado preliminar</td>
+<td>Motor de Consolidacion</td>
+<td>15-30 seg</td>
+</tr>
+<tr>
+<td></td>
+<td>6.2 Normalizacion de formato</td>
+<td>Reporte preliminar</td>
+<td>Formato estandarizado</td>
+<td>Data Normalizer</td>
+<td>10-20 seg</td>
+</tr>
+<tr>
+<td></td>
+<td>6.3 Correlacion de duplicados</td>
+<td>Hallazgos normalizados</td>
+<td>Hallazgos unicos identificados</td>
+<td>Algoritmo ML de correlacion</td>
+<td>20-40 seg</td>
+</tr>
+<tr>
+<td></td>
+<td>6.4 Eliminacion de falsos positivos</td>
+<td>Hallazgos correlacionados</td>
+<td>Hallazgos validados</td>
+<td>Filter ML Model</td>
+<td>15-30 seg</td>
+</tr>
+<tr>
+<td></td>
+<td>6.5 Asignacion de severidad</td>
+<td>Hallazgos validados</td>
+<td>Severidad CVSS asignada</td>
+<td>CVSS Calculator</td>
+<td>10-20 seg</td>
+</tr>
+<tr>
+<td></td>
+<td>6.6 Clasificacion OWASP</td>
+<td>Hallazgos con severidad</td>
+<td>Categorias OWASP API Top 10</td>
+<td>OWASP Classifier</td>
+<td>10-15 seg</td>
+</tr>
+<tr>
+<td><strong>7. Sistema de Evaluacion</strong></td>
+<td>7.1 Calculo de metricas</td>
+<td>Hallazgos clasificados</td>
+<td>Total de vulnerabilidades por tipo</td>
+<td>Metrics Calculator</td>
+<td>5-10 seg</td>
+</tr>
+<tr>
+<td></td>
+<td>7.2 Calculo de score de seguridad</td>
+<td>Metricas calculadas</td>
+<td>Puntuacion 0-100</td>
+<td>Scoring Algorithm</td>
+<td>5-10 seg</td>
+</tr>
+<tr>
+<td></td>
+<td>7.3 Determinacion de nivel de riesgo</td>
+<td>Score calculado</td>
+<td>Nivel (Critico/Alto/Medio/Bajo)</td>
+<td>Risk Evaluator</td>
+<td>2-5 seg</td>
+</tr>
+<tr>
+<td><strong>8. Generacion de Reportes</strong></td>
+<td>8.1 Generacion de estructura</td>
+<td>Hallazgos consolidados</td>
+<td>Estructura de reporte</td>
+<td>Report Builder</td>
+<td>5-10 seg</td>
+</tr>
+<tr>
+<td></td>
+<td>8.2 Organizacion por severidad</td>
+<td>Estructura generada</td>
+<td>Hallazgos ordenados</td>
+<td>Report Organizer</td>
+<td>5-10 seg</td>
+</tr>
+<tr>
+<td></td>
+<td>8.3 Inclusion de recomendaciones</td>
+<td>Hallazgos organizados</td>
+<td>Recomendaciones de mitigacion</td>
+<td>Recommendation Engine</td>
+<td>10-20 seg</td>
+</tr>
+<tr>
+<td></td>
+<td>8.4 Generacion de evidencias y graficos</td>
+<td>Datos consolidados</td>
+<td>Graficos y tablas</td>
+<td>Chart Generator (Matplotlib)</td>
+<td>15-30 seg</td>
+</tr>
+<tr>
+<td></td>
+<td>8.5 Exportacion a PDF</td>
+<td>Reporte completo</td>
+<td>Archivo PDF ejecutivo</td>
+<td>ReportLab Library</td>
+<td>20-40 seg</td>
+</tr>
+<tr>
+<td></td>
+<td>8.6 Exportacion a JSON</td>
+<td>Reporte completo</td>
+<td>Archivo JSON programatico</td>
+<td>JSON Encoder</td>
+<td>5-10 seg</td>
+</tr>
+<tr>
+<td></td>
+<td>8.7 Generacion de Dashboard Web</td>
+<td>Reporte completo</td>
+<td>Dashboard HTML interactivo</td>
+<td>Web Dashboard Module</td>
+<td>10-20 seg</td>
+</tr>
+<tr>
+<td><strong>9. Notificaciones y Persistencia</strong></td>
+<td>9.1 Envio de notificaciones</td>
+<td>Reporte finalizado + config</td>
+<td>Email/Webhook enviados</td>
+<td>Notification Service</td>
+<td>3-7 seg</td>
+</tr>
+<tr>
+<td></td>
+<td>9.2 Almacenamiento en base de datos</td>
+<td>Reporte completo</td>
+<td>Registro en BD con timestamp</td>
+<td>Database Manager</td>
+<td>2-5 seg</td>
+</tr>
+<tr>
+<td></td>
+<td>9.3 Generacion de logs de auditoria</td>
+<td>Eventos del sistema</td>
+<td>Logs persistidos</td>
+<td>Logging System</td>
+<td>Continuo</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="descripcion-detallada-de-procesos-principales">DESCRIPCION DETALLADA DE PROCESOS PRINCIPALES</h2>
+<h3 id="proceso-1-autenticacion-y-configuracion-total-30-65-segundos"><strong>Proceso 1: Autenticacion y Configuracion</strong> (Total: 30-65 segundos)</h3>
+<p><strong>Objetivo:</strong> Establecer sesion de usuario y configurar parametros iniciales del analisis.</p>
+<p><strong>Flujo:</strong></p>
+<ol>
+<li>Usuario ingresa credenciales → Sistema valida contra BD → Token JWT generado</li>
+<li>Usuario selecciona tipo de analisis (SAST/DAST/Hibrido)</li>
+<li>Usuario carga archivo OpenAPI/Swagger</li>
+<li>Usuario configura parametros adicionales (URL base, tokens de autenticacion, etc.)</li>
+</ol>
+<p><strong>Salida:</strong> Configuracion lista para iniciar analisis</p>
+<hr>
+<h3 id="proceso-2-validacion-de-entrada-total-17-35-segundos"><strong>Proceso 2: Validacion de Entrada</strong> (Total: 17-35 segundos)</h3>
+<p><strong>Objetivo:</strong> Validar sintaxis y estructura de la especificacion OpenAPI antes de analisis.</p>
+<p><strong>Flujo:</strong></p>
+<ol>
+<li>Validacion sintactica del archivo YAML/JSON</li>
+<li>Extraccion de endpoints, metodos HTTP, parametros y esquemas</li>
+<li>Almacenamiento de metadatos en base de datos SQLite</li>
+</ol>
+<p><strong>Salida:</strong> Lista de endpoints validados y persistidos</p>
+<hr>
+<h3 id="proceso-3-analisis-estatico---sast-total-1-2-minutos"><strong>Proceso 3: Analisis Estatico - SAST</strong> (Total: 1-2 minutos)</h3>
+<p><strong>Objetivo:</strong> Detectar vulnerabilidades mediante analisis de especificacion OpenAPI sin ejecutar la API.</p>
+<p><strong>Tecnicas aplicadas:</strong></p>
+<ul>
+<li>Analisis de esquemas de autenticacion (JWT, OAuth2, API Keys)</li>
+<li>Deteccion de configuraciones inseguras (CORS, headers, metodos HTTP)</li>
+<li>Validacion de esquemas de entrada/salida</li>
+<li>Identificacion de endpoints sin autenticacion</li>
+</ul>
+<p><strong>Herramientas:</strong> Semgrep + Reglas personalizadas</p>
+<p><strong>Salida:</strong> Reporte JSON con vulnerabilidades SAST</p>
+<hr>
+<h3 id="proceso-4-correlacion-con-machine-learning-total-23-50-segundos"><strong>Proceso 4: Correlacion con Machine Learning</strong> (Total: 23-50 segundos)</h3>
+<p><strong>Objetivo:</strong> Priorizar endpoints criticos para analisis dinamico mediante modelo Random Forest.</p>
+<p><strong>Caracteristicas extraidas (15 features):</strong></p>
+<ol>
+<li>Numero de vulnerabilidades SAST detectadas</li>
+<li>Severidad promedio SAST</li>
+<li>Presencia de autenticacion</li>
+<li>Metodos HTTP permitidos</li>
+<li>Numero de parametros por endpoint</li>
+<li>Complejidad de esquemas JSON</li>
+<li>Presencia de validacion de entrada</li>
+<li>Tipo de autenticacion (JWT/OAuth2/None)</li>
+<li>Endpoints con operaciones sensibles (DELETE, PUT)</li>
+<li>Presencia de rate limiting</li>
+<li>Configuracion CORS</li>
+<li>Longitud de path del endpoint</li>
+<li>Numero de respuestas definidas</li>
+<li>Presencia de ejemplos en OpenAPI</li>
+<li>Profundidad de objetos JSON</li>
+</ol>
+<p><strong>Modelo:</strong> Random Forest Classifier entrenado con 500 APIs</p>
+<p><strong>Salida:</strong> Lista de endpoints ordenados por probabilidad de vulnerabilidad</p>
+<hr>
+<h3 id="proceso-5-analisis-dinamico---dast-total-10-17-minutos"><strong>Proceso 5: Analisis Dinamico - DAST</strong> (Total: 10-17 minutos)</h3>
+<p><strong>Objetivo:</strong> Ejecutar ataques activos sobre la API en ejecucion para validar vulnerabilidades explotables.</p>
+<p><strong>Tipos de ataques ejecutados:</strong></p>
+<ul>
+<li>Inyeccion SQL (SQL Injection)</li>
+<li>Cross-Site Scripting (XSS)</li>
+<li>Broken Object Level Authorization (BOLA)</li>
+<li>Fuzzing de parametros</li>
+<li>Manipulacion de tokens JWT</li>
+<li>Ataques de denegacion de servicio (DoS)</li>
+<li>Server-Side Request Forgery (SSRF)</li>
+</ul>
+<p><strong>Herramienta:</strong> OWASP ZAP en contenedor Docker</p>
+<p><strong>Salida:</strong> Reporte XML/JSON de ZAP con alertas</p>
+<hr>
+<h3 id="proceso-6-consolidacion-de-resultados-total-15-25-minutos"><strong>Proceso 6: Consolidacion de Resultados</strong> (Total: 1.5-2.5 minutos)</h3>
+<p><strong>Objetivo:</strong> Unificar hallazgos SAST y DAST, eliminar duplicados y asignar severidad.</p>
+<p><strong>Algoritmo de correlacion:</strong></p>
+<pre class="hljs"><code><div>Para cada hallazgo_DAST:
+    Para cada hallazgo_SAST:
+        Si (mismo_endpoint AND misma_vulnerabilidad_OWASP):
+            Marcar como duplicado
+            Consolidar evidencias
+            Asignar severidad maxima entre ambos
+</div></code></pre>
+<p><strong>Calculo de severidad CVSS:</strong></p>
+<ul>
+<li>Base Score: 0-10</li>
+<li>Temporal Score: Ajuste por explotabilidad</li>
+<li>Environmental Score: Contexto de la organizacion</li>
+</ul>
+<p><strong>Salida:</strong> Reporte consolidado sin duplicados con severidad CVSS</p>
+<hr>
+<h3 id="proceso-7-sistema-de-evaluacion-total-12-25-segundos"><strong>Proceso 7: Sistema de Evaluacion</strong> (Total: 12-25 segundos)</h3>
+<p><strong>Objetivo:</strong> Calcular score global de seguridad y nivel de riesgo.</p>
+<p><strong>Formula de Score (0-100):</strong></p>
+<pre class="hljs"><code><div>Score = 100 - (Σ(vulnerabilidades × peso_severidad) / factor_normalizacion)
+
+Pesos de severidad:
+- Critica: 10 puntos
+- Alta: 7 puntos
+- Media: 4 puntos
+- Baja: 1 punto
+</div></code></pre>
+<p><strong>Niveles de riesgo:</strong></p>
+<ul>
+<li><strong>Critico:</strong> Score 0-40 (&gt;=1 vulnerabilidad critica)</li>
+<li><strong>Alto:</strong> Score 41-60 (&gt;=3 vulnerabilidades altas)</li>
+<li><strong>Medio:</strong> Score 61-80 (solo vulnerabilidades medias/bajas)</li>
+<li><strong>Bajo:</strong> Score 81-100 (&lt;=2 vulnerabilidades bajas)</li>
+</ul>
+<p><strong>Salida:</strong> Score numerico + Nivel de riesgo categorico</p>
+<hr>
+<h3 id="proceso-8-generacion-de-reportes-total-1-2-minutos"><strong>Proceso 8: Generacion de Reportes</strong> (Total: 1-2 minutos)</h3>
+<p><strong>Objetivo:</strong> Producir reportes en multiples formatos para diferentes audiencias.</p>
+<p><strong>Formato PDF (Ejecutivo):</strong></p>
+<ul>
+<li>Resumen ejecutivo con score global</li>
+<li>Graficos de distribucion de vulnerabilidades</li>
+<li>Top 5 vulnerabilidades criticas</li>
+<li>Recomendaciones priorizadas</li>
+<li>Evidencias con screenshots</li>
+</ul>
+<p><strong>Formato JSON (Programatico):</strong></p>
+<pre class="hljs"><code><div>{
+  <span class="hljs-attr">"scan_id"</span>: <span class="hljs-string">"scan_20241123_001"</span>,
+  <span class="hljs-attr">"timestamp"</span>: <span class="hljs-string">"2024-11-23T10:15:00Z"</span>,
+  <span class="hljs-attr">"score"</span>: <span class="hljs-number">72</span>,
+  <span class="hljs-attr">"risk_level"</span>: <span class="hljs-string">"Medium"</span>,
+  <span class="hljs-attr">"vulnerabilities"</span>: [
+    {
+      <span class="hljs-attr">"id"</span>: <span class="hljs-string">"VULN-001"</span>,
+      <span class="hljs-attr">"title"</span>: <span class="hljs-string">"Broken Object Level Authorization"</span>,
+      <span class="hljs-attr">"severity"</span>: <span class="hljs-string">"High"</span>,
+      <span class="hljs-attr">"cvss"</span>: <span class="hljs-number">8.2</span>,
+      <span class="hljs-attr">"owasp"</span>: <span class="hljs-string">"API1:2023"</span>,
+      <span class="hljs-attr">"endpoint"</span>: <span class="hljs-string">"/api/users/{id}"</span>,
+      <span class="hljs-attr">"method"</span>: <span class="hljs-string">"GET"</span>,
+      <span class="hljs-attr">"evidence"</span>: <span class="hljs-string">"..."</span>,
+      <span class="hljs-attr">"recommendation"</span>: <span class="hljs-string">"..."</span>
+    }
+  ]
+}
+</div></code></pre>
+<p><strong>Dashboard Web:</strong></p>
+<ul>
+<li>Graficos interactivos con Chart.js</li>
+<li>Filtros por severidad y categoria OWASP</li>
+<li>Exportacion de datos</li>
+<li>Historico de escaneos</li>
+</ul>
+<p><strong>Salida:</strong> 3 archivos (PDF, JSON, HTML)</p>
+<hr>
+<h3 id="proceso-9-notificaciones-y-persistencia-total-5-12-segundos"><strong>Proceso 9: Notificaciones y Persistencia</strong> (Total: 5-12 segundos)</h3>
+<p><strong>Objetivo:</strong> Notificar a stakeholders y persistir resultados para trazabilidad.</p>
+<p><strong>Canales de notificacion:</strong></p>
+<ul>
+<li>Email (SMTP)</li>
+<li>Slack (Webhook)</li>
+<li>Microsoft Teams (Webhook)</li>
+<li>Webhooks personalizados</li>
+</ul>
+<p><strong>Base de datos:</strong></p>
+<ul>
+<li>SQLite para desarrollo</li>
+<li>PostgreSQL para produccion</li>
+<li>Esquema: <code>scans</code>, <code>vulnerabilities</code>, <code>recommendations</code>, <code>logs</code></li>
+</ul>
+<p><strong>Logs de auditoria:</strong></p>
+<ul>
+<li>Timestamp de cada operacion</li>
+<li>Usuario que ejecuto el analisis</li>
+<li>Errores y excepciones</li>
+<li>Tiempo de ejecucion por modulo</li>
+</ul>
+<p><strong>Salida:</strong> Notificaciones enviadas + Datos persistidos</p>
+<hr>
+<h2 id="flujo-completo-del-sistema">FLUJO COMPLETO DEL SISTEMA</h2>
+<pre class="hljs"><code><div>Inicio → Autenticacion (30s) → Validacion (20s) → 
+    ↓
+Decision: ¿Tipo de analisis?
+    ↓
+├─ Solo SAST → SAST (1.5min) → Reportes (1min) → Fin
+├─ Solo DAST → DAST (15min) → Reportes (1min) → Fin
+└─ Hibrido → SAST (1.5min) → Correlacion ML (40s) → 
+             DAST (15min) → Consolidacion (2min) → 
+             Evaluacion (15s) → Reportes (1min) → 
+             Notificaciones (10s) → Fin
+
+Tiempo total maximo (Hibrido): ~20 minutos
+</div></code></pre>
+<hr>
+<h2 id="matriz-de-responsabilidades">MATRIZ DE RESPONSABILIDADES</h2>
+<table>
+<thead>
+<tr>
+<th><strong>Componente</strong></th>
+<th><strong>Tecnologia</strong></th>
+<th><strong>Responsabilidad</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Frontend Web</td>
+<td>React + TypeScript</td>
+<td>Interfaz de usuario, carga de archivos</td>
+</tr>
+<tr>
+<td>API Gateway</td>
+<td>FastAPI (Python)</td>
+<td>Validacion, enrutamiento, autenticacion JWT</td>
+</tr>
+<tr>
+<td>Motor SAST</td>
+<td>Semgrep + Python</td>
+<td>Analisis estatico de OpenAPI</td>
+</tr>
+<tr>
+<td>Motor ML</td>
+<td>Scikit-learn + Random Forest</td>
+<td>Correlacion y priorizacion</td>
+</tr>
+<tr>
+<td>Motor DAST</td>
+<td>OWASP ZAP + Docker</td>
+<td>Analisis dinamico con ataques activos</td>
+</tr>
+<tr>
+<td>Consolidacion</td>
+<td>Python + Pandas</td>
+<td>Unificacion y eliminacion de duplicados</td>
+</tr>
+<tr>
+<td>Reportes</td>
+<td>ReportLab + Matplotlib</td>
+<td>Generacion de PDF, JSON, Dashboard</td>
+</tr>
+<tr>
+<td>Base de Datos</td>
+<td>SQLite / PostgreSQL</td>
+<td>Persistencia de resultados</td>
+</tr>
+<tr>
+<td>Notificaciones</td>
+<td>SMTP + Webhooks</td>
+<td>Envio de alertas</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="consideraciones-operacionales">CONSIDERACIONES OPERACIONALES</h2>
+<h3 id="requisitos-de-sistema">Requisitos de Sistema</h3>
+<ul>
+<li><strong>CPU:</strong> 4 cores minimo (8 cores recomendado)</li>
+<li><strong>RAM:</strong> 8 GB minimo (16 GB recomendado)</li>
+<li><strong>Disco:</strong> 20 GB de espacio libre</li>
+<li><strong>Docker:</strong> Version 20.10+</li>
+<li><strong>Python:</strong> Version 3.9+</li>
+</ul>
+<h3 id="escalabilidad">Escalabilidad</h3>
+<ul>
+<li><strong>Analisis concurrentes:</strong> Hasta 5 escaneos simultaneos</li>
+<li><strong>APIs por escaneo:</strong> 50 endpoints maximo recomendado</li>
+<li><strong>Historico:</strong> Retencion de 90 dias en BD</li>
+</ul>
+<h3 id="limitaciones">Limitaciones</h3>
+<ul>
+<li>DAST requiere API accesible via HTTP/HTTPS</li>
+<li>Analisis de APIs con autenticacion compleja requiere configuracion manual</li>
+<li>Tiempo de DAST depende del numero de endpoints (1 min/endpoint aprox.)</li>
+</ul>
+<hr>
+<h2 id="referencias">REFERENCIAS</h2>
+<ul>
+<li>OWASP Foundation. (2023). <em>OWASP API Security Top 10 - 2023</em>. https://owasp.org/API-Security/</li>
+<li>Corradini, D., et al. (2023). Automated black-box testing of mass assignment vulnerabilities in RESTful APIs. <em>Software Testing, Verification and Reliability</em>.</li>
+<li>Atlidakis, V., et al. (2019). RESTler: Stateful REST API fuzzing. <em>IEEE/ACM ICSE</em>.</li>
+<li>Fielding, R. T. (2000). <em>Architectural Styles and the Design of Network-based Software Architectures</em>. Doctoral dissertation, University of California, Irvine.</li>
+<li>Salt Security. (2023). <em>State of API Security Report Q1 2023</em>.</li>
+</ul>
+<hr>
+<p><strong>Elaborado por:</strong> Oscar Isaac Laguna Santa Cruz<br>
+<strong>Institucion:</strong> Universidad Nacional Mayor de San Marcos - FISI<br>
+<strong>Escuela Profesional:</strong> Ingenieria de Software<br>
+<strong>Fecha:</strong> Noviembre 2024<br>
+<strong>Version:</strong> 1.0</p>
+
+</body>
+</html>
