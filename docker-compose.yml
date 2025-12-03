@@ -10,11 +10,16 @@ services:
       dockerfile: Dockerfile.backend
     container_name: hybridscan-backend
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
-      - ENVIRONMENT=production
-      - DATABASE_URL=sqlite:///./database/hybridsecscan.db
-      - MAX_UPLOAD_SIZE=100MB
-      - CORS_ORIGINS=http://localhost,http://localhost:80,http://frontend
+      - ENVIRONMENT=${ENVIRONMENT}
+      - DATABASE_URL=${DATABASE_URL}
+      - MAX_UPLOAD_SIZE=${MAX_UPLOAD_SIZE}
+      - CORS_ORIGINS=${CORS_ORIGINS}
+      - SECRET_KEY=${SECRET_KEY}
+      - MAX_WORKERS=${MAX_WORKERS}
+      - REQUEST_TIMEOUT=${REQUEST_TIMEOUT}
     volumes:
       # Persistir base de datos
       - ./database:/app/database
@@ -49,8 +54,8 @@ services:
     container_name: hybridscan-frontend
     restart: unless-stopped
     ports:
-      - "80:80"
-      - "443:443"  # Para HTTPS futuro
+      - "8100:80"    # HybridSecScan en puerto 8100
+      - "8443:443"   # HTTPS en puerto 8443
     depends_on:
       backend:
         condition: service_healthy
