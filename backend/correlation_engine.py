@@ -526,13 +526,39 @@ class VulnerabilityCorrelator:
         """Genera reporte detallado de correlaciones"""
         correlations = self.correlate_vulnerabilities()
         
+        # Calcular distribución de severidad combinada (SAST + DAST)
+        all_vulns = self.sast_findings + self.dast_findings
+        severity_counts = {
+            'critical': 0,
+            'high': 0,
+            'medium': 0,
+            'low': 0
+        }
+        
+        for vuln in all_vulns:
+            sev = str(vuln.severity.value if hasattr(vuln.severity, 'value') else vuln.severity).lower()
+            if 'critical' in sev:
+                severity_counts['critical'] += 1
+            elif 'high' in sev:
+                severity_counts['high'] += 1
+            elif 'medium' in sev:
+                severity_counts['medium'] += 1
+            else:
+                severity_counts['low'] += 1
+        
         report = {
             "summary": {
                 "total_sast_findings": len(self.sast_findings),
                 "total_dast_findings": len(self.dast_findings),
                 "high_confidence_correlations": len([c for c in correlations if c[2] > 0.8]),
                 "medium_confidence_correlations": len([c for c in correlations if 0.6 <= c[2] <= 0.8]),
-                "potential_false_positives_reduced": self._estimate_false_positive_reduction(correlations)
+                "low_confidence_correlations": len([c for c in correlations if c[2] < 0.6]),
+                "potential_false_positives_reduced": self._estimate_false_positive_reduction(correlations),
+                # Agregar distribución de severidad
+                "critical_issues": severity_counts['critical'],
+                "high_severity_findings": severity_counts['high'],
+                "medium_severity_findings": severity_counts['medium'],
+                "low_severity_findings": severity_counts['low']
             },
             "correlations": [
                 {
@@ -541,12 +567,14 @@ class VulnerabilityCorrelator:
                         "type": corr[0].type.value,
                         "file": corr[0].file_path,
                         "line": corr[0].line_number,
+                        "severity": corr[0].severity.value if hasattr(corr[0].severity, 'value') else str(corr[0].severity),
                         "tool": corr[0].source_tool
                     },
                     "dast_vulnerability": {
                         "id": corr[1].id,
                         "type": corr[1].type.value,
                         "endpoint": corr[1].endpoint,
+                        "severity": corr[1].severity.value if hasattr(corr[1].severity, 'value') else str(corr[1].severity),
                         "tool": corr[1].source_tool
                     },
                     "confidence_score": corr[2],

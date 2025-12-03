@@ -1,0 +1,92 @@
+URLS PARA PRUEBAS DAST (Dynamic Application Security Testing)
+================================================================
+
+APLICACIONES VULNERABLES LOCALES (requieren estar corriendo):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. OWASP DVWA (Damn Vulnerable Web App)
+   URL: http://localhost/DVWA/
+   Usuario: admin
+   Contraseña: password
+   Vulnerabilidades: SQL Injection, XSS, CSRF, etc.
+
+2. OWASP Juice Shop (Aplicación e-commerce vulnerable)
+   URL: http://localhost:3000/
+   Vulnerabilidades: Broken Authentication, XSS, Injection, etc.
+
+3. NodeGoat (Aplicación Node.js vulnerable)
+   URL: http://localhost:4000/
+   Vulnerabilidades: NoSQL Injection, XXE, Path Traversal, etc.
+
+4. OWASP WebGoat (Aplicación Java vulnerable)
+   URL: http://localhost:8080/WebGoat/
+   Vulnerabilidades: Varios módulos de seguridad
+
+5. OWASP Mutillidae II (Aplicación vulnerable completa)
+   URL: http://localhost/mutillidae/
+   Vulnerabilidades: SQL Injection, XSS, File Upload, etc.
+
+
+APLICACIONES EN LINEA PARA PRUEBAS (no requieren instalación local):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. OWASP Juice Shop (versión online)
+   URL: https://juice-shop.herokuapp.com/
+   Descripción: E-commerce vulnerable con múltiples defectos
+
+2. HackTheBox (plataformas vulnerable)
+   URL: https://www.hackthebox.eu/
+   Descripción: Máquinas virtuales para práctica de seguridad
+
+3. TryHackMe (máquinas vulnerable)
+   URL: https://tryhackme.com/
+   Descripción: Salas de ciberentrenamiento
+
+
+URLS PARA DEMOSTRACIÓN (bajo riesgo):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. WebGoat Online
+   URL: https://webgoat.herokuapp.com/WebGoat/
+   Descripción: Módulos educativos de OWASP
+
+2. Damn Vulnerable Web App (hosted)
+   URL: http://testphp.vulnweb.com/
+   Descripción: Aplicación de prueba con vulnerabilidades conocidas
+
+
+CONFIGURACIÓN RECOMENDADA PARA PRUEBAS LOCALES:
+════════════════════════════════════════════════
+
+Opción 1: Usar Docker Compose
+- Instala Docker Desktop
+- Ejecuta: docker-compose up -d
+- Accede a http://localhost:3000 (Juice Shop)
+
+Opción 2: Instalar manualmente
+- Descarga DVWA de github.com/digininja/DVWA
+- Descarga Juice Shop de github.com/bkimminich/juice-shop
+- Descarga NodeGoat de github.com/OWASP/NodeGoat
+
+Opción 3: Usar máquinas virtuales pregeneradas
+- VulnHub: https://www.vulnhub.com/
+- HackTheBox: https://www.hackthebox.eu/
+
+
+PARÁMETROS PARA ESCANEO DAST:
+════════════════════════════
+
+- Profundidad de escaneo: Normal (más rápido) o Completo (exhaustivo)
+- Nivel de riesgo: Bajo, Medio, Alto
+- Tipo de autenticación: None, Basic, Cookies
+- Timeout: 30-60 segundos para pruebas rápidas
+- Reportes: HTML, JSON, XML
+
+
+NOTAS DE SEGURIDAD:
+════════════════════
+
+⚠️ NUNCA ejecutes escaneos DAST en aplicaciones que no sean tuyas
+⚠️ Usa únicamente ambientes de prueba y desarrollo
+⚠️ Obtén autorización escrita antes de cualquier prueba de seguridad
+⚠️ Las aplicaciones vulnerables pueden ser comprometidas - aisla en red local

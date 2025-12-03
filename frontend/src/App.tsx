@@ -28,7 +28,7 @@ function App() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadMessage, setUploadMessage] = useState('');
   const [uploadError, setUploadError] = useState('');
-  const [scanType, setScanType] = useState<'sast' | 'dast'>('sast');
+  const [scanType, setScanType] = useState<'sast' | 'dast' | 'hybrid'>('sast');
   const [tool, setTool] = useState<'bandit' | 'semgrep'>('bandit');
   const [targetPath, setTargetPath] = useState('');
   const [targetUrl, setTargetUrl] = useState('');
@@ -36,6 +36,10 @@ function App() {
   const [scanError, setScanError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<ScanResult[]>([]);
+  const [downloadError, setDownloadError] = useState('');
+  const [downloadMessage, setDownloadMessage] = useState('');
+  const [selectedSastId, setSelectedSastId] = useState<string>('');
+  const [selectedDastId, setSelectedDastId] = useState<string>('');
 
   const API_BASE_URL = 'http://localhost:8000';
 
@@ -90,6 +94,10 @@ function App() {
       setScanError('⚠️ Ingresa una URL válida para DAST');
       return;
     }
+    if (scanType === 'hybrid' && (!selectedSastId || !selectedDastId)) {
+      setScanError('⚠️ Selecciona un escaneo SAST y uno DAST para correlacionar');
+      return;
+    }
 
     setIsLoading(true);
     setScanError('');
@@ -102,9 +110,13 @@ function App() {
         formData.append('target_path', targetPath);
         formData.append('tool', tool);
         endpoint = '/scan/sast';
-      } else {
+      } else if (scanType === 'dast') {
         formData.append('target_url', targetUrl);
         endpoint = '/scan/dast';
+      } else if (scanType === 'hybrid') {
+        formData.append('sast_scan_id', selectedSastId);
+        formData.append('dast_scan_id', selectedDastId);
+        endpoint = '/scan/hybrid';
       }
       
       const res = await fetch(`${API_BASE_URL}${endpoint}`, { method: 'POST', body: formData });
@@ -119,6 +131,55 @@ function App() {
       setScanError(error instanceof Error ? error.message : 'Error desconocido');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDownloadPDF = async (id: string | number) => {
+    setDownloadError('');
+    setDownloadMessage('');
+    try {
+      const res = await fetch(`${API_BASE_URL}/download/pdf/${id}`);
+      if (!res.ok) {
+        // try to parse json error body
+        const errBody = await res.json().catch(() => null);
+        throw new Error(errBody?.detail || `Error descargando PDF: ${res.status}`);
+      }
+      const blob = await res.blob();
+      const url = (globalThis as any).URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `scan_${id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      (globalThis as any).URL.revokeObjectURL(url);
+      setDownloadMessage('PDF descargado correctamente');
+    } catch (err) {
+      setDownloadError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const handleDownloadJSON = async (id: string | number) => {
+    setDownloadError('');
+    setDownloadMessage('');
+    try {
+      const res = await fetch(`${API_BASE_URL}/download/json/${id}`);
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => null);
+        throw new Error(errBody?.detail || `Error descargando JSON: ${res.status}`);
+      }
+      const blob = await res.blob();
+      const url = (globalThis as any).URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `scan_${id}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      (globalThis as any).URL.revokeObjectURL(url);
+      setDownloadMessage('JSON descargado correctamente');
+    } catch (err) {
+      setDownloadError(err instanceof Error ? err.message : String(err));
     }
   };
 
@@ -173,6 +234,14 @@ function App() {
                   <Icons.Globe /> DAST
                 </div>
               </button>
+              <button 
+                className={`tab-btn hybrid ${scanType === 'hybrid' ? 'active' : ''}`}
+                onClick={() => setScanType('hybrid')}
+              >
+                 <div style={{display:'flex', alignItems:'center', justifyContent:'center', gap:8}}>
+                  <Icons.Shield /> HYBRID
+                </div>
+              </button>
             </div>
 
             {scanType === 'sast' ? (
@@ -206,7 +275,7 @@ function App() {
 
                 {targetPath && <p style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>Target: <span className="code-path">{targetPath}</span></p>}
               </div>
-            ) : (
+            ) : scanType === 'dast' ? (
               <div className="form-group fade-in">
                 <label>URL Objetivo (API Endpoint)</label>
                 <input
@@ -218,9 +287,45 @@ function App() {
                 />
                 <p style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>El análisis dinámico ejecutará pruebas contra esta URL activa.</p>
               </div>
+            ) : (
+              <div className="form-group fade-in">
+                <label>🔗 Análisis Híbrido con Correlación</label>
+                <p style={{fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem'}}>
+                  Selecciona un escaneo SAST y uno DAST previos para ejecutar el motor de correlación inteligente.
+                  El sistema reduce falsos positivos al correlacionar hallazgos estáticos y dinámicos.
+                </p>
+                
+                <label style={{marginTop: '1rem'}}>Escaneo SAST</label>
+                <select 
+                  value={selectedSastId} 
+                  onChange={e => setSelectedSastId(e.target.value)}
+                  disabled={isLoading}
+                >
+                  <option value="">-- Selecciona SAST --</option>
+                  {results.filter(r => r.scan_type === 'SAST').map(r => (
+                    <option key={r.id} value={r.id}>
+                      ID {r.id} - {r.tool} - {new Date(r.created_at).toLocaleString()}
+                    </option>
+                  ))}
+                </select>
+
+                <label style={{marginTop: '1rem'}}>Escaneo DAST</label>
+                <select 
+                  value={selectedDastId} 
+                  onChange={e => setSelectedDastId(e.target.value)}
+                  disabled={isLoading}
+                >
+                  <option value="">-- Selecciona DAST --</option>
+                  {results.filter(r => r.scan_type === 'DAST').map(r => (
+                    <option key={r.id} value={r.id}>
+                      ID {r.id} - {r.tool} - {new Date(r.created_at).toLocaleString()}
+                    </option>
+                  ))}
+                </select>
+              </div>
             )}
 
-            <button className="btn-primary" onClick={handleScan} disabled={isLoading || (scanType === 'sast' && !targetPath)}>
+            <button className="btn-primary" onClick={handleScan} disabled={isLoading || (scanType === 'sast' && !targetPath) || (scanType === 'hybrid' && (!selectedSastId || !selectedDastId))}>
               {isLoading ? 'Auditando...' : <><Icons.Play /> Ejecutar Auditoría</>}
             </button>
             
@@ -237,6 +342,19 @@ function App() {
             
             {scanResult ? (
               <div className="result-display">
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                  <button className="btn-secondary" onClick={() => handleDownloadPDF((scanResult as any).id)}>
+                    Descargar PDF
+                  </button>
+                  <button className="btn-secondary" onClick={() => handleDownloadJSON((scanResult as any).id)}>
+                    Descargar JSON
+                  </button>
+                  {(downloadMessage || downloadError) && (
+                    <div style={{ marginLeft: '1rem', color: downloadError ? 'var(--danger)' : 'var(--success)' }}>
+                      {downloadError || downloadMessage}
+                    </div>
+                  )}
+                </div>
                  {/* Si quieres formatear JSON más bonito, podrías usar una librería como react-syntax-highlighter, pero esto es nativo */}
                 <pre>{JSON.stringify(scanResult, null, 2)}</pre>
               </div>
@@ -273,7 +391,8 @@ function App() {
                     <th>Herramienta</th>
                     <th>Objetivo</th>
                     <th>Estado</th>
-                    <th>Fecha</th>
+                      <th>Fecha</th>
+                      <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -293,6 +412,12 @@ function App() {
                       </td>
                       <td style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                         {new Date(r.created_at).toLocaleString()}
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '.5rem' }}>
+                          <button className="btn-sm" onClick={() => handleDownloadPDF(r.id)}>PDF</button>
+                          <button className="btn-sm" onClick={() => handleDownloadJSON(r.id)}>JSON</button>
+                        </div>
                       </td>
                     </tr>
                   ))}
