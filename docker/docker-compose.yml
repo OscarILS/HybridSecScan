@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ../..
+      dockerfile: docker/backend/Dockerfile
+    container_name: hybridscan-backend
+    ports:
+      - "8200:8000"
+    volumes:
+      - ../../database:/app/database
+      - ../../reports:/app/reports
+      - ../../uploads:/app/uploads
+    environment:
+      - PYTHONPATH=/app
+      - DATABASE_URL=sqlite:///./database/hybridsecscan.db
+      - CORS_ORIGINS=http://localhost:8100,http://127.0.0.1:8100
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - hybridscan-network
+
+  frontend:
+    build:
+      context: ../..
+      dockerfile: docker/frontend/Dockerfile
+    container_name: hybridscan-frontend
+    ports:
+      - "8100:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - hybridscan-network
+
+networks:
+  hybridscan-network:
+    driver: bridge
+
+volumes:
+  database:
+  reports:
+  uploads:
