@@ -644,51 +644,81 @@ def run_dast_scan(target_url: str = Form(...), db: Session = Depends(get_db)):
         vuln_templates = [
             {
                 "type": "Cross-Site Scripting (XSS)",
+                "alert": "Cross-Site Scripting (XSS)",
                 "severity": "HIGH",
+                "risk": "High",
                 "confidence": "Medium",
                 "parameter": "q",
+                "description": "Cross-site Scripting (XSS) is a type of injection attack where malicious scripts are injected into otherwise benign and trusted websites. XSS attacks occur when an attacker uses a web application to send malicious code to a different end user. The attacker could use XSS to send a malicious script to an unsuspecting user, which can access cookies, session tokens, or other sensitive information retained by the browser.",
+                "solution": "Validate all input and encode output before rendering it. Use Content Security Policy (CSP) headers. Implement proper input sanitization and output encoding using framework-specific functions.",
                 "evidence": "Unvalidated user input reflected in response",
-                "cwe": "CWE-79"
+                "cwe": "CWE-79",
+                "cweid": "79"
             },
             {
                 "type": "SQL Injection",
+                "alert": "SQL Injection",
                 "severity": "CRITICAL",
+                "risk": "Critical",
                 "confidence": "High",
                 "parameter": "id",
+                "description": "SQL injection is a web security vulnerability that allows an attacker to interfere with the queries that an application makes to its database. It generally allows an attacker to view data that they are not normally able to retrieve, such as data belonging to other users, or any other data that the application itself is able to access. SQL injection can also allow attackers to modify or delete data, causing persistent changes to the application's content or behavior.",
+                "solution": "Use prepared statements with parameterized queries. Use stored procedures. Validate input using whitelist validation. Escape all user supplied input. Implement least privilege principle for database accounts.",
                 "evidence": "SQL syntax patterns detected in error messages",
-                "cwe": "CWE-89"
+                "cwe": "CWE-89",
+                "cweid": "89"
             },
             {
                 "type": "Insecure Direct Object Reference (IDOR)",
+                "alert": "Insecure Direct Object Reference",
                 "severity": "MEDIUM",
+                "risk": "Medium",
                 "confidence": "Medium",
                 "parameter": "user_id",
+                "description": "Insecure Direct Object References (IDOR) occur when an application provides direct access to objects based on user-supplied input. As a result of this vulnerability attackers can bypass authorization and access resources in the system directly, for example database records or files. Insecure Direct Object References allow attackers to bypass authorization and access resources directly by modifying the value of a parameter used to directly point to an object.",
+                "solution": "Implement access control checks for all object references. Use indirect reference maps (e.g., temporary session-specific reference IDs). Verify user authorization before granting access to requested objects. Never expose internal object references directly in URLs or form parameters.",
                 "evidence": "Predictable sequential IDs in URLs",
-                "cwe": "CWE-639"
+                "cwe": "CWE-639",
+                "cweid": "639"
             },
             {
                 "type": "Missing Security Headers",
+                "alert": "Missing Security Headers",
                 "severity": "MEDIUM",
+                "risk": "Medium",
                 "confidence": "High",
                 "parameter": "HTTP Headers",
+                "description": "The application is missing important security headers that help protect against common web vulnerabilities. Security headers provide an additional layer of defense against attacks like XSS, clickjacking, MIME-sniffing, and other code injection attacks. Modern browsers use these headers to enhance security and protect users.",
+                "solution": "Implement the following security headers: Content-Security-Policy (CSP) to prevent XSS attacks, X-Frame-Options to prevent clickjacking, X-Content-Type-Options to prevent MIME-sniffing, Strict-Transport-Security (HSTS) to enforce HTTPS, and Referrer-Policy to control referrer information.",
                 "evidence": "Missing Content-Security-Policy, X-Frame-Options headers",
-                "cwe": "CWE-693"
+                "cwe": "CWE-693",
+                "cweid": "693"
             },
             {
                 "type": "Open Redirect",
+                "alert": "Open Redirect",
                 "severity": "LOW",
+                "risk": "Low",
                 "confidence": "Low",
                 "parameter": "next",
+                "description": "Open redirect vulnerabilities occur when a web application accepts a user-controlled input that specifies a link to an external site, and uses that link in a redirect. This behavior can be leveraged to facilitate phishing attacks against users of the application. The attacker can construct a URL that redirects to a malicious site that appears to be a legitimate part of the original domain.",
+                "solution": "Avoid using redirects and forwards. If redirects are necessary, validate the URL against a whitelist of allowed destinations. Do not include user-controllable parameters in redirect URLs. Use relative URLs for internal redirects.",
                 "evidence": "Unvalidated redirect parameter",
-                "cwe": "CWE-601"
+                "cwe": "CWE-601",
+                "cweid": "601"
             },
             {
                 "type": "Server Information Leak",
+                "alert": "Information Disclosure",
                 "severity": "LOW",
+                "risk": "Low",
                 "confidence": "Medium",
                 "parameter": "response_headers",
+                "description": "The web server discloses sensitive information in HTTP responses, such as detailed error messages, stack traces, or version information. This information can help attackers gain intelligence about the application's internal workings, technology stack, and potential vulnerabilities. Information leakage can significantly ease the process of exploiting other vulnerabilities.",
+                "solution": "Configure custom error pages that don't reveal sensitive information. Disable detailed error messages in production environments. Remove or obfuscate server version headers. Implement proper error handling and logging that separates user-facing messages from internal debugging information.",
                 "evidence": "Stack trace exposed in error response",
-                "cwe": "CWE-200"
+                "cwe": "CWE-200",
+                "cweid": "200"
             }
         ]
 
