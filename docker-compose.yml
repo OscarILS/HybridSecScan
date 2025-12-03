@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  # ==========================================
+  # Backend FastAPI + SAST Tools
+  # ==========================================
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: hybridscan-backend
+    restart: unless-stopped
+    environment:
+      - ENVIRONMENT=production
+      - DATABASE_URL=sqlite:///./database/hybridsecscan.db
+      - MAX_UPLOAD_SIZE=100MB
+      - CORS_ORIGINS=http://localhost,http://localhost:80,http://frontend
+    volumes:
+      # Persistir base de datos
+      - ./database:/app/database
+      # Persistir reportes generados
+      - ./reports:/app/reports
+      # Persistir uploads temporales
+      - ./uploads:/app/uploads
+    networks:
+      - hybridscan-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # ==========================================
+  # Frontend React + Nginx
+  # ==========================================
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: hybridscan-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"  # Para HTTPS futuro
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - hybridscan-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
+networks:
+  hybridscan-network:
+    driver: bridge
+    name: hybridscan-network
+
+volumes:
+  database:
+    name: hybridscan-database
+  reports:
+    name: hybridscan-reports
+  uploads:
+    name: hybridscan-uploads

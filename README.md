@@ -19,7 +19,30 @@ La arquitectura propuesta implementa un diseño modular que facilita la escalabi
 
 ## Metodología de Implementación
 
-### Configuración del Entorno de Desarrollo
+### 🐳 Despliegue con Docker (Recomendado para Producción)
+
+**La forma más rápida y segura de desplegar HybridSecScan es usando Docker:**
+
+```bash
+# Linux/macOS
+git clone https://github.com/OscarILS/HybridSecScan.git
+cd HybridSecScan
+chmod +x deploy.sh
+./deploy.sh
+
+# Windows PowerShell
+git clone https://github.com/OscarILS/HybridSecScan.git
+cd HybridSecScan
+.\deploy.ps1
+```
+
+**Acceso**: `http://localhost`
+
+📖 **Documentación completa de Docker**: Ver [DOCKER.md](DOCKER.md) y [DEPLOYMENT.md](DEPLOYMENT.md)
+
+---
+
+### Configuración del Entorno de Desarrollo (Manual)
 
 #### Prerrequisitos del Sistema
 
@@ -27,6 +50,7 @@ Para la implementación completa del sistema, es necesario contar con:
 - Python 3.8 o superior (recomendado 3.11+)
 - Node.js 18+ con npm
 - Git para control de versiones
+- **O alternativamente**: Docker + Docker Compose
 
 #### Configuración del Backend
 

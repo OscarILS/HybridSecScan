@@ -41,7 +41,8 @@ function App() {
   const [selectedSastId, setSelectedSastId] = useState<string>('');
   const [selectedDastId, setSelectedDastId] = useState<string>('');
 
-  const API_BASE_URL = 'http://localhost:8000';
+  // En desarrollo: http://localhost:8000 | En Docker: /api (Nginx proxy)
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
   useEffect(() => {
     fetchResults();

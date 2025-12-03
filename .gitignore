@@ -85,3 +85,12 @@ logs/
 # Temporary files
 *.tmp
 *.temp
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Environment variables
+.env
+.env.local
+.env.production
