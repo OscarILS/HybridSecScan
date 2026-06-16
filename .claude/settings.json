@@ -27,7 +27,8 @@
       "Bash(node_modules/.bin/tsc --noEmit)",
       "Bash(npm run dev > /tmp/frontend.log 2>&1 & *)",
       "Read(//tmp/**)",
-      "Bash(pkill -f \"vite\")"
+      "Bash(pkill -f \"vite\")",
+      "Bash(python -c ' *)"
     ]
   }
 }

@@ -324,6 +324,12 @@ def _styles():
         "toc_row": p("toc_row",
             fontSize=9, fontName="Helvetica",
             textColor=HexColor("#334155")),
+        "payload_code": p("payload_code",
+            fontSize=7.5, fontName="Courier",
+            textColor=HexColor("#c7d2fe"), leading=11, spaceAfter=1),
+        "payload_label": p("payload_label",
+            fontSize=7, fontName="Courier-Bold",
+            textColor=HexColor("#818cf8"), spaceAfter=1),
     }
 
 
@@ -885,7 +891,82 @@ def _findings_pages(story, scan_data: Dict, styles):
             ("BOX",           (0, 0), (-1, -1), 0.5, HexColor("#e2e8f0")),
         ]))
 
-        story.append(KeepTogether([hdr_t, body_t, Spacer(1, 0.35 * cm)]))
+        # ── Bloque de payload de ataque ──────────────────────────────────────
+        payload = v.get("request_payload") or {}
+        payload_block = None
+        if payload:
+            lines = []
+            method  = payload.get("method", "")
+            req_url = payload.get("url", "")
+            probe   = payload.get("probe", "")
+            response_text = payload.get("response", "")
+            sent    = payload.get("sent_headers", {})
+
+            if method and req_url:
+                lines.append(Paragraph(
+                    f"<b>►</b> {method} {req_url}",
+                    styles["payload_code"]))
+            for hname, hval in sent.items():
+                lines.append(Paragraph(
+                    f"  {hname}: {hval}",
+                    styles["payload_code"]))
+            if probe:
+                lines.append(Paragraph(
+                    f"  [Sonda] {probe}",
+                    styles["payload_label"]))
+            if response_text:
+                # Truncar línea larga de respuesta
+                resp_short = response_text[:350] + ("…" if len(response_text) > 350 else "")
+                lines.append(Paragraph(
+                    f"  [Respuesta] {resp_short}",
+                    styles["payload_code"]))
+
+            if lines:
+                missing_hdr = payload.get("missing_header", "")
+                block_label = f"PAYLOAD DEL ATAQUE{' — header: ' + missing_hdr if missing_hdr else ''}"
+                payload_inner = Table(
+                    [[line] for line in lines],
+                    colWidths=[usable - 1 * cm],
+                )
+                payload_inner.setStyle(TableStyle([
+                    ("BACKGROUND",    (0, 0), (-1, -1), HexColor("#0f172a")),
+                    ("LEFTPADDING",   (0, 0), (-1, -1), 10),
+                    ("RIGHTPADDING",  (0, 0), (-1, -1), 8),
+                    ("TOPPADDING",    (0, 0), (0, 0),   6),
+                    ("BOTTOMPADDING", (0, -1), (-1, -1), 6),
+                    ("TOPPADDING",    (0, 1), (-1, -1), 1),
+                    ("BOTTOMPADDING", (0, 0), (-1, -2), 1),
+                ]))
+                payload_label_t = Table(
+                    [[Paragraph(
+                        f"<font color='#818cf8'><b>{block_label}</b></font>",
+                        styles["payload_label"])]],
+                    colWidths=[usable - 1 * cm],
+                )
+                payload_label_t.setStyle(TableStyle([
+                    ("BACKGROUND",    (0, 0), (-1, -1), HexColor("#1e1b4b")),
+                    ("LEFTPADDING",   (0, 0), (-1, -1), 10),
+                    ("TOPPADDING",    (0, 0), (-1, -1), 4),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                ]))
+                payload_block = Table(
+                    [[payload_label_t], [payload_inner]],
+                    colWidths=[usable - 1 * cm],
+                )
+                payload_block.setStyle(TableStyle([
+                    ("BOX",           (0, 0), (-1, -1), 0.5, HexColor("#4338ca")),
+                    ("LEFTPADDING",   (0, 0), (-1, -1), 0),
+                    ("RIGHTPADDING",  (0, 0), (-1, -1), 0),
+                    ("TOPPADDING",    (0, 0), (-1, -1), 0),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                ]))
+
+        elements = [hdr_t, body_t]
+        if payload_block:
+            elements.append(Spacer(1, 0.2 * cm))
+            elements.append(payload_block)
+        elements.append(Spacer(1, 0.35 * cm))
+        story.append(KeepTogether(elements))
 
 
 def _hybrid_correlations(story, scan_data: Dict, styles):

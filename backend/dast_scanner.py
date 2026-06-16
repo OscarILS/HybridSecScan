@@ -85,39 +85,41 @@ RATE_LIMIT_PROBE_DELAY = 0.05   # segundos entre requests
 @dataclass
 class ScanFinding:
     """Hallazgo DAST normalizado, compatible con el correlador SAST."""
-    id:             str = field(default_factory=lambda: str(uuid.uuid4()))
-    type:           str = ""
-    alert:          str = ""
-    severity:       str = "LOW"
-    risk:           str = "Low"
-    confidence:     str = "Medium"
-    url:            str = ""
-    parameter:      str = ""
-    description:    str = ""
-    solution:       str = ""
-    evidence:       str = ""
-    cwe:            str = ""
-    cweid:          str = ""
-    owasp_category: str = ""
-    source:         str = "HTTP Scanner"
+    id:              str  = field(default_factory=lambda: str(uuid.uuid4()))
+    type:            str  = ""
+    alert:           str  = ""
+    severity:        str  = "LOW"
+    risk:            str  = "Low"
+    confidence:      str  = "Medium"
+    url:             str  = ""
+    parameter:       str  = ""
+    description:     str  = ""
+    solution:        str  = ""
+    evidence:        str  = ""
+    cwe:             str  = ""
+    cweid:           str  = ""
+    owasp_category:  str  = ""
+    source:          str  = "HTTP Scanner"
+    request_payload: Dict = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
-            "id":             self.id,
-            "type":           self.type,
-            "alert":          self.alert,
-            "severity":       self.severity,
-            "risk":           self.risk,
-            "confidence":     self.confidence,
-            "url":            self.url,
-            "parameter":      self.parameter,
-            "description":    self.description,
-            "solution":       self.solution,
-            "evidence":       self.evidence,
-            "cwe":            self.cwe,
-            "cweid":          self.cweid,
-            "owasp_category": self.owasp_category,
-            "source":         self.source,
+            "id":              self.id,
+            "type":            self.type,
+            "alert":           self.alert,
+            "severity":        self.severity,
+            "risk":            self.risk,
+            "confidence":      self.confidence,
+            "url":             self.url,
+            "parameter":       self.parameter,
+            "description":     self.description,
+            "solution":        self.solution,
+            "evidence":        self.evidence,
+            "cwe":             self.cwe,
+            "cweid":           self.cweid,
+            "owasp_category":  self.owasp_category,
+            "source":          self.source,
+            "request_payload": self.request_payload,
         }
 
 
@@ -175,6 +177,13 @@ class HTTPSecurityScanner:
         try:
             resp = self.session.get(url, timeout=self.timeout, verify=False)
             present = set(resp.headers.keys())
+            payload = {
+                "method": "GET",
+                "url": url,
+                "sent_headers": {"User-Agent": "HybridSecScan/2.0 Security Scanner"},
+                "probe": "Inspección de cabeceras de seguridad HTTP",
+                "response": f"HTTP {resp.status_code} — {len(present)} headers recibidos",
+            }
             for header, (severity, owasp, cwe, explanation) in SECURITY_HEADERS.items():
                 if header not in present:
                     findings.append(ScanFinding(
@@ -195,6 +204,7 @@ class HTTPSecurityScanner:
                         cweid=cwe.replace("CWE-", ""),
                         owasp_category=owasp,
                         source="HTTP Scanner – Security Headers",
+                        request_payload={**payload, "missing_header": header},
                     ))
         except Exception as exc:
             logger.debug(f"security_headers: {exc}")
@@ -213,6 +223,21 @@ class HTTPSecurityScanner:
             )
             acao = resp.headers.get("Access-Control-Allow-Origin", "")
             acac = resp.headers.get("Access-Control-Allow-Credentials", "").lower()
+
+            evil_payload = {
+                "method": "GET",
+                "url": url,
+                "sent_headers": {
+                    "Origin": evil,
+                    "User-Agent": "HybridSecScan/2.0 Security Scanner",
+                },
+                "probe": "Inyección de origen hostil para verificar política CORS",
+                "response": (
+                    f"HTTP {resp.status_code} | "
+                    f"Access-Control-Allow-Origin: {acao or '(ausente)'} | "
+                    f"Access-Control-Allow-Credentials: {resp.headers.get('Access-Control-Allow-Credentials', '(ausente)')}"
+                ),
+            }
 
             if acao == "*" and acac == "true":
                 findings.append(ScanFinding(
@@ -236,6 +261,7 @@ class HTTPSecurityScanner:
                     cweid="942",
                     owasp_category="API8:2023",
                     source="HTTP Scanner – CORS",
+                    request_payload=evil_payload,
                 ))
             elif acao == evil:
                 findings.append(ScanFinding(
@@ -256,6 +282,7 @@ class HTTPSecurityScanner:
                     cweid="942",
                     owasp_category="API8:2023",
                     source="HTTP Scanner – CORS",
+                    request_payload=evil_payload,
                 ))
             elif acao == "*":
                 findings.append(ScanFinding(
@@ -273,6 +300,7 @@ class HTTPSecurityScanner:
                     cweid="942",
                     owasp_category="API8:2023",
                     source="HTTP Scanner – CORS",
+                    request_payload=evil_payload,
                 ))
 
             # Probe con origen null (explotable desde iframes sandboxed)
@@ -298,6 +326,13 @@ class HTTPSecurityScanner:
                     cweid="942",
                     owasp_category="API8:2023",
                     source="HTTP Scanner – CORS",
+                    request_payload={
+                        "method": "GET",
+                        "url": url,
+                        "sent_headers": {"Origin": "null"},
+                        "probe": 'Prueba de origen "null" — explotable desde iframes sandboxed',
+                        "response": f"HTTP {null_resp.status_code} | Access-Control-Allow-Origin: null",
+                    },
                 ))
         except Exception as exc:
             logger.debug(f"cors_policy: {exc}")
@@ -339,6 +374,19 @@ class HTTPSecurityScanner:
                         cweid="200",
                         owasp_category="API9:2023",
                         source="HTTP Scanner – Endpoint Discovery",
+                        request_payload={
+                            "method": "GET",
+                            "url": probe,
+                            "sent_headers": {
+                                "User-Agent": "HybridSecScan/2.0 Security Scanner",
+                            },
+                            "probe": f"Descubrimiento de ruta sensible: {path}",
+                            "response": (
+                                f"HTTP {resp.status_code} | "
+                                f"Content-Type: {resp.headers.get('Content-Type', 'N/A')} | "
+                                f"Content-Length: {resp.headers.get('Content-Length', len(resp.content))} bytes"
+                            ),
+                        },
                     ))
             except Exception:
                 pass
@@ -370,6 +418,17 @@ class HTTPSecurityScanner:
                     cweid="749",
                     owasp_category="API5:2023",
                     source="HTTP Scanner – HTTP Methods",
+                    request_payload={
+                        "method": "OPTIONS",
+                        "url": url,
+                        "sent_headers": {"User-Agent": "HybridSecScan/2.0 Security Scanner"},
+                        "probe": "Enumeración de métodos HTTP permitidos",
+                        "response": (
+                            f"HTTP {resp.status_code} | "
+                            f"Allow: {raw or '(no especificado)'} | "
+                            f"Métodos peligrosos confirmados: {', '.join(sorted(dangerous))}"
+                        ),
+                    },
                 ))
         except Exception as exc:
             logger.debug(f"http_methods: {exc}")
@@ -381,12 +440,12 @@ class HTTPSecurityScanner:
         origin = f"{parsed.scheme}://{parsed.netloc}"
 
         probes = [
-            (f"{url}?id='", "SQL injection probe"),
-            (f"{url}?page=-9999", "Negative page probe"),
-            (f"{origin}/nonexistent_endpoint_xyz_abc", "Invalid path probe"),
+            (f"{url}?id='",                          "SQL injection probe",   "?id='"),
+            (f"{url}?page=-9999",                    "Negative page probe",   "?page=-9999"),
+            (f"{origin}/nonexistent_endpoint_xyz_abc", "Invalid path probe",  "/nonexistent_endpoint_xyz_abc"),
         ]
 
-        for probe_url, probe_name in probes:
+        for probe_url, probe_name, probe_payload in probes:
             try:
                 resp = self.session.get(probe_url, timeout=self.timeout, verify=False)
                 body = resp.text[:5000]
@@ -414,6 +473,17 @@ class HTTPSecurityScanner:
                             cweid="209",
                             owasp_category="API8:2023",
                             source="HTTP Scanner – Error Disclosure",
+                            request_payload={
+                                "method": "GET",
+                                "url": probe_url,
+                                "sent_headers": {"User-Agent": "HybridSecScan/2.0 Security Scanner"},
+                                "probe": f"{probe_name} — payload: {probe_payload}",
+                                "response": (
+                                    f"HTTP {resp.status_code} | "
+                                    f'Patrón detectado: "{pattern}" | '
+                                    f"Body (primeros 200 chars): {body[:200].strip()!r}"
+                                ),
+                            },
                         ))
                         break
             except Exception:
@@ -445,6 +515,7 @@ class HTTPSecurityScanner:
                 time.sleep(RATE_LIMIT_PROBE_DELAY)
 
             if not has_rate_limit:
+                req_rate = 1 / RATE_LIMIT_PROBE_DELAY if RATE_LIMIT_PROBE_DELAY else 0
                 findings.append(ScanFinding(
                     type="Missing Rate Limiting",
                     alert="Sin control de tasa (rate limiting) detectable",
@@ -467,6 +538,20 @@ class HTTPSecurityScanner:
                     cweid="770",
                     owasp_category="API4:2023",
                     source="HTTP Scanner – Rate Limiting",
+                    request_payload={
+                        "method": "GET (x{})".format(RATE_LIMIT_PROBE_COUNT),
+                        "url": url,
+                        "sent_headers": {"User-Agent": "HybridSecScan/2.0 Security Scanner"},
+                        "probe": (
+                            f"Flood de peticiones: {RATE_LIMIT_PROBE_COUNT} GETs "
+                            f"a ~{req_rate:.0f} req/s (delay={RATE_LIMIT_PROBE_DELAY*1000:.0f}ms)"
+                        ),
+                        "response": (
+                            f"Todos respondieron sin HTTP 429. "
+                            f"Códigos obtenidos: {statuses}. "
+                            f"Headers de rate limit ausentes (X-RateLimit-*, Retry-After)."
+                        ),
+                    },
                 ))
         except Exception as exc:
             logger.debug(f"rate_limiting: {exc}")
@@ -503,6 +588,16 @@ class HTTPSecurityScanner:
                         cweid="200",
                         owasp_category="API8:2023",
                         source="HTTP Scanner – Information Disclosure",
+                        request_payload={
+                            "method": "GET",
+                            "url": url,
+                            "sent_headers": {"User-Agent": "HybridSecScan/2.0 Security Scanner"},
+                            "probe": "Inspección de headers de respuesta que revelan información del servidor",
+                            "response": (
+                                f"HTTP {resp.status_code} | "
+                                f"Header filtrado → {header}: {value}"
+                            ),
+                        },
                     ))
         except Exception as exc:
             logger.debug(f"server_info: {exc}")
@@ -534,6 +629,17 @@ class HTTPSecurityScanner:
                         cweid="319",
                         owasp_category="API8:2023",
                         source="HTTP Scanner – SSL/TLS",
+                        request_payload={
+                            "method": "GET",
+                            "url": url,
+                            "sent_headers": {"User-Agent": "HybridSecScan/2.0 Security Scanner"},
+                            "probe": "Verificación de redirección HTTP → HTTPS (sin seguir redirects)",
+                            "response": (
+                                f"HTTP {resp.status_code} | "
+                                f"Location: {location or '(sin Location header)'} | "
+                                "Sin redirección a HTTPS — tráfico transmitido en texto plano"
+                            ),
+                        },
                     ))
             except Exception as exc:
                 logger.debug(f"ssl_config: {exc}")
