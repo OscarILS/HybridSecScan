@@ -647,6 +647,49 @@ input:focus, select:focus {
 
 .finding-loc code { font-family: monospace; }
 
+/* ── SCAN META ROW ──────────────────────────────────────────────────────── */
+
+.scan-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 0.6rem;
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  font-size: 0.78rem;
+}
+
+.scan-meta-target {
+  color: var(--text-muted);
+  font-family: monospace;
+  font-size: 0.75rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 260px;
+}
+
+.scan-meta-tool {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  opacity: 0.7;
+}
+
+.summary-warn {
+  margin-left: auto;
+  background: rgba(245,158,11,0.12);
+  color: #fcd34d;
+  border: 1px solid rgba(245,158,11,0.25);
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: help;
+}
+
 .no-findings {
   display: flex;
   flex-direction: column;
@@ -655,6 +698,12 @@ input:focus, select:focus {
   padding: 2rem;
   color: #10b981;
   text-align: center;
+}
+
+.no-findings span {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  max-width: 360px;
 }
 
 /* ── RAW JSON ───────────────────────────────────────────────────────────── */

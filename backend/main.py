@@ -1162,13 +1162,17 @@ def download_pdf_report(scan_id: str, db: Session = Depends(get_db)):
                                 'source': 'DAST',
                                 'tool': dast_scan.tool,
                                 'type': vuln.get('alert', vuln.get('type', 'Unknown')),
+                                'alert': vuln.get('alert', ''),
                                 'severity': vuln.get('risk', vuln.get('severity', 'low')),
                                 'url': vuln.get('url', ''),
                                 'description': vuln.get('description', 'No description'),
                                 'solution': vuln.get('solution', ''),
                                 'cwe': vuln.get('cweid', vuln.get('cwe', '')),
+                                'cweid': vuln.get('cweid', vuln.get('cwe', '')),
                                 'owasp_category': vuln.get('owasp_category', ''),
+                                'evidence': vuln.get('evidence', ''),
                                 'parameter': vuln.get('parameter', ''),
+                                'request_payload': vuln.get('request_payload', {}),
                             })
             
             # Usar la distribución de severidad calculada directamente desde los datos
@@ -1220,9 +1224,13 @@ def download_pdf_report(scan_id: str, db: Session = Depends(get_db)):
                             'description': v.get('description', 'No description'),
                             'solution': v.get('solution', ''),
                             'cwe': v.get('cweid', v.get('cwe', '')),
+                            'cweid': v.get('cweid', v.get('cwe', '')),
                             'owasp_category': v.get('owasp_category', ''),
                             'evidence': v.get('evidence', ''),
                             'parameter': v.get('parameter', ''),
+                            'source': v.get('source', ''),
+                            'alert': v.get('alert', ''),
+                            'request_payload': v.get('request_payload', {}),
                         })
 
             # Normalizar severities

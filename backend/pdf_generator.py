@@ -532,30 +532,40 @@ def _cover_page(story, scan_data: Dict, styles, score: int, label: str, score_co
     story.append(sh_t)
     story.append(Spacer(1, 0.3 * cm))
 
-    # Score numérico grande
-    score_num_style = ParagraphStyle("score_num", fontSize=48,
+    # Score — número compacto en una sola fila junto a la barra
+    score_inline_style = ParagraphStyle("score_inline", fontSize=26,
+                                        fontName="Helvetica-Bold",
+                                        textColor=score_color, alignment=TA_LEFT,
+                                        leading=30)
+    slash_style = ParagraphStyle("slash", fontSize=10,
+                                 fontName="Helvetica",
+                                 textColor=HexColor("#94a3b8"), alignment=TA_LEFT,
+                                 leading=30)
+    score_lbl_style = ParagraphStyle("score_lbl", fontSize=13,
                                      fontName="Helvetica-Bold",
-                                     textColor=score_color, alignment=TA_LEFT)
-    score_lbl_style = ParagraphStyle("score_lbl", fontSize=14,
-                                     fontName="Helvetica",
-                                     textColor=HexColor("#64748b"), alignment=TA_LEFT)
+                                     textColor=score_color, alignment=TA_LEFT,
+                                     leading=30)
 
-    score_cols = [
-        [Paragraph(str(score), score_num_style),
-         Paragraph(f"/ 100  —  {label}", score_lbl_style)],
-    ]
-    # Barra de health
-    bar_d = _health_bar_drawing(score, width=usable - 0.5 * cm)
-
-    score_t = Table([[score_cols[0][0], score_cols[0][1]]], colWidths=[3 * cm, usable - 3 * cm])
+    score_t = Table(
+        [[
+            Paragraph(str(score), score_inline_style),
+            Paragraph("/ 100", slash_style),
+            Paragraph(label, score_lbl_style),
+        ]],
+        colWidths=[1.6 * cm, 1.5 * cm, usable - 3.1 * cm],
+    )
     score_t.setStyle(TableStyle([
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("LEFTPADDING", (0, 0), (-1, -1), 0),
-        ("TOPPADDING",  (0, 0), (-1, -1), 0),
+        ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
+        ("LEFTPADDING",   (0, 0), (-1, -1), 3),
+        ("RIGHTPADDING",  (0, 0), (-1, -1), 3),
+        ("TOPPADDING",    (0, 0), (-1, -1), 0),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
     ]))
     story.append(score_t)
     story.append(Spacer(1, 0.4 * cm))
-    story.append(bar_d)
+
+    # Barra de health
+    bar_d = _health_bar_drawing(score, width=usable - 0.5 * cm)
     story.append(Spacer(1, 0.5 * cm))
 
     # Nota de puntuación
@@ -786,6 +796,65 @@ def _dast_flow_page(story, scan_data: Dict, styles):
     story.append(PageBreak())
 
 
+def _infer_payload(v: Dict) -> Dict:
+    """Reconstruye un payload de ataque básico para hallazgos DAST sin request_payload."""
+    source   = v.get('source', '')
+    vuln_type = v.get('type', '')
+    url      = v.get('url', '')
+    evidence = (v.get('evidence') or '')[:300]
+    param    = v.get('parameter', '')
+
+    base = {
+        'method': 'GET',
+        'url': url,
+        'sent_headers': {'User-Agent': 'HybridSecScan/2.0 Security Scanner'},
+        'response': evidence,
+    }
+
+    if 'CORS' in source or 'CORS' in vuln_type:
+        return {**base,
+                'sent_headers': {'Origin': 'https://evil-attacker.example.com',
+                                 'User-Agent': 'HybridSecScan/2.0 Security Scanner'},
+                'probe': 'Inyección de origen hostil para verificar política CORS'}
+
+    if 'Security Header' in source or 'Missing Security Header' in vuln_type:
+        return {**base,
+                'probe': f'Inspección del header de seguridad HTTP: {param or vuln_type}'}
+
+    if 'Endpoint' in source or 'Sensitive' in vuln_type:
+        return {**base,
+                'probe': f'Descubrimiento de ruta sensible: {param or url}'}
+
+    if 'Error' in source or 'Information Disclosure' in vuln_type:
+        probes = {"?id='": 'SQL injection probe', '?page=-9999': 'Negative page probe',
+                  '/nonexistent_endpoint_xyz_abc': 'Invalid path probe'}
+        matched = next((f"{p} — {d}" for p, d in probes.items() if p in url), 'Error disclosure probe')
+        return {**base, 'probe': matched}
+
+    if 'Rate' in source or 'Rate Limiting' in vuln_type:
+        return {**base,
+                'method': 'GET (x15)',
+                'probe': 'Flood de peticiones: 15 GETs a ~20 req/s (delay=50ms)'}
+
+    if 'HTTP Method' in source or 'Dangerous HTTP' in vuln_type:
+        return {**base,
+                'method': 'OPTIONS',
+                'probe': 'Enumeración de métodos HTTP permitidos'}
+
+    if 'Information' in source or 'Server Information' in vuln_type:
+        return {**base,
+                'probe': f'Inspección de headers que revelan información del servidor ({param})'}
+
+    if 'SSL' in source or 'Insecure Transport' in vuln_type:
+        return {**base,
+                'probe': 'Verificación de redirección HTTP → HTTPS (sin seguir redirects)'}
+
+    if url:
+        return {**base, 'probe': f'Prueba DAST activa sobre {url}'}
+
+    return {}
+
+
 def _findings_pages(story, scan_data: Dict, styles):
     W, _ = A4
     usable = W - 3 * cm
@@ -892,7 +961,10 @@ def _findings_pages(story, scan_data: Dict, styles):
         ]))
 
         # ── Bloque de payload de ataque ──────────────────────────────────────
+        # Si no hay request_payload guardado (scans anteriores), reconstruir desde datos del hallazgo
         payload = v.get("request_payload") or {}
+        if not payload and v.get("url"):
+            payload = _infer_payload(v)
         payload_block = None
         if payload:
             lines = []

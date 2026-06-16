@@ -18,6 +18,7 @@ type Finding = {
   issue_text?: string;
   severity?: string;
   issue_severity?: string;
+  risk?: string;
   confidence?: string;
   filename?: string;
   file?: string;
@@ -31,6 +32,10 @@ type Finding = {
   solution?: string;
   alert?: string;
   owasp_category?: string;
+  evidence?: string;
+  parameter?: string;
+  source?: string;
+  request_payload?: Record<string, unknown>;
 };
 
 type SortDir = 'asc' | 'desc';
@@ -171,18 +176,36 @@ function findingLocation(f: Finding): string {
 }
 
 function ScanSummaryBar({ result }: { result: Record<string, unknown> }) {
+  // Prioridad: usar summary del backend (siempre disponible) sobre parsear findings
+  const summary = result.summary as Record<string, number> | undefined;
   const findings = parseFindings(result);
-  if (findings.length === 0) return null;
 
+  // Construir counts desde findings o desde summary del backend
   const counts: Record<string, number> = { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0, INFO: 0 };
-  findings.forEach(f => {
-    const s = (f.severity || f.issue_severity || 'INFO').toUpperCase();
-    counts[s in counts ? s : 'INFO']++;
-  });
+
+  if (findings.length > 0) {
+    findings.forEach(f => {
+      const s = ((f.severity || f.issue_severity || f.risk || 'INFO') as string).toUpperCase();
+      counts[s in counts ? s : 'INFO']++;
+    });
+  } else if (summary) {
+    // Fallback: usar counts del summary del backend directamente
+    counts.CRITICAL = Number(summary.critical || 0);
+    counts.HIGH     = Number(summary.high     || 0);
+    counts.MEDIUM   = Number(summary.medium   || 0);
+    counts.LOW      = Number(summary.low      || 0);
+    counts.INFO     = Number(summary.info     || 0);
+  }
+
+  const total = findings.length > 0
+    ? findings.length
+    : Object.values(counts).reduce((a, b) => a + b, 0);
+
+  if (total === 0) return null;
 
   return (
     <div className="summary-bar">
-      <span className="summary-total">{findings.length} hallazgos</span>
+      <span className="summary-total">{total} hallazgos</span>
       {(Object.entries(counts) as [string, number][])
         .filter(([, c]) => c > 0)
         .map(([sev, c]) => (
@@ -190,6 +213,11 @@ function ScanSummaryBar({ result }: { result: Record<string, unknown> }) {
             {c} {sev}
           </span>
         ))}
+      {findings.length === 0 && total > 0 && (
+        <span className="summary-warn" title="Usa 'Ver JSON' para ver los hallazgos en detalle">
+          ⚠ datos en JSON
+        </span>
+      )}
     </div>
   );
 }
@@ -569,7 +597,21 @@ function App() {
 
                 {scanResult ? (
                   <>
+                    {/* Metadata del escaneo */}
+                    <div className="scan-meta-row">
+                      <span className={`type-badge ${((scanResult as any).scan_type || '').toLowerCase()}`}>
+                        {(scanResult as any).scan_type || 'SCAN'}
+                      </span>
+                      <span className="scan-meta-target">
+                        {(scanResult as any).target_url || (scanResult as any).target || ''}
+                      </span>
+                      <span className="scan-meta-tool">
+                        {(scanResult as any).tool || ''}
+                      </span>
+                    </div>
+
                     <ScanSummaryBar result={scanResult} />
+
                     {showRaw ? (
                       <div className="result-display">
                         <pre>{JSON.stringify(scanResult, null, 2)}</pre>
@@ -578,12 +620,48 @@ function App() {
                       <div className="findings-list">
                         {findings.map((f, i) => <FindingCard key={i} f={f} index={i} />)}
                       </div>
-                    ) : (
-                      <div className="no-findings">
-                        <Icons.Check />
-                        <p>Sin vulnerabilidades detectadas</p>
-                      </div>
-                    )}
+                    ) : (() => {
+                      // Intentar extraer findings de campos alternativos
+                      const raw = scanResult as any;
+                      const altFindings: Finding[] =
+                        (Array.isArray(raw?.results?.vulnerabilities) ? raw.results.vulnerabilities : null) ||
+                        (Array.isArray(raw?.data?.vulnerabilities)    ? raw.data.vulnerabilities    : null) ||
+                        [];
+
+                      if (altFindings.length > 0) {
+                        return (
+                          <div className="findings-list">
+                            {altFindings.map((f, i) => <FindingCard key={i} f={f} index={i} />)}
+                          </div>
+                        );
+                      }
+
+                      const summary = raw?.summary as Record<string, number> | undefined;
+                      const totalFromSummary = summary
+                        ? (Number(summary.critical||0) + Number(summary.high||0) +
+                           Number(summary.medium||0)   + Number(summary.low||0))
+                        : 0;
+
+                      return (
+                        <div className="no-findings">
+                          <Icons.Check />
+                          {totalFromSummary > 0 ? (
+                            <>
+                              <p>Hallazgos detectados: {totalFromSummary}</p>
+                              <span>
+                                Los hallazgos están disponibles en el reporte PDF/JSON.
+                                Usa <b>Ver JSON</b> para inspeccionarlos en bruto.
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <p>Sin vulnerabilidades detectadas</p>
+                              <span>El objetivo no presentó problemas en los controles ejecutados.</span>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </>
                 ) : (
                   <div className="empty-state">

@@ -28,7 +28,8 @@
       "Bash(npm run dev > /tmp/frontend.log 2>&1 & *)",
       "Read(//tmp/**)",
       "Bash(pkill -f \"vite\")",
-      "Bash(python -c ' *)"
+      "Bash(python -c ' *)",
+      "Bash(npx tsc *)"
     ]
   }
 }
