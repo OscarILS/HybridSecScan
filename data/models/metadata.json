@@ -1,29 +1,29 @@
 {
   "validation": {
-    "accuracy": 1.0,
-    "precision": 1.0,
-    "recall": 1.0,
-    "f1_score": 1.0,
-    "roc_auc": 1.0
+    "accuracy": 0.8076923076923077,
+    "precision": 0.6944444444444444,
+    "recall": 0.9433962264150944,
+    "f1_score": 0.8,
+    "roc_auc": 0.8513844645920118
   },
   "test": {
-    "accuracy": 1.0,
-    "precision": 1.0,
-    "recall": 1.0,
-    "f1_score": 1.0,
-    "roc_auc": 1.0
+    "accuracy": 0.7692307692307693,
+    "precision": 0.6626506024096386,
+    "recall": 0.9649122807017544,
+    "f1_score": 0.7857142857142857,
+    "roc_auc": 0.7853881278538812
   },
   "confusion_matrix": {
-    "TN": 3923,
-    "FP": 0,
-    "FN": 0,
-    "TP": 5776
+    "TN": 45,
+    "FP": 28,
+    "FN": 2,
+    "TP": 55
   },
   "training_info": {
-    "n_train_samples": 77586,
-    "n_val_samples": 9698,
-    "n_test_samples": 9699,
+    "n_train_samples": 1040,
+    "n_val_samples": 130,
+    "n_test_samples": 130,
     "n_features": 517,
-    "trained_at": "2025-11-25T17:23:56.574238"
+    "trained_at": "2026-06-16T13:43:03.779572"
   }
 }

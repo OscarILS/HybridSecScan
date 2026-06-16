@@ -309,7 +309,7 @@ class TrainingVisualizer:
             # Crear boxplot
             bp = ax.boxplot(
                 data_to_plot,
-                labels=['No Correlacionadas', 'Correlacionadas'],
+                tick_labels=['No Correlacionadas', 'Correlacionadas'],
                 patch_artist=True,
                 widths=0.6,
                 showmeans=True,

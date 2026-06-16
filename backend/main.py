@@ -17,7 +17,12 @@ from typing import Optional
 from datetime import datetime, timezone, timedelta
 import json
 from pydantic import BaseModel, EmailStr
-import hashlib
+
+# Importar scanner DAST real
+try:
+    from backend.dast_scanner import run_dast_scan as execute_dast_scan
+except ImportError:
+    from dast_scanner import run_dast_scan as execute_dast_scan
 
 # Importar módulo de generación de PDF
 try:
@@ -405,6 +410,40 @@ def get_db():
 def read_root():
     return {"message": "Bienvenido a HybridSecScan API - Sistema de auditoría automatizada OWASP API Top 10"}
 
+
+@app.get("/api/model-metrics")
+def get_model_metrics():
+    """
+    Devuelve las métricas reales del modelo ML de correlación.
+
+    Si el modelo no ha sido entrenado, devuelve model_available=False.
+    Para entrenar: python scripts/generate_training_dataset.py
+                   python backend/train_ml_model.py
+    """
+    metadata_path = Path(BASE_DIR) / "data" / "models" / "metadata.json"
+    model_path    = Path(BASE_DIR) / "data" / "models" / "rf_correlator_v1.pkl"
+
+    if not metadata_path.exists():
+        return {
+            "model_available": False,
+            "message": (
+                "Modelo no entrenado. Ejecuta:\n"
+                "  python scripts/generate_training_dataset.py\n"
+                "  python backend/train_ml_model.py"
+            ),
+        }
+
+    with open(metadata_path, "r") as f:
+        metadata = json.load(f)
+
+    return {
+        "model_available": True,
+        "metrics":         metadata.get("test", {}),
+        "validation":      metadata.get("validation", {}),
+        "confusion_matrix":metadata.get("confusion_matrix", {}),
+        "training_info":   metadata.get("training_info", {}),
+    }
+
 @app.get("/scan-results")
 def get_scan_results(db: Session = Depends(get_db)):
     results = db.query(ScanResult).all()
@@ -603,196 +642,74 @@ def run_sast_scan(target_path: str = Form(...), tool: str = Form(...), db: Sessi
 @app.post("/scan/dast")
 def run_dast_scan(target_url: str = Form(...), db: Session = Depends(get_db)):
     """
-    Ejecuta un análisis DAST usando OWASP ZAP sobre la URL indicada.
+    Ejecuta un análisis DAST real contra la URL indicada.
+
+    Estrategia de escaneo (por prioridad):
+      1. OWASP ZAP daemon  — si está corriendo en localhost:8080
+      2. HTTP Security Scanner — probing HTTP activo sin dependencias externas
+
+    Ambas rutas producen hallazgos reales a partir de peticiones HTTP al objetivo.
     """
-    logger.info(f"🔍 Iniciando escaneo DAST contra: {target_url}")
-    
-    # Validar que sea una URL válida
-    if not target_url.startswith(('http://', 'https://')):
-        logger.error(f"❌ URL inválida (sin esquema): {target_url}")
-        raise HTTPException(
-            status_code=400, 
-            detail="URL debe comenzar con http:// o https://"
-        )
-    
-    # Validar que tenga un dominio
+    logger.info(f"🔍 Iniciando escaneo DAST real contra: {target_url}")
+
+    if not target_url.startswith(("http://", "https://")):
+        raise HTTPException(status_code=400, detail="URL debe comenzar con http:// o https://")
+
     from urllib.parse import urlparse
     parsed = urlparse(target_url)
     if not parsed.netloc:
-        logger.error(f"❌ URL inválida (sin dominio): {target_url}")
-        raise HTTPException(
-            status_code=400, 
-            detail="URL inválida - debe incluir dominio (ej: https://ejemplo.com/)"
-        )
-    
-    report_id = str(uuid.uuid4())
-    
+        raise HTTPException(status_code=400, detail="URL inválida - debe incluir dominio")
+
     try:
-        report_path = os.path.join(BASE_DIR, "reports", f"zap_report_{report_id}.json")
+        # ── Escaneo DAST real ──────────────────────────────────────────────
+        dast_result = execute_dast_scan(target_url)
+        dast_result["timestamp"] = datetime.now(timezone.utc).isoformat()
+        dast_result["status"] = "completed"
+
+        logger.info(
+            f"✅ DAST completado — tool: {dast_result['tool']}, "
+            f"hallazgos: {dast_result['summary']['total_issues']}, "
+            f"ZAP disponible: {dast_result.get('zap_available', False)}"
+        )
+
+        # ── Persistir reporte en archivo ───────────────────────────────────
+        report_id = str(uuid.uuid4())
+        report_path = os.path.join(BASE_DIR, "reports", f"dast_report_{report_id}.json")
         os.makedirs(os.path.dirname(report_path), exist_ok=True)
-        
-        logger.info(f"✓ URL validada: {target_url}")
-        logger.info(f"  Host: {parsed.netloc}")
-        logger.info(f"  Path: {parsed.path or '/'}")
-        
-        # Simular escaneo DAST con hallazgos realistas.
-        # Ahora la simulación varía de forma determinística según la URL objetivo
-        # (hash de la URL) para producir resultados reproducibles y distintos por destino.
-        seed = int(hashlib.md5(target_url.encode('utf-8')).hexdigest()[:8], 16)
+        with open(report_path, "w") as f:
+            json.dump(dast_result, f, indent=2)
 
-        # Plantillas de hallazgos posibles
-        vuln_templates = [
-            {
-                "type": "Cross-Site Scripting (XSS)",
-                "alert": "Cross-Site Scripting (XSS)",
-                "severity": "HIGH",
-                "risk": "High",
-                "confidence": "Medium",
-                "parameter": "q",
-                "description": "Cross-site Scripting (XSS) is a type of injection attack where malicious scripts are injected into otherwise benign and trusted websites. XSS attacks occur when an attacker uses a web application to send malicious code to a different end user. The attacker could use XSS to send a malicious script to an unsuspecting user, which can access cookies, session tokens, or other sensitive information retained by the browser.",
-                "solution": "Validate all input and encode output before rendering it. Use Content Security Policy (CSP) headers. Implement proper input sanitization and output encoding using framework-specific functions.",
-                "evidence": "Unvalidated user input reflected in response",
-                "cwe": "CWE-79",
-                "cweid": "79"
-            },
-            {
-                "type": "SQL Injection",
-                "alert": "SQL Injection",
-                "severity": "CRITICAL",
-                "risk": "Critical",
-                "confidence": "High",
-                "parameter": "id",
-                "description": "SQL injection is a web security vulnerability that allows an attacker to interfere with the queries that an application makes to its database. It generally allows an attacker to view data that they are not normally able to retrieve, such as data belonging to other users, or any other data that the application itself is able to access. SQL injection can also allow attackers to modify or delete data, causing persistent changes to the application's content or behavior.",
-                "solution": "Use prepared statements with parameterized queries. Use stored procedures. Validate input using whitelist validation. Escape all user supplied input. Implement least privilege principle for database accounts.",
-                "evidence": "SQL syntax patterns detected in error messages",
-                "cwe": "CWE-89",
-                "cweid": "89"
-            },
-            {
-                "type": "Insecure Direct Object Reference (IDOR)",
-                "alert": "Insecure Direct Object Reference",
-                "severity": "MEDIUM",
-                "risk": "Medium",
-                "confidence": "Medium",
-                "parameter": "user_id",
-                "description": "Insecure Direct Object References (IDOR) occur when an application provides direct access to objects based on user-supplied input. As a result of this vulnerability attackers can bypass authorization and access resources in the system directly, for example database records or files. Insecure Direct Object References allow attackers to bypass authorization and access resources directly by modifying the value of a parameter used to directly point to an object.",
-                "solution": "Implement access control checks for all object references. Use indirect reference maps (e.g., temporary session-specific reference IDs). Verify user authorization before granting access to requested objects. Never expose internal object references directly in URLs or form parameters.",
-                "evidence": "Predictable sequential IDs in URLs",
-                "cwe": "CWE-639",
-                "cweid": "639"
-            },
-            {
-                "type": "Missing Security Headers",
-                "alert": "Missing Security Headers",
-                "severity": "MEDIUM",
-                "risk": "Medium",
-                "confidence": "High",
-                "parameter": "HTTP Headers",
-                "description": "The application is missing important security headers that help protect against common web vulnerabilities. Security headers provide an additional layer of defense against attacks like XSS, clickjacking, MIME-sniffing, and other code injection attacks. Modern browsers use these headers to enhance security and protect users.",
-                "solution": "Implement the following security headers: Content-Security-Policy (CSP) to prevent XSS attacks, X-Frame-Options to prevent clickjacking, X-Content-Type-Options to prevent MIME-sniffing, Strict-Transport-Security (HSTS) to enforce HTTPS, and Referrer-Policy to control referrer information.",
-                "evidence": "Missing Content-Security-Policy, X-Frame-Options headers",
-                "cwe": "CWE-693",
-                "cweid": "693"
-            },
-            {
-                "type": "Open Redirect",
-                "alert": "Open Redirect",
-                "severity": "LOW",
-                "risk": "Low",
-                "confidence": "Low",
-                "parameter": "next",
-                "description": "Open redirect vulnerabilities occur when a web application accepts a user-controlled input that specifies a link to an external site, and uses that link in a redirect. This behavior can be leveraged to facilitate phishing attacks against users of the application. The attacker can construct a URL that redirects to a malicious site that appears to be a legitimate part of the original domain.",
-                "solution": "Avoid using redirects and forwards. If redirects are necessary, validate the URL against a whitelist of allowed destinations. Do not include user-controllable parameters in redirect URLs. Use relative URLs for internal redirects.",
-                "evidence": "Unvalidated redirect parameter",
-                "cwe": "CWE-601",
-                "cweid": "601"
-            },
-            {
-                "type": "Server Information Leak",
-                "alert": "Information Disclosure",
-                "severity": "LOW",
-                "risk": "Low",
-                "confidence": "Medium",
-                "parameter": "response_headers",
-                "description": "The web server discloses sensitive information in HTTP responses, such as detailed error messages, stack traces, or version information. This information can help attackers gain intelligence about the application's internal workings, technology stack, and potential vulnerabilities. Information leakage can significantly ease the process of exploiting other vulnerabilities.",
-                "solution": "Configure custom error pages that don't reveal sensitive information. Disable detailed error messages in production environments. Remove or obfuscate server version headers. Implement proper error handling and logging that separates user-facing messages from internal debugging information.",
-                "evidence": "Stack trace exposed in error response",
-                "cwe": "CWE-200",
-                "cweid": "200"
-            }
-        ]
-
-        # Determinar cuántos hallazgos generar (entre 1 y len(vuln_templates)) basado en seed
-        num_candidates = len(vuln_templates)
-        chosen_count = 1 + (seed % num_candidates)
-
-        vulnerabilities = []
-        for i in range(chosen_count):
-            t = vuln_templates[(seed + i) % num_candidates].copy()
-            # Ajustar la URL y el parámetro objetivo para cada hallazgo
-            path_map = ["/search", "/user", "/profile", "", "/redirect", "/debug"]
-            t['url'] = f"{target_url}{path_map[(seed + i) % len(path_map)]}"
-            # Add a bit of variation in evidence text using seed
-            t['evidence'] = t.get('evidence', '') + f" (source: {hex((seed + i) & 0xffffffff)})"
-            vulnerabilities.append(t)
-
-        dast_findings = {
-            "scan_type": "DAST",
-            "tool": "OWASP ZAP (simulated)",
-            "target_url": target_url,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "status": "completed",
-            "vulnerabilities": vulnerabilities,
-            "summary": {
-                "total_issues": len(vulnerabilities),
-                "critical": len([v for v in vulnerabilities if v.get('severity','').lower()=='critical']),
-                "high": len([v for v in vulnerabilities if v.get('severity','').lower()=='high']),
-                "medium": len([v for v in vulnerabilities if v.get('severity','').lower()=='medium']),
-                "low": len([v for v in vulnerabilities if v.get('severity','').lower()=='low']),
-                "scan_duration": f"{30 + (seed % 60)} seconds",
-                "alerts_found": len(vulnerabilities)
-            }
-        }
-        
-        # Guardar reporte en archivo
-        with open(report_path, 'w') as f:
-            json.dump(dast_findings, f, indent=2)
-        
-        logger.info(f"✓ Reporte guardado en: {report_path}")
-        
-        # Crear registro en BD
+        # ── Crear registro en BD ───────────────────────────────────────────
         scan_result = ScanResult(
             scan_type="DAST",
-            tool="OWASP ZAP",
+            tool=dast_result["tool"],
             target=target_url,
             status="completed",
             result_path=report_path,
-            results=dast_findings  # Guardar los resultados directamente (SQLAlchemy maneja JSON)
+            results=dast_result,
         )
         db.add(scan_result)
         db.commit()
         db.refresh(scan_result)
-        
+
         logger.info(f"✓ Registro en BD creado con ID: {scan_result.id}")
-        
+
         return {
-            "id": scan_result.id,
-            "scan_type": "DAST",
-            "tool": "OWASP ZAP",
-            "target_url": target_url,
-            "status": "completed",
-            "vulnerabilities": dast_findings["vulnerabilities"],
-            "summary": dast_findings["summary"],
-            "report_path": report_path,
-            "message": "Análisis DAST completado exitosamente"
+            "id":              scan_result.id,
+            "scan_type":       "DAST",
+            "tool":            dast_result["tool"],
+            "zap_available":   dast_result.get("zap_available", False),
+            "target_url":      target_url,
+            "status":          "completed",
+            "vulnerabilities": dast_result.get("vulnerabilities", []),
+            "summary":         dast_result.get("summary", {}),
+            "report_path":     report_path,
+            "message":         "Análisis DAST completado exitosamente",
         }
-        
+
     except Exception as e:
         logger.error(f"❌ Error en escaneo DAST: {str(e)}")
-        raise HTTPException(
-            status_code=500, 
-            detail=f"Error ejecutando análisis DAST: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Error ejecutando análisis DAST: {str(e)}")
 
 def _map_bandit_to_vulnerability(bandit_issue: dict, file_path: str) -> Vulnerability:
     """Mapea hallazgo de Bandit a clase Vulnerability para correlación"""
@@ -1249,7 +1166,9 @@ def download_pdf_report(scan_id: str, db: Session = Depends(get_db)):
                                 'url': vuln.get('url', ''),
                                 'description': vuln.get('description', 'No description'),
                                 'solution': vuln.get('solution', ''),
-                                'cwe': vuln.get('cweid', '')
+                                'cwe': vuln.get('cweid', vuln.get('cwe', '')),
+                                'owasp_category': vuln.get('owasp_category', ''),
+                                'parameter': vuln.get('parameter', ''),
                             })
             
             # Usar la distribución de severidad calculada directamente desde los datos
@@ -1300,7 +1219,10 @@ def download_pdf_report(scan_id: str, db: Session = Depends(get_db)):
                             'url': v.get('url', ''),
                             'description': v.get('description', 'No description'),
                             'solution': v.get('solution', ''),
-                            'cwe': v.get('cweid', '')
+                            'cwe': v.get('cweid', v.get('cwe', '')),
+                            'owasp_category': v.get('owasp_category', ''),
+                            'evidence': v.get('evidence', ''),
+                            'parameter': v.get('parameter', ''),
                         })
 
             # Normalizar severities
