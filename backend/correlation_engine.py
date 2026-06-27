@@ -94,50 +94,71 @@ class VulnerabilityCorrelator:
     def _initialize_ml_model(self):
         """
         Inicializa el modelo de Machine Learning para correlación.
-        
+
         Modelo: Random Forest Classifier
         Justificación:
         - Interpretabilidad: Permite feature importance analysis
         - Robustez: Maneja bien datos mixtos (categóricos + numéricos)
-        - Validación: F1=1.00, Accuracy=1.00 en test set (96,983 muestras)
-        
+        - High recall intencional: en seguridad es preferible un falso positivo
+          a perder una vulnerabilidad real (ver metadata.json para métricas reales)
+
         Returns:
             bool: True si se inicializó correctamente, False en caso contrario
         """
         try:
             import joblib
             from pathlib import Path
-            
-            # Intentar cargar modelo pre-entrenado
-            model_path = Path("data/models/rf_correlator_v1.pkl")
-            
+
+            # Resolver ruta del modelo de forma absoluta desde este archivo
+            _base = Path(__file__).resolve().parent.parent
+            model_path = _base / "data" / "models" / "rf_correlator_v1.pkl"
+            metadata_path = _base / "data" / "models" / "metadata.json"
+
             if model_path.exists():
                 print(f"📥 Cargando modelo entrenado desde {model_path}...")
                 model_package = joblib.load(model_path)
-                
+
                 self.ml_classifier = model_package['classifier']
                 self.tfidf_vectorizer = model_package['tfidf_vectorizer']
                 self.label_encoders = model_package.get('label_encoders', {})
-                
-                # Actualizar métricas del modelo
-                self.model_metrics = {
-                    'test_accuracy': 1.00,
-                    'test_precision': 1.00,
-                    'test_recall': 1.00,
-                    'test_f1': 1.00,
-                    'test_roc_auc': 1.00,
-                    'training_samples': 77586,
-                    'validation_samples': 9698,
-                    'test_samples': 9699,
-                    'n_features': model_package.get('feature_count', 517),
-                    'version': model_package.get('version', '1.0.0'),
-                    'trained_at': model_package.get('trained_at', 'unknown')
-                }
-                
+
+                # Cargar métricas reales desde metadata.json — nunca hardcodear
+                if metadata_path.exists():
+                    with open(metadata_path, "r") as f:
+                        stored = json.load(f)
+                    test_m = stored.get("test", {})
+                    train_info = stored.get("training_info", {})
+                    self.model_metrics = {
+                        'test_accuracy':   test_m.get('accuracy',  0.0),
+                        'test_precision':  test_m.get('precision', 0.0),
+                        'test_recall':     test_m.get('recall',    0.0),
+                        'test_f1':         test_m.get('f1_score',  0.0),
+                        'test_roc_auc':    test_m.get('roc_auc',   0.0),
+                        'training_samples': train_info.get('n_train_samples', 0),
+                        'validation_samples': train_info.get('n_val_samples', 0),
+                        'test_samples':    train_info.get('n_test_samples', 0),
+                        'n_features':      model_package.get('feature_count', train_info.get('n_features', 517)),
+                        'version':         model_package.get('version', '1.0.0'),
+                        'trained_at':      model_package.get('trained_at', 'unknown'),
+                    }
+                else:
+                    # metadata.json no encontrado — valores conservadores
+                    self.model_metrics = {
+                        'test_accuracy': 0.0, 'test_precision': 0.0,
+                        'test_recall': 0.0, 'test_f1': 0.0, 'test_roc_auc': 0.0,
+                        'n_features': model_package.get('feature_count', 517),
+                        'version': model_package.get('version', '1.0.0'),
+                        'trained_at': model_package.get('trained_at', 'unknown'),
+                        'warning': 'metadata.json no encontrado — re-entrena el modelo'
+                    }
+
                 print(f"✅ Modelo ML cargado exitosamente")
-                print(f"   Versión: {self.model_metrics['version']}")
-                print(f"   Features: {self.model_metrics['n_features']}")
-                print(f"   F1-Score: {self.model_metrics['test_f1']:.2%}")
+                print(f"   Versión:   {self.model_metrics['version']}")
+                print(f"   Features:  {self.model_metrics['n_features']}")
+                print(f"   Precision: {self.model_metrics['test_precision']:.2%}")
+                print(f"   Recall:    {self.model_metrics['test_recall']:.2%}")
+                print(f"   F1-Score:  {self.model_metrics['test_f1']:.2%}")
+                print(f"   ROC-AUC:   {self.model_metrics['test_roc_auc']:.4f}")
                 return True
             else:
                 print(f"⚠️  Modelo no encontrado en {model_path}")
@@ -456,19 +477,65 @@ class VulnerabilityCorrelator:
         
         return (type1, type2) in related_pairs or (type2, type1) in related_pairs
     
+    @staticmethod
+    def _normalize_endpoint(raw: str) -> str:
+        """
+        Normalizes an endpoint for comparison.
+
+        Handles both SAST inputs (file paths like 'backend/api/users.py') and
+        DAST inputs (full URLs like 'http://localhost:8000/api/users').
+        Both are reduced to a comparable path-like token list.
+        """
+        if not raw:
+            return ""
+        from urllib.parse import urlparse
+        parsed = urlparse(raw)
+        # If it has a scheme it's a URL — use only the path
+        if parsed.scheme in ("http", "https"):
+            path = parsed.path
+        else:
+            path = raw
+        # Strip extension (e.g. .py) so 'users.py' == 'users'
+        from pathlib import Path as _Path
+        path = str(_Path(path).with_suffix(""))
+        return path.strip("/").lower()
+
     def _calculate_endpoint_similarity(self, endpoint1: str, endpoint2: str) -> float:
-        """Calcula similitud entre endpoints usando distancia de Levenshtein"""
-        if not endpoint1 or not endpoint2:
+        """
+        Calculates similarity between two endpoints using normalized Levenshtein.
+
+        Both SAST file paths and DAST URLs are first normalized to their
+        path-only, extension-stripped form before comparison, so that
+        'backend/api/users.py'  vs  'http://localhost:8000/api/users'
+        compares 'backend/api/users' vs 'api/users' instead of comparing
+        the raw strings which share almost no characters.
+        """
+        ep1 = self._normalize_endpoint(endpoint1)
+        ep2 = self._normalize_endpoint(endpoint2)
+
+        if not ep1 or not ep2:
             return 0.0
-            
-        # Normalizar endpoints
-        ep1 = endpoint1.strip('/').lower()
-        ep2 = endpoint2.strip('/').lower()
-        
-        # Distancia de Levenshtein normalizada
+
+        # Exact match after normalization
+        if ep1 == ep2:
+            return 1.0
+
+        # Partial match: if one is a suffix of the other (common case:
+        # 'api/users' is a suffix of 'backend/api/users')
+        if ep1.endswith(ep2) or ep2.endswith(ep1):
+            shorter = min(len(ep1), len(ep2))
+            longer  = max(len(ep1), len(ep2))
+            return 0.85 * (shorter / longer)
+
+        # Last-segment match (e.g. both end with 'users')
+        seg1 = ep1.split("/")[-1]
+        seg2 = ep2.split("/")[-1]
+        if seg1 and seg1 == seg2:
+            return 0.70
+
+        # Levenshtein on the normalized paths
         distance = self._levenshtein_distance(ep1, ep2)
         max_len = max(len(ep1), len(ep2))
-        
         return 1.0 - (distance / max_len) if max_len > 0 else 0.0
     
     def _levenshtein_distance(self, s1: str, s2: str) -> int:
@@ -587,16 +654,26 @@ class VulnerabilityCorrelator:
         return report
     
     def _estimate_false_positive_reduction(self, correlations: List) -> float:
-        """Estima reducción de falsos positivos basado en correlaciones"""
-        high_confidence = len([c for c in correlations if c[2] > 0.8])
-        total_findings = len(self.sast_findings) + len(self.dast_findings)
-        
-        if total_findings == 0:
+        """
+        Estimates false-positive reduction as the percentage of SAST-only findings
+        that are NOT corroborated by a DAST finding.
+
+        Rationale: A SAST finding that has no matching DAST evidence is a
+        candidate false positive — it exists in static code analysis but was
+        not observable at runtime.  The reduction estimate is:
+
+            FP_reduction = (uncorroborated_sast / total_sast) * 100
+
+        This is a conservative lower-bound; the real reduction can be higher
+        because DAST also surfaces findings not present in SAST.
+        """
+        if not self.sast_findings:
             return 0.0
-            
-        # Estimación basada en estudios empíricos
-        reduction_rate = (high_confidence * 0.6) / total_findings
-        return min(reduction_rate * 100, 60.0)  # Máximo 60% de reducción
+
+        corroborated_sast_ids = {c[0].id for c in correlations if c[2] > 0.7}
+        uncorroborated = len(self.sast_findings) - len(corroborated_sast_ids)
+        reduction = (uncorroborated / len(self.sast_findings)) * 100
+        return round(min(reduction, 100.0), 2)
     
     def _get_correlation_factors(self, sast_vuln: Vulnerability, dast_vuln: Vulnerability) -> Dict:
         """Obtiene factores que contribuyen a la correlación"""

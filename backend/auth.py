@@ -3,17 +3,37 @@ Sistema de autenticación JWT para HybridSecScan.
 Proporciona funciones para crear y verificar tokens, autenticar usuarios y gestionar contraseñas.
 """
 
+import sys
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-from jose import JWTError, jwt
-from passlib.context import CryptContext
+
+from dotenv import load_dotenv
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
+from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 import os
 
-# Configuración de seguridad
-SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
+load_dotenv()
+
+_PLACEHOLDER = "your-secret-key-change-in-production"
+SECRET_KEY = os.getenv("SECRET_KEY", _PLACEHOLDER)
+
+if not SECRET_KEY:
+    SECRET_KEY = _PLACEHOLDER
+    print(
+        "CRITICAL: SECRET_KEY no está definida. Usando placeholder — "
+        "establece SECRET_KEY en .env antes de cualquier despliegue.",
+        file=sys.stderr,
+    )
+elif SECRET_KEY == _PLACEHOLDER:
+    print(
+        "WARNING: SECRET_KEY está usando el valor por defecto. "
+        "Define una clave segura en .env antes de usar en producción.",
+        file=sys.stderr,
+    )
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 
@@ -95,28 +115,22 @@ def authenticate_user(db: Session, username: str, password: str):
     return user
 
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends()):
+def get_current_user(token: str = Depends(oauth2_scheme)):
     """
     Obtiene el usuario actual desde el token JWT.
-    
-    Args:
-        token: Token JWT del header Authorization
-        db: Sesión de base de datos
-        
-    Returns:
-        Usuario actual autenticado
-        
-    Raises:
-        HTTPException: Si el token es inválido o el usuario no existe
+    Abre y cierra su propia sesión de DB para evitar fugas de recursos.
     """
-    from database.models import User, get_db
-    
+    try:
+        from backend.dependencies import SessionLocal
+    except ImportError:
+        from dependencies import SessionLocal  # type: ignore[no-redef]
+
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    
+
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
@@ -124,14 +138,16 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
             raise credentials_exception
     except JWTError:
         raise credentials_exception
-    
-    # Obtener sesión de base de datos
-    db = next(get_db())
-    user = db.query(User).filter(User.username == username).first()
-    if user is None:
-        raise credentials_exception
-    
-    return user
+
+    db = SessionLocal()
+    try:
+        from models import User  # database dir on sys.path via dependencies
+        user = db.query(User).filter(User.username == username).first()
+        if user is None:
+            raise credentials_exception
+        return user
+    finally:
+        db.close()
 
 
 def get_current_active_user(current_user = Depends(get_current_user)):

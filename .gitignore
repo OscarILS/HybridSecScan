@@ -78,6 +78,18 @@ reports/*
 *.db
 *.sqlite
 
+# ML model binaries (large files — regenerate with scripts/setup.py)
+data/models/*.pkl
+data/models/*.h5
+data/models/*.pt
+
+# Test databases
+test_integration.db
+*.test.db
+
+# Hybridscan audit log
+hybridscan_audit.log
+
 # Logs
 *.log
 logs/
