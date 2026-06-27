@@ -1,0 +1,41 @@
+{
+  "summary": {
+    "total_sast_findings": 12,
+    "total_dast_findings": 12,
+    "high_confidence_correlations": 1,
+    "medium_confidence_correlations": 0,
+    "low_confidence_correlations": 0,
+    "potential_false_positives_reduced": 91.67,
+    "critical_issues": 0,
+    "high_severity_findings": 0,
+    "medium_severity_findings": 0,
+    "low_severity_findings": 24
+  },
+  "correlations": [
+    {
+      "sast_vulnerability": {
+        "id": "SAST_B608_25",
+        "type": "sql_injection",
+        "file": "C:\\Users\\OSCAR\\Documents\\GitHub\\HybridSecScan\\ProgramasPruebas\\vulnerable_app.py",
+        "line": 25,
+        "severity": 2,
+        "tool": "bandit"
+      },
+      "dast_vulnerability": {
+        "id": "DAST_SQL_Injection",
+        "type": "sql_injection",
+        "endpoint": "/login",
+        "severity": 3,
+        "tool": "http_scanner"
+      },
+      "confidence_score": 0.8936283157862958,
+      "correlation_factors": {
+        "type_match": true,
+        "endpoint_similarity": 1.0,
+        "severity_similarity": 0.6666666666666667,
+        "cwe_match": true,
+        "owasp_category_match": false
+      }
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "summary": {
+    "total_sast_findings": 9,
+    "total_dast_findings": 23,
+    "high_confidence_correlations": 0,
+    "medium_confidence_correlations": 0,
+    "low_confidence_correlations": 1,
+    "potential_false_positives_reduced": 100.0,
+    "critical_issues": 0,
+    "high_severity_findings": 0,
+    "medium_severity_findings": 0,
+    "low_severity_findings": 32
+  },
+  "correlations": [
+    {
+      "sast_vulnerability": {
+        "id": "SAST_javascript.express.security.audit.express-open-redirect.express-open-redirect_19",
+        "type": "xss",
+        "file": "C:\\Users\\OSCAR\\Documents\\GitHub\\HybridSecScan\\juiceshop_src\\routes\\redirect.ts",
+        "line": 19,
+        "severity": 2,
+        "tool": "semgrep"
+      },
+      "dast_vulnerability": {
+        "id": "DAST_Sensitive_Endpoint_Exposed",
+        "type": "security_misconfiguration",
+        "endpoint": "http://localhost:3000/metrics",
+        "severity": 2,
+        "tool": "http_scanner"
+      },
+      "confidence_score": 0.45000000000000007,
+      "correlation_factors": {
+        "type_match": false,
+        "endpoint_similarity": 0.375,
+        "severity_similarity": 1.0,
+        "cwe_match": false,
+        "owasp_category_match": false
+      }
+    }
+  ]
+}

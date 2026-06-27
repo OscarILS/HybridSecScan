@@ -1,0 +1,331 @@
+{
+  "scan_type": "DAST",
+  "tool": "HTTP Security Scanner (Active Probe)",
+  "zap_available": false,
+  "target_url": "http://localhost:5000",
+  "vulnerabilities": [
+    {
+      "id": "f7452085-956c-4ef5-a39a-7ff6f62592a9",
+      "type": "Missing Security Header",
+      "alert": "Header ausente: Content-Security-Policy",
+      "severity": "HIGH",
+      "risk": "High",
+      "confidence": "High",
+      "url": "http://localhost:5000",
+      "parameter": "Content-Security-Policy",
+      "description": "El header HTTP \"Content-Security-Policy\" no est\u00e1 presente en la respuesta. Previene XSS e inyecci\u00f3n de contenido.",
+      "solution": "Agregar el header \"Content-Security-Policy\" en la configuraci\u00f3n del servidor.",
+      "evidence": "Header no encontrado. Headers presentes: ['Connection', 'Content-Length', 'Content-Type', 'Date', 'Server']",
+      "cwe": "CWE-693",
+      "cweid": "693",
+      "owasp_category": "API7:2023",
+      "source": "HTTP Scanner \u2013 Security Headers",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:5000",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Inspecci\u00f3n de cabeceras de seguridad HTTP",
+        "response": "HTTP 404 \u2014 5 headers recibidos",
+        "missing_header": "Content-Security-Policy"
+      }
+    },
+    {
+      "id": "48c964e1-c06d-4043-b0fe-395995070c24",
+      "type": "Missing Security Header",
+      "alert": "Header ausente: X-Frame-Options",
+      "severity": "MEDIUM",
+      "risk": "Medium",
+      "confidence": "High",
+      "url": "http://localhost:5000",
+      "parameter": "X-Frame-Options",
+      "description": "El header HTTP \"X-Frame-Options\" no est\u00e1 presente en la respuesta. Previene ataques de clickjacking.",
+      "solution": "Agregar el header \"X-Frame-Options\" en la configuraci\u00f3n del servidor.",
+      "evidence": "Header no encontrado. Headers presentes: ['Connection', 'Content-Length', 'Content-Type', 'Date', 'Server']",
+      "cwe": "CWE-1021",
+      "cweid": "1021",
+      "owasp_category": "API7:2023",
+      "source": "HTTP Scanner \u2013 Security Headers",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:5000",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Inspecci\u00f3n de cabeceras de seguridad HTTP",
+        "response": "HTTP 404 \u2014 5 headers recibidos",
+        "missing_header": "X-Frame-Options"
+      }
+    },
+    {
+      "id": "0b5cb019-c3d0-4fb8-beaf-646dad0b563c",
+      "type": "Missing Security Header",
+      "alert": "Header ausente: X-Content-Type-Options",
+      "severity": "LOW",
+      "risk": "Low",
+      "confidence": "High",
+      "url": "http://localhost:5000",
+      "parameter": "X-Content-Type-Options",
+      "description": "El header HTTP \"X-Content-Type-Options\" no est\u00e1 presente en la respuesta. Previene MIME-type sniffing.",
+      "solution": "Agregar el header \"X-Content-Type-Options\" en la configuraci\u00f3n del servidor.",
+      "evidence": "Header no encontrado. Headers presentes: ['Connection', 'Content-Length', 'Content-Type', 'Date', 'Server']",
+      "cwe": "CWE-693",
+      "cweid": "693",
+      "owasp_category": "API7:2023",
+      "source": "HTTP Scanner \u2013 Security Headers",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:5000",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Inspecci\u00f3n de cabeceras de seguridad HTTP",
+        "response": "HTTP 404 \u2014 5 headers recibidos",
+        "missing_header": "X-Content-Type-Options"
+      }
+    },
+    {
+      "id": "cf7bcebc-aec9-401d-a831-5094b9a0af28",
+      "type": "Missing Security Header",
+      "alert": "Header ausente: Strict-Transport-Security",
+      "severity": "HIGH",
+      "risk": "High",
+      "confidence": "High",
+      "url": "http://localhost:5000",
+      "parameter": "Strict-Transport-Security",
+      "description": "El header HTTP \"Strict-Transport-Security\" no est\u00e1 presente en la respuesta. Fuerza conexiones HTTPS.",
+      "solution": "Agregar el header \"Strict-Transport-Security\" en la configuraci\u00f3n del servidor.",
+      "evidence": "Header no encontrado. Headers presentes: ['Connection', 'Content-Length', 'Content-Type', 'Date', 'Server']",
+      "cwe": "CWE-319",
+      "cweid": "319",
+      "owasp_category": "API7:2023",
+      "source": "HTTP Scanner \u2013 Security Headers",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:5000",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Inspecci\u00f3n de cabeceras de seguridad HTTP",
+        "response": "HTTP 404 \u2014 5 headers recibidos",
+        "missing_header": "Strict-Transport-Security"
+      }
+    },
+    {
+      "id": "a307b5bc-4948-431c-8e03-eacdf7e06c97",
+      "type": "Missing Security Header",
+      "alert": "Header ausente: Referrer-Policy",
+      "severity": "LOW",
+      "risk": "Low",
+      "confidence": "High",
+      "url": "http://localhost:5000",
+      "parameter": "Referrer-Policy",
+      "description": "El header HTTP \"Referrer-Policy\" no est\u00e1 presente en la respuesta. Controla informaci\u00f3n del referrer.",
+      "solution": "Agregar el header \"Referrer-Policy\" en la configuraci\u00f3n del servidor.",
+      "evidence": "Header no encontrado. Headers presentes: ['Connection', 'Content-Length', 'Content-Type', 'Date', 'Server']",
+      "cwe": "CWE-200",
+      "cweid": "200",
+      "owasp_category": "API7:2023",
+      "source": "HTTP Scanner \u2013 Security Headers",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:5000",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Inspecci\u00f3n de cabeceras de seguridad HTTP",
+        "response": "HTTP 404 \u2014 5 headers recibidos",
+        "missing_header": "Referrer-Policy"
+      }
+    },
+    {
+      "id": "1af9dad7-1e18-423c-83db-992fe48b039f",
+      "type": "Missing Security Header",
+      "alert": "Header ausente: Permissions-Policy",
+      "severity": "LOW",
+      "risk": "Low",
+      "confidence": "High",
+      "url": "http://localhost:5000",
+      "parameter": "Permissions-Policy",
+      "description": "El header HTTP \"Permissions-Policy\" no est\u00e1 presente en la respuesta. Controla permisos del navegador.",
+      "solution": "Agregar el header \"Permissions-Policy\" en la configuraci\u00f3n del servidor.",
+      "evidence": "Header no encontrado. Headers presentes: ['Connection', 'Content-Length', 'Content-Type', 'Date', 'Server']",
+      "cwe": "CWE-693",
+      "cweid": "693",
+      "owasp_category": "API7:2023",
+      "source": "HTTP Scanner \u2013 Security Headers",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:5000",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Inspecci\u00f3n de cabeceras de seguridad HTTP",
+        "response": "HTTP 404 \u2014 5 headers recibidos",
+        "missing_header": "Permissions-Policy"
+      }
+    },
+    {
+      "id": "f173b0c1-fc92-45e5-98e6-8289d346b127",
+      "type": "Missing Rate Limiting",
+      "alert": "Sin control de tasa (rate limiting) detectable",
+      "severity": "MEDIUM",
+      "risk": "Medium",
+      "confidence": "Medium",
+      "url": "http://localhost:5000",
+      "parameter": "HTTP responses",
+      "description": "Se enviaron 15 peticiones r\u00e1pidas sin obtener respuesta 429 ni headers de rate limiting. La API puede ser vulnerable a abuso de recursos o ataques de fuerza bruta.",
+      "solution": "Implementar rate limiting por IP y por usuario. Devolver HTTP 429 con header Retry-After al superar el l\u00edmite.",
+      "evidence": "15 requests. C\u00f3digos: [404, 404, 404, 404, 404, 404, 404, 404, 404, 404, 404, 404, 404, 404, 404]",
+      "cwe": "CWE-770",
+      "cweid": "770",
+      "owasp_category": "API4:2023",
+      "source": "HTTP Scanner \u2013 Rate Limiting",
+      "request_payload": {
+        "method": "GET (x15)",
+        "url": "http://localhost:5000",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Flood de peticiones: 15 GETs a ~20 req/s (delay=50ms)",
+        "response": "Todos respondieron sin HTTP 429. C\u00f3digos obtenidos: [404, 404, 404, 404, 404, 404, 404, 404, 404, 404, 404, 404, 404, 404, 404]. Headers de rate limit ausentes (X-RateLimit-*, Retry-After)."
+      }
+    },
+    {
+      "id": "d7a0bd7a-8f81-4e99-bca1-81c7738ac2c3",
+      "type": "Server Information Disclosure",
+      "alert": "Header Server expone informaci\u00f3n del servidor",
+      "severity": "LOW",
+      "risk": "Low",
+      "confidence": "High",
+      "url": "http://localhost:5000",
+      "parameter": "Server",
+      "description": "El header \"Server\" revela versi\u00f3n del servidor web (\"Werkzeug/3.1.8 Python/3.11.9\"). Facilita ataques dirigidos a versiones espec\u00edficas.",
+      "solution": "Eliminar o suprimir el header \"Server\" en la configuraci\u00f3n del servidor.",
+      "evidence": "Server: Werkzeug/3.1.8 Python/3.11.9",
+      "cwe": "CWE-200",
+      "cweid": "200",
+      "owasp_category": "API8:2023",
+      "source": "HTTP Scanner \u2013 Information Disclosure",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:5000",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Inspecci\u00f3n de headers de respuesta que revelan informaci\u00f3n del servidor",
+        "response": "HTTP 404 | Header filtrado \u2192 Server: Werkzeug/3.1.8 Python/3.11.9"
+      }
+    },
+    {
+      "id": "3eafbfbe-a11b-4891-a60c-5b8a6227818d",
+      "type": "Insecure Transport",
+      "alert": "API accesible sin HTTPS sin redirecci\u00f3n",
+      "severity": "HIGH",
+      "risk": "High",
+      "confidence": "High",
+      "url": "http://localhost:5000",
+      "parameter": "scheme",
+      "description": "La API acepta conexiones HTTP sin cifrar y no redirige a HTTPS. Los datos transmitidos son vulnerables a interceptaci\u00f3n (MITM).",
+      "solution": "Forzar HTTPS. Configurar redirecci\u00f3n 301 HTTP \u2192 HTTPS y habilitar HSTS.",
+      "evidence": "HTTP 404 desde http://localhost:5000 sin redirecci\u00f3n HTTPS",
+      "cwe": "CWE-319",
+      "cweid": "319",
+      "owasp_category": "API8:2023",
+      "source": "HTTP Scanner \u2013 SSL/TLS",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:5000",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Verificaci\u00f3n de redirecci\u00f3n HTTP \u2192 HTTPS (sin seguir redirects)",
+        "response": "HTTP 404 | Location: (sin Location header) | Sin redirecci\u00f3n a HTTPS \u2014 tr\u00e1fico transmitido en texto plano"
+      }
+    },
+    {
+      "id": "02371a8b-cdcc-4a2b-b345-f3a83dcf24f0",
+      "type": "SQL Injection",
+      "alert": "Inyecci\u00f3n SQL confirmada por respuesta del servidor",
+      "severity": "HIGH",
+      "risk": "High",
+      "confidence": "High",
+      "url": "http://localhost:5000/login",
+      "parameter": "username / password",
+      "description": "La respuesta del endpoint /login contiene fragmentos SQL (select , from , where ) al recibir el payload '' OR '1'='1'. Indica que la entrada del usuario se interpola directamente en la query SQL.",
+      "solution": "Usar consultas parametrizadas o prepared statements. Nunca construir queries SQL mediante concatenaci\u00f3n/f-string de entradas de usuario.",
+      "evidence": "Query: SELECT * FROM users WHERE username='' OR '1'='1' AND password='' OR '1'='1'",
+      "cwe": "CWE-89",
+      "cweid": "89",
+      "owasp_category": "API3:2023",
+      "source": "HTTP Scanner \u2013 Active SQL Injection Probe",
+      "request_payload": {
+        "method": "POST",
+        "url": "http://localhost:5000/login",
+        "body": "username=' OR '1'='1&password=' OR '1'='1",
+        "probe": "SQL injection via form login",
+        "response": "HTTP 200 | indicadores: ['select ', 'from ', 'where ', \"' or \", 'query:']"
+      }
+    },
+    {
+      "id": "767eb142-9871-4739-b2bb-549d28bff59e",
+      "type": "Path Traversal",
+      "alert": "Path traversal confirmado \u2014 acceso a archivos del sistema",
+      "severity": "HIGH",
+      "risk": "High",
+      "confidence": "High",
+      "url": "http://localhost:5000/read_file",
+      "parameter": "file",
+      "description": "El endpoint /read_file permite acceder a archivos fuera del directorio de la aplicaci\u00f3n. Payload 'C:\\Windows\\win.ini' devolvi\u00f3 contenido que coincide con indicadores de sistema (fonts, [extensions]).",
+      "solution": "Validar y sanitizar todos los par\u00e1metros de ruta de archivo. Usar os.path.realpath() y verificar que el path resultante est\u00e9 dentro del directorio permitido.",
+      "evidence": "; for 16-bit app support\n[fonts]\n[extensions]\n[mci extensions]\n[files]\n[Mail]\nMAPI=1\n",
+      "cwe": "CWE-22",
+      "cweid": "22",
+      "owasp_category": "API1:2023",
+      "source": "HTTP Scanner \u2013 Active Path Traversal Probe",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:5000/read_file",
+        "params": {
+          "file": "C:\\Windows\\win.ini"
+        },
+        "probe": "Path traversal via file parameter",
+        "response": "HTTP 200 | 85 bytes | indicadores: ['fonts', '[extensions]']"
+      }
+    },
+    {
+      "id": "648f5c5e-ced7-43f5-a878-892ae9e7751e",
+      "type": "Error Disclosure - Debug Mode",
+      "alert": "Stack trace completo expuesto \u2014 modo debug activo",
+      "severity": "HIGH",
+      "risk": "High",
+      "confidence": "High",
+      "url": "http://localhost:5000/deserialize",
+      "parameter": "debug_mode",
+      "description": "La aplicaci\u00f3n est\u00e1 corriendo en modo debug y expone stack traces completos de Python. Se detect\u00f3 'Traceback (most recent call last)' en la respuesta HTTP. Revela rutas internas, versiones de librer\u00edas y l\u00f3gica de la aplicaci\u00f3n.",
+      "solution": "Deshabilitar debug=True en producci\u00f3n. Configurar app.run(debug=False) o usar FLASK_ENV=production.",
+      "evidence": "<!doctype html>\n<html lang=en>\n  <head>\n    <title>flask.debughelpers.DebugFilesKeyError: You tried to access the file &#39;data&#39; in the request.files dictionary but it does not exist. The mimetype for the request is &#39;application/x-www-form-urlencoded&#39; instead of &#39;multipart/form-data&#39; which means that no file contents were transmitted. To fix this error you should provide encty",
+      "cwe": "CWE-209",
+      "cweid": "209",
+      "owasp_category": "API8:2023",
+      "source": "HTTP Scanner \u2013 Active Debug Probe",
+      "request_payload": {
+        "method": "POST",
+        "url": "http://localhost:5000/deserialize",
+        "probe": "Error disclosure via malformed input",
+        "response": "HTTP 500 | indicadores: ['Traceback (most recent call last)', 'File \"', 'line ', 'DebugFilesKeyError', 'werkzeug']"
+      }
+    }
+  ],
+  "summary": {
+    "total_issues": 12,
+    "alerts_found": 12,
+    "passive_checks": 9,
+    "active_probes": 3,
+    "critical": 0,
+    "high": 6,
+    "medium": 2,
+    "low": 4
+  }
+}

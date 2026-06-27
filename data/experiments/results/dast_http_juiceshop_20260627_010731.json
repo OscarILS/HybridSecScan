@@ -1,0 +1,619 @@
+{
+  "scan_type": "DAST",
+  "tool": "HTTP Security Scanner",
+  "zap_available": false,
+  "target_url": "http://localhost:3000",
+  "vulnerabilities": [
+    {
+      "id": "70b76318-ca3b-44e3-9207-06dc997054c4",
+      "type": "Missing Security Header",
+      "alert": "Header ausente: Content-Security-Policy",
+      "severity": "HIGH",
+      "risk": "High",
+      "confidence": "High",
+      "url": "http://localhost:3000",
+      "parameter": "Content-Security-Policy",
+      "description": "El header HTTP \"Content-Security-Policy\" no est\u00e1 presente en la respuesta. Previene XSS e inyecci\u00f3n de contenido.",
+      "solution": "Agregar el header \"Content-Security-Policy\" en la configuraci\u00f3n del servidor.",
+      "evidence": "Header no encontrado. Headers presentes: ['Accept-Ranges', 'Access-Control-Allow-Origin', 'Cache-Control', 'Connection', 'Content-Encoding', 'Content-Type', 'Date', 'ETag', 'Feature-Policy', 'Keep-Alive', 'Last-Modified', 'Transfer-Encoding', 'Vary', 'X-Content-Type-Options', 'X-Frame-Options', 'X-Recruiting']",
+      "cwe": "CWE-693",
+      "cweid": "693",
+      "owasp_category": "API7:2023",
+      "source": "HTTP Scanner \u2013 Security Headers",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:3000",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Inspecci\u00f3n de cabeceras de seguridad HTTP",
+        "response": "HTTP 200 \u2014 16 headers recibidos",
+        "missing_header": "Content-Security-Policy"
+      }
+    },
+    {
+      "id": "57a2a065-28cf-4f3a-a1cc-a24fe8aa53ec",
+      "type": "Missing Security Header",
+      "alert": "Header ausente: Strict-Transport-Security",
+      "severity": "HIGH",
+      "risk": "High",
+      "confidence": "High",
+      "url": "http://localhost:3000",
+      "parameter": "Strict-Transport-Security",
+      "description": "El header HTTP \"Strict-Transport-Security\" no est\u00e1 presente en la respuesta. Fuerza conexiones HTTPS.",
+      "solution": "Agregar el header \"Strict-Transport-Security\" en la configuraci\u00f3n del servidor.",
+      "evidence": "Header no encontrado. Headers presentes: ['Accept-Ranges', 'Access-Control-Allow-Origin', 'Cache-Control', 'Connection', 'Content-Encoding', 'Content-Type', 'Date', 'ETag', 'Feature-Policy', 'Keep-Alive', 'Last-Modified', 'Transfer-Encoding', 'Vary', 'X-Content-Type-Options', 'X-Frame-Options', 'X-Recruiting']",
+      "cwe": "CWE-319",
+      "cweid": "319",
+      "owasp_category": "API7:2023",
+      "source": "HTTP Scanner \u2013 Security Headers",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:3000",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Inspecci\u00f3n de cabeceras de seguridad HTTP",
+        "response": "HTTP 200 \u2014 16 headers recibidos",
+        "missing_header": "Strict-Transport-Security"
+      }
+    },
+    {
+      "id": "ea64267b-9290-47b6-a5f8-b24366ed67f1",
+      "type": "Missing Security Header",
+      "alert": "Header ausente: Referrer-Policy",
+      "severity": "LOW",
+      "risk": "Low",
+      "confidence": "High",
+      "url": "http://localhost:3000",
+      "parameter": "Referrer-Policy",
+      "description": "El header HTTP \"Referrer-Policy\" no est\u00e1 presente en la respuesta. Controla informaci\u00f3n del referrer.",
+      "solution": "Agregar el header \"Referrer-Policy\" en la configuraci\u00f3n del servidor.",
+      "evidence": "Header no encontrado. Headers presentes: ['Accept-Ranges', 'Access-Control-Allow-Origin', 'Cache-Control', 'Connection', 'Content-Encoding', 'Content-Type', 'Date', 'ETag', 'Feature-Policy', 'Keep-Alive', 'Last-Modified', 'Transfer-Encoding', 'Vary', 'X-Content-Type-Options', 'X-Frame-Options', 'X-Recruiting']",
+      "cwe": "CWE-200",
+      "cweid": "200",
+      "owasp_category": "API7:2023",
+      "source": "HTTP Scanner \u2013 Security Headers",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:3000",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Inspecci\u00f3n de cabeceras de seguridad HTTP",
+        "response": "HTTP 200 \u2014 16 headers recibidos",
+        "missing_header": "Referrer-Policy"
+      }
+    },
+    {
+      "id": "2bc4dd2c-ddc6-4c3e-9471-24c75417e7d4",
+      "type": "Missing Security Header",
+      "alert": "Header ausente: Permissions-Policy",
+      "severity": "LOW",
+      "risk": "Low",
+      "confidence": "High",
+      "url": "http://localhost:3000",
+      "parameter": "Permissions-Policy",
+      "description": "El header HTTP \"Permissions-Policy\" no est\u00e1 presente en la respuesta. Controla permisos del navegador.",
+      "solution": "Agregar el header \"Permissions-Policy\" en la configuraci\u00f3n del servidor.",
+      "evidence": "Header no encontrado. Headers presentes: ['Accept-Ranges', 'Access-Control-Allow-Origin', 'Cache-Control', 'Connection', 'Content-Encoding', 'Content-Type', 'Date', 'ETag', 'Feature-Policy', 'Keep-Alive', 'Last-Modified', 'Transfer-Encoding', 'Vary', 'X-Content-Type-Options', 'X-Frame-Options', 'X-Recruiting']",
+      "cwe": "CWE-693",
+      "cweid": "693",
+      "owasp_category": "API7:2023",
+      "source": "HTTP Scanner \u2013 Security Headers",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:3000",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Inspecci\u00f3n de cabeceras de seguridad HTTP",
+        "response": "HTTP 200 \u2014 16 headers recibidos",
+        "missing_header": "Permissions-Policy"
+      }
+    },
+    {
+      "id": "fb7e7785-e0fa-4b95-a867-c77b454f765b",
+      "type": "CORS Misconfiguration",
+      "alert": "CORS: Wildcard sin restricci\u00f3n de origen",
+      "severity": "MEDIUM",
+      "risk": "Medium",
+      "confidence": "Medium",
+      "url": "http://localhost:3000",
+      "parameter": "Access-Control-Allow-Origin",
+      "description": "El servidor permite peticiones desde cualquier origen (*).",
+      "solution": "Restringir Access-Control-Allow-Origin a or\u00edgenes conocidos.",
+      "evidence": "Access-Control-Allow-Origin: *",
+      "cwe": "CWE-942",
+      "cweid": "942",
+      "owasp_category": "API8:2023",
+      "source": "HTTP Scanner \u2013 CORS",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:3000",
+        "sent_headers": {
+          "Origin": "https://evil-attacker.example.com",
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Inyecci\u00f3n de origen hostil para verificar pol\u00edtica CORS",
+        "response": "HTTP 200 | Access-Control-Allow-Origin: * | Access-Control-Allow-Credentials: (ausente)"
+      }
+    },
+    {
+      "id": "0fe15549-0ec8-4c32-a174-0efa31cacd78",
+      "type": "Sensitive Endpoint Exposed",
+      "alert": "Endpoint sensible accesible: /.env",
+      "severity": "HIGH",
+      "risk": "High",
+      "confidence": "High",
+      "url": "http://localhost:3000/.env",
+      "parameter": "path",
+      "description": "Variables de entorno expuestas. El endpoint /.env devuelve HTTP 200 sin requerir autenticaci\u00f3n.",
+      "solution": "Proteger /.env con autenticaci\u00f3n/autorizaci\u00f3n o deshabilitarlo.",
+      "evidence": "HTTP 200 en http://localhost:3000/.env  |  Content-Type: text/html; charset=UTF-8",
+      "cwe": "CWE-200",
+      "cweid": "200",
+      "owasp_category": "API9:2023",
+      "source": "HTTP Scanner \u2013 Endpoint Discovery",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:3000/.env",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Descubrimiento de ruta sensible: /.env",
+        "response": "HTTP 200 | Content-Type: text/html; charset=UTF-8 | Content-Length: 9903 bytes"
+      }
+    },
+    {
+      "id": "8636067e-418d-44c3-aebd-8e034a644b43",
+      "type": "Sensitive Endpoint Exposed",
+      "alert": "Endpoint sensible accesible: /config",
+      "severity": "HIGH",
+      "risk": "High",
+      "confidence": "High",
+      "url": "http://localhost:3000/config",
+      "parameter": "path",
+      "description": "Endpoint de configuraci\u00f3n accesible. El endpoint /config devuelve HTTP 200 sin requerir autenticaci\u00f3n.",
+      "solution": "Proteger /config con autenticaci\u00f3n/autorizaci\u00f3n o deshabilitarlo.",
+      "evidence": "HTTP 200 en http://localhost:3000/config  |  Content-Type: text/html; charset=UTF-8",
+      "cwe": "CWE-200",
+      "cweid": "200",
+      "owasp_category": "API9:2023",
+      "source": "HTTP Scanner \u2013 Endpoint Discovery",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:3000/config",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Descubrimiento de ruta sensible: /config",
+        "response": "HTTP 200 | Content-Type: text/html; charset=UTF-8 | Content-Length: 9903 bytes"
+      }
+    },
+    {
+      "id": "cee8c8bc-29f4-4940-80e5-a36d209ab3d2",
+      "type": "Sensitive Endpoint Exposed",
+      "alert": "Endpoint sensible accesible: /config.json",
+      "severity": "HIGH",
+      "risk": "High",
+      "confidence": "High",
+      "url": "http://localhost:3000/config.json",
+      "parameter": "path",
+      "description": "Configuraci\u00f3n JSON expuesta. El endpoint /config.json devuelve HTTP 200 sin requerir autenticaci\u00f3n.",
+      "solution": "Proteger /config.json con autenticaci\u00f3n/autorizaci\u00f3n o deshabilitarlo.",
+      "evidence": "HTTP 200 en http://localhost:3000/config.json  |  Content-Type: text/html; charset=UTF-8",
+      "cwe": "CWE-200",
+      "cweid": "200",
+      "owasp_category": "API9:2023",
+      "source": "HTTP Scanner \u2013 Endpoint Discovery",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:3000/config.json",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Descubrimiento de ruta sensible: /config.json",
+        "response": "HTTP 200 | Content-Type: text/html; charset=UTF-8 | Content-Length: 9903 bytes"
+      }
+    },
+    {
+      "id": "80d5b92d-3532-4526-876c-df0c230f4914",
+      "type": "Sensitive Endpoint Exposed",
+      "alert": "Endpoint sensible accesible: /admin",
+      "severity": "HIGH",
+      "risk": "High",
+      "confidence": "High",
+      "url": "http://localhost:3000/admin",
+      "parameter": "path",
+      "description": "Panel administrativo expuesto. El endpoint /admin devuelve HTTP 200 sin requerir autenticaci\u00f3n.",
+      "solution": "Proteger /admin con autenticaci\u00f3n/autorizaci\u00f3n o deshabilitarlo.",
+      "evidence": "HTTP 200 en http://localhost:3000/admin  |  Content-Type: text/html; charset=UTF-8",
+      "cwe": "CWE-200",
+      "cweid": "200",
+      "owasp_category": "API9:2023",
+      "source": "HTTP Scanner \u2013 Endpoint Discovery",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:3000/admin",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Descubrimiento de ruta sensible: /admin",
+        "response": "HTTP 200 | Content-Type: text/html; charset=UTF-8 | Content-Length: 9903 bytes"
+      }
+    },
+    {
+      "id": "46a5ef8e-4411-4b45-8954-341abbae06e7",
+      "type": "Sensitive Endpoint Exposed",
+      "alert": "Endpoint sensible accesible: /admin/",
+      "severity": "HIGH",
+      "risk": "High",
+      "confidence": "High",
+      "url": "http://localhost:3000/admin/",
+      "parameter": "path",
+      "description": "Panel administrativo expuesto. El endpoint /admin/ devuelve HTTP 200 sin requerir autenticaci\u00f3n.",
+      "solution": "Proteger /admin/ con autenticaci\u00f3n/autorizaci\u00f3n o deshabilitarlo.",
+      "evidence": "HTTP 200 en http://localhost:3000/admin/  |  Content-Type: text/html; charset=UTF-8",
+      "cwe": "CWE-200",
+      "cweid": "200",
+      "owasp_category": "API9:2023",
+      "source": "HTTP Scanner \u2013 Endpoint Discovery",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:3000/admin/",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Descubrimiento de ruta sensible: /admin/",
+        "response": "HTTP 200 | Content-Type: text/html; charset=UTF-8 | Content-Length: 9903 bytes"
+      }
+    },
+    {
+      "id": "f5914e66-5360-4ce7-94d1-6e59ccbb4e12",
+      "type": "Sensitive Endpoint Exposed",
+      "alert": "Endpoint sensible accesible: /swagger.json",
+      "severity": "MEDIUM",
+      "risk": "Medium",
+      "confidence": "High",
+      "url": "http://localhost:3000/swagger.json",
+      "parameter": "path",
+      "description": "Documentaci\u00f3n Swagger p\u00fablica. El endpoint /swagger.json devuelve HTTP 200 sin requerir autenticaci\u00f3n.",
+      "solution": "Proteger /swagger.json con autenticaci\u00f3n/autorizaci\u00f3n o deshabilitarlo.",
+      "evidence": "HTTP 200 en http://localhost:3000/swagger.json  |  Content-Type: text/html; charset=UTF-8",
+      "cwe": "CWE-200",
+      "cweid": "200",
+      "owasp_category": "API9:2023",
+      "source": "HTTP Scanner \u2013 Endpoint Discovery",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:3000/swagger.json",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Descubrimiento de ruta sensible: /swagger.json",
+        "response": "HTTP 200 | Content-Type: text/html; charset=UTF-8 | Content-Length: 9903 bytes"
+      }
+    },
+    {
+      "id": "216e4c29-21c8-4092-9a9c-748c6cf5666e",
+      "type": "Sensitive Endpoint Exposed",
+      "alert": "Endpoint sensible accesible: /openapi.json",
+      "severity": "MEDIUM",
+      "risk": "Medium",
+      "confidence": "High",
+      "url": "http://localhost:3000/openapi.json",
+      "parameter": "path",
+      "description": "Especificaci\u00f3n OpenAPI p\u00fablica. El endpoint /openapi.json devuelve HTTP 200 sin requerir autenticaci\u00f3n.",
+      "solution": "Proteger /openapi.json con autenticaci\u00f3n/autorizaci\u00f3n o deshabilitarlo.",
+      "evidence": "HTTP 200 en http://localhost:3000/openapi.json  |  Content-Type: text/html; charset=UTF-8",
+      "cwe": "CWE-200",
+      "cweid": "200",
+      "owasp_category": "API9:2023",
+      "source": "HTTP Scanner \u2013 Endpoint Discovery",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:3000/openapi.json",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Descubrimiento de ruta sensible: /openapi.json",
+        "response": "HTTP 200 | Content-Type: text/html; charset=UTF-8 | Content-Length: 9903 bytes"
+      }
+    },
+    {
+      "id": "fa84d01f-c777-4b1c-b284-c0373a417380",
+      "type": "Sensitive Endpoint Exposed",
+      "alert": "Endpoint sensible accesible: /docs",
+      "severity": "MEDIUM",
+      "risk": "Medium",
+      "confidence": "High",
+      "url": "http://localhost:3000/docs",
+      "parameter": "path",
+      "description": "Documentaci\u00f3n p\u00fablica. El endpoint /docs devuelve HTTP 200 sin requerir autenticaci\u00f3n.",
+      "solution": "Proteger /docs con autenticaci\u00f3n/autorizaci\u00f3n o deshabilitarlo.",
+      "evidence": "HTTP 200 en http://localhost:3000/docs  |  Content-Type: text/html; charset=UTF-8",
+      "cwe": "CWE-200",
+      "cweid": "200",
+      "owasp_category": "API9:2023",
+      "source": "HTTP Scanner \u2013 Endpoint Discovery",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:3000/docs",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Descubrimiento de ruta sensible: /docs",
+        "response": "HTTP 200 | Content-Type: text/html; charset=UTF-8 | Content-Length: 9903 bytes"
+      }
+    },
+    {
+      "id": "ffde2557-664b-46a2-9b7b-28143ed5a8f0",
+      "type": "Sensitive Endpoint Exposed",
+      "alert": "Endpoint sensible accesible: /actuator",
+      "severity": "HIGH",
+      "risk": "High",
+      "confidence": "High",
+      "url": "http://localhost:3000/actuator",
+      "parameter": "path",
+      "description": "Spring Boot Actuator expuesto. El endpoint /actuator devuelve HTTP 200 sin requerir autenticaci\u00f3n.",
+      "solution": "Proteger /actuator con autenticaci\u00f3n/autorizaci\u00f3n o deshabilitarlo.",
+      "evidence": "HTTP 200 en http://localhost:3000/actuator  |  Content-Type: text/html; charset=UTF-8",
+      "cwe": "CWE-200",
+      "cweid": "200",
+      "owasp_category": "API9:2023",
+      "source": "HTTP Scanner \u2013 Endpoint Discovery",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:3000/actuator",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Descubrimiento de ruta sensible: /actuator",
+        "response": "HTTP 200 | Content-Type: text/html; charset=UTF-8 | Content-Length: 9903 bytes"
+      }
+    },
+    {
+      "id": "cb3b50cb-e874-460b-aabf-5e6788976871",
+      "type": "Sensitive Endpoint Exposed",
+      "alert": "Endpoint sensible accesible: /actuator/env",
+      "severity": "CRITICAL",
+      "risk": "Critical",
+      "confidence": "High",
+      "url": "http://localhost:3000/actuator/env",
+      "parameter": "path",
+      "description": "Variables de entorno v\u00eda Actuator. El endpoint /actuator/env devuelve HTTP 200 sin requerir autenticaci\u00f3n.",
+      "solution": "Proteger /actuator/env con autenticaci\u00f3n/autorizaci\u00f3n o deshabilitarlo.",
+      "evidence": "HTTP 200 en http://localhost:3000/actuator/env  |  Content-Type: text/html; charset=UTF-8",
+      "cwe": "CWE-200",
+      "cweid": "200",
+      "owasp_category": "API9:2023",
+      "source": "HTTP Scanner \u2013 Endpoint Discovery",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:3000/actuator/env",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Descubrimiento de ruta sensible: /actuator/env",
+        "response": "HTTP 200 | Content-Type: text/html; charset=UTF-8 | Content-Length: 9903 bytes"
+      }
+    },
+    {
+      "id": "3ae15ee5-1874-4c17-bacf-5d42fd3b72cc",
+      "type": "Sensitive Endpoint Exposed",
+      "alert": "Endpoint sensible accesible: /actuator/dump",
+      "severity": "CRITICAL",
+      "risk": "Critical",
+      "confidence": "High",
+      "url": "http://localhost:3000/actuator/dump",
+      "parameter": "path",
+      "description": "Dump de threads v\u00eda Actuator. El endpoint /actuator/dump devuelve HTTP 200 sin requerir autenticaci\u00f3n.",
+      "solution": "Proteger /actuator/dump con autenticaci\u00f3n/autorizaci\u00f3n o deshabilitarlo.",
+      "evidence": "HTTP 200 en http://localhost:3000/actuator/dump  |  Content-Type: text/html; charset=UTF-8",
+      "cwe": "CWE-200",
+      "cweid": "200",
+      "owasp_category": "API9:2023",
+      "source": "HTTP Scanner \u2013 Endpoint Discovery",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:3000/actuator/dump",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Descubrimiento de ruta sensible: /actuator/dump",
+        "response": "HTTP 200 | Content-Type: text/html; charset=UTF-8 | Content-Length: 9903 bytes"
+      }
+    },
+    {
+      "id": "45a25240-41ac-4591-bd7c-53e9f3936910",
+      "type": "Sensitive Endpoint Exposed",
+      "alert": "Endpoint sensible accesible: /metrics",
+      "severity": "MEDIUM",
+      "risk": "Medium",
+      "confidence": "High",
+      "url": "http://localhost:3000/metrics",
+      "parameter": "path",
+      "description": "M\u00e9tricas del sistema expuestas. El endpoint /metrics devuelve HTTP 200 sin requerir autenticaci\u00f3n.",
+      "solution": "Proteger /metrics con autenticaci\u00f3n/autorizaci\u00f3n o deshabilitarlo.",
+      "evidence": "HTTP 200 en http://localhost:3000/metrics  |  Content-Type: text/plain; version=0.0.4; charset=utf-8",
+      "cwe": "CWE-200",
+      "cweid": "200",
+      "owasp_category": "API9:2023",
+      "source": "HTTP Scanner \u2013 Endpoint Discovery",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:3000/metrics",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Descubrimiento de ruta sensible: /metrics",
+        "response": "HTTP 200 | Content-Type: text/plain; version=0.0.4; charset=utf-8 | Content-Length: 25952 bytes"
+      }
+    },
+    {
+      "id": "79964662-9db6-4be1-87b2-ebe1df1d111f",
+      "type": "Sensitive Endpoint Exposed",
+      "alert": "Endpoint sensible accesible: /debug",
+      "severity": "HIGH",
+      "risk": "High",
+      "confidence": "High",
+      "url": "http://localhost:3000/debug",
+      "parameter": "path",
+      "description": "Endpoint de debug accesible. El endpoint /debug devuelve HTTP 200 sin requerir autenticaci\u00f3n.",
+      "solution": "Proteger /debug con autenticaci\u00f3n/autorizaci\u00f3n o deshabilitarlo.",
+      "evidence": "HTTP 200 en http://localhost:3000/debug  |  Content-Type: text/html; charset=UTF-8",
+      "cwe": "CWE-200",
+      "cweid": "200",
+      "owasp_category": "API9:2023",
+      "source": "HTTP Scanner \u2013 Endpoint Discovery",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:3000/debug",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Descubrimiento de ruta sensible: /debug",
+        "response": "HTTP 200 | Content-Type: text/html; charset=UTF-8 | Content-Length: 9903 bytes"
+      }
+    },
+    {
+      "id": "de259de1-ba9d-4e38-874b-7976131cbba3",
+      "type": "Sensitive Endpoint Exposed",
+      "alert": "Endpoint sensible accesible: /phpinfo.php",
+      "severity": "HIGH",
+      "risk": "High",
+      "confidence": "High",
+      "url": "http://localhost:3000/phpinfo.php",
+      "parameter": "path",
+      "description": "phpinfo() expuesto. El endpoint /phpinfo.php devuelve HTTP 200 sin requerir autenticaci\u00f3n.",
+      "solution": "Proteger /phpinfo.php con autenticaci\u00f3n/autorizaci\u00f3n o deshabilitarlo.",
+      "evidence": "HTTP 200 en http://localhost:3000/phpinfo.php  |  Content-Type: text/html; charset=UTF-8",
+      "cwe": "CWE-200",
+      "cweid": "200",
+      "owasp_category": "API9:2023",
+      "source": "HTTP Scanner \u2013 Endpoint Discovery",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:3000/phpinfo.php",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Descubrimiento de ruta sensible: /phpinfo.php",
+        "response": "HTTP 200 | Content-Type: text/html; charset=UTF-8 | Content-Length: 9903 bytes"
+      }
+    },
+    {
+      "id": "c74a210c-2fac-48a8-9c4b-3c6749a2c8aa",
+      "type": "Sensitive Endpoint Exposed",
+      "alert": "Endpoint sensible accesible: /.git/config",
+      "severity": "CRITICAL",
+      "risk": "Critical",
+      "confidence": "High",
+      "url": "http://localhost:3000/.git/config",
+      "parameter": "path",
+      "description": "Repositorio Git expuesto. El endpoint /.git/config devuelve HTTP 200 sin requerir autenticaci\u00f3n.",
+      "solution": "Proteger /.git/config con autenticaci\u00f3n/autorizaci\u00f3n o deshabilitarlo.",
+      "evidence": "HTTP 200 en http://localhost:3000/.git/config  |  Content-Type: text/html; charset=UTF-8",
+      "cwe": "CWE-200",
+      "cweid": "200",
+      "owasp_category": "API9:2023",
+      "source": "HTTP Scanner \u2013 Endpoint Discovery",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:3000/.git/config",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Descubrimiento de ruta sensible: /.git/config",
+        "response": "HTTP 200 | Content-Type: text/html; charset=UTF-8 | Content-Length: 9903 bytes"
+      }
+    },
+    {
+      "id": "de8140d5-0100-420e-a3cb-9fb7b6e07533",
+      "type": "Sensitive Endpoint Exposed",
+      "alert": "Endpoint sensible accesible: /health",
+      "severity": "LOW",
+      "risk": "Low",
+      "confidence": "High",
+      "url": "http://localhost:3000/health",
+      "parameter": "path",
+      "description": "Endpoint de health check p\u00fablico. El endpoint /health devuelve HTTP 200 sin requerir autenticaci\u00f3n.",
+      "solution": "Proteger /health con autenticaci\u00f3n/autorizaci\u00f3n o deshabilitarlo.",
+      "evidence": "HTTP 200 en http://localhost:3000/health  |  Content-Type: text/html; charset=UTF-8",
+      "cwe": "CWE-200",
+      "cweid": "200",
+      "owasp_category": "API9:2023",
+      "source": "HTTP Scanner \u2013 Endpoint Discovery",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:3000/health",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Descubrimiento de ruta sensible: /health",
+        "response": "HTTP 200 | Content-Type: text/html; charset=UTF-8 | Content-Length: 9903 bytes"
+      }
+    },
+    {
+      "id": "033e42e6-183e-47e5-b063-fee87bea3292",
+      "type": "Missing Rate Limiting",
+      "alert": "Sin control de tasa (rate limiting) detectable",
+      "severity": "MEDIUM",
+      "risk": "Medium",
+      "confidence": "Medium",
+      "url": "http://localhost:3000",
+      "parameter": "HTTP responses",
+      "description": "Se enviaron 15 peticiones r\u00e1pidas sin obtener respuesta 429 ni headers de rate limiting. La API puede ser vulnerable a abuso de recursos o ataques de fuerza bruta.",
+      "solution": "Implementar rate limiting por IP y por usuario. Devolver HTTP 429 con header Retry-After al superar el l\u00edmite.",
+      "evidence": "15 requests. C\u00f3digos: [200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200]",
+      "cwe": "CWE-770",
+      "cweid": "770",
+      "owasp_category": "API4:2023",
+      "source": "HTTP Scanner \u2013 Rate Limiting",
+      "request_payload": {
+        "method": "GET (x15)",
+        "url": "http://localhost:3000",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Flood de peticiones: 15 GETs a ~20 req/s (delay=50ms)",
+        "response": "Todos respondieron sin HTTP 429. C\u00f3digos obtenidos: [200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200]. Headers de rate limit ausentes (X-RateLimit-*, Retry-After)."
+      }
+    },
+    {
+      "id": "b9a34109-6655-44ab-937b-d268e5405848",
+      "type": "Insecure Transport",
+      "alert": "API accesible sin HTTPS sin redirecci\u00f3n",
+      "severity": "HIGH",
+      "risk": "High",
+      "confidence": "High",
+      "url": "http://localhost:3000",
+      "parameter": "scheme",
+      "description": "La API acepta conexiones HTTP sin cifrar y no redirige a HTTPS. Los datos transmitidos son vulnerables a interceptaci\u00f3n (MITM).",
+      "solution": "Forzar HTTPS. Configurar redirecci\u00f3n 301 HTTP \u2192 HTTPS y habilitar HSTS.",
+      "evidence": "HTTP 200 desde http://localhost:3000 sin redirecci\u00f3n HTTPS",
+      "cwe": "CWE-319",
+      "cweid": "319",
+      "owasp_category": "API8:2023",
+      "source": "HTTP Scanner \u2013 SSL/TLS",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:3000",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Verificaci\u00f3n de redirecci\u00f3n HTTP \u2192 HTTPS (sin seguir redirects)",
+        "response": "HTTP 200 | Location: (sin Location header) | Sin redirecci\u00f3n a HTTPS \u2014 tr\u00e1fico transmitido en texto plano"
+      }
+    }
+  ],
+  "summary": {
+    "total_issues": 23,
+    "alerts_found": 23,
+    "critical": 3,
+    "high": 11,
+    "medium": 6,
+    "low": 3
+  }
+}
