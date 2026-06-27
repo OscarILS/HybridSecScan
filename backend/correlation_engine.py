@@ -365,21 +365,26 @@ class VulnerabilityCorrelator:
         """Añade hallazgos de herramientas DAST"""
         self.dast_findings.extend(findings)
         
-    def correlate_vulnerabilities(self) -> List[Tuple[Vulnerability, Vulnerability, float]]:
+    def correlate_vulnerabilities(self, threshold: float = 0.7) -> List[Tuple[Vulnerability, Vulnerability, float]]:
         """
-        Correlaciona vulnerabilidades SAST y DAST
+        Correlaciona vulnerabilidades SAST y DAST.
+
+        Args:
+            threshold: Mínima confianza para incluir una correlación [0,1].
+                       Default 0.7 cuando el modelo ML está disponible.
+                       Reducir a ~0.45 cuando se usa fallback determinístico
+                       y los endpoints son de diferente naturaleza (file paths vs HTTP URLs).
+
         Returns: Lista de tuplas (vuln_sast, vuln_dast, confidence_score)
         """
         correlations = []
-        
+
         for sast_vuln in self.sast_findings:
             for dast_vuln in self.dast_findings:
                 confidence = self._calculate_correlation_confidence(sast_vuln, dast_vuln)
-                
-                if confidence > 0.7:  # Threshold de correlación
+                if confidence > threshold:
                     correlations.append((sast_vuln, dast_vuln, confidence))
-        
-        # Ordenar por confianza descendente
+
         return sorted(correlations, key=lambda x: x[2], reverse=True)
     
     def _calculate_correlation_confidence(self, sast_vuln: Vulnerability, dast_vuln: Vulnerability) -> float:
@@ -496,8 +501,14 @@ class VulnerabilityCorrelator:
         else:
             path = raw
         # Strip extension (e.g. .py) so 'users.py' == 'users'
+        path = path.strip("/")
+        if not path:
+            return ""
         from pathlib import Path as _Path
-        path = str(_Path(path).with_suffix(""))
+        try:
+            path = str(_Path(path).with_suffix(""))
+        except ValueError:
+            pass  # path like "." or root — keep as-is
         return path.strip("/").lower()
 
     def _calculate_endpoint_similarity(self, endpoint1: str, endpoint2: str) -> float:
@@ -589,9 +600,14 @@ class VulnerabilityCorrelator:
             
         return min(score, 1.0)
     
-    def generate_correlation_report(self) -> Dict:
-        """Genera reporte detallado de correlaciones"""
-        correlations = self.correlate_vulnerabilities()
+    def generate_correlation_report(self, threshold: float = 0.7) -> Dict:
+        """Genera reporte detallado de correlaciones.
+
+        Args:
+            threshold: Mínima confianza para incluir una correlación.
+                       Se pasa directamente a correlate_vulnerabilities().
+        """
+        correlations = self.correlate_vulnerabilities(threshold=threshold)
         
         # Calcular distribución de severidad combinada (SAST + DAST)
         all_vulns = self.sast_findings + self.dast_findings

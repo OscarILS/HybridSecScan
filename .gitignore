@@ -78,6 +78,9 @@ reports/*
 *.db
 *.sqlite
 
+# Juice Shop source clone (local only — git clone separately)
+juiceshop_src/
+
 # ML model binaries (large files — regenerate with scripts/setup.py)
 data/models/*.pkl
 data/models/*.h5
