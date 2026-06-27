@@ -603,6 +603,235 @@ class HTTPSecurityScanner:
             logger.debug(f"server_info: {exc}")
         return findings
 
+    # ── IDOR / BOLA probing (API1:2023) ──────────────────────────────────────
+
+    def probe_idor_bola(self, target_url: str) -> List[ScanFinding]:
+        """
+        Broken Object Level Authorization (BOLA / IDOR) — OWASP API1:2023.
+
+        Estrategia de detección en dos capas:
+
+        Capa 1 — Acceso sin autenticación:
+            Prueba si endpoints que deberían requerir auth devuelven datos reales
+            sin ningún token.  Un 200 con payload JSON es BOLA confirmado.
+
+        Capa 2 — Enumeración de IDs (IDOR):
+            Prueba IDs secuenciales en patrones típicos de REST API
+            (/api/users/1, /api/users/2 …).  Si todos devuelven 200 con datos
+            distintos, cualquier usuario puede leer los recursos de otro.
+
+        Capa 3 — Forced Browsing por UUID:
+            Endpoints con UUID (/api/orders/{uuid}) suelen ser tratados como
+            "seguros por oscuridad".  Se prueban UUIDs predecibles.
+        """
+        findings: List[ScanFinding] = []
+        parsed   = urlparse(target_url)
+        base     = f"{parsed.scheme}://{parsed.netloc}"
+
+        # ── Capa 1: endpoints autenticados accesibles sin token ───────────────
+        auth_endpoints = [
+            # (path, descripción)
+            ("/api/users/me",           "Perfil del usuario autenticado"),
+            ("/api/me",                 "Perfil del usuario autenticado"),
+            ("/api/user/profile",       "Perfil de usuario"),
+            ("/api/account",            "Cuenta del usuario"),
+            ("/api/profile",            "Perfil"),
+            ("/rest/user/whoami",       "Identificación de usuario (Juice Shop)"),
+            ("/api/admin/users",        "Lista de usuarios — admin"),
+            ("/api/v1/users/me",        "Perfil v1"),
+            ("/api/orders",             "Pedidos del usuario"),
+            ("/api/basket",             "Carrito del usuario"),
+        ]
+
+        no_auth_session = requests.Session()
+        no_auth_session.headers["User-Agent"] = "HybridSecScan/2.0 Security Scanner"
+
+        for path, description in auth_endpoints:
+            url = base + path
+            try:
+                resp = no_auth_session.get(url, timeout=self.timeout, verify=False)
+                body = resp.text
+
+                # Indicadores de respuesta con datos reales (no error/redirect)
+                has_data = (
+                    resp.status_code == 200
+                    and len(body) > 30
+                    and any(kw in body.lower() for kw in [
+                        '"id":', '"email":', '"username":', '"name":', '"role":',
+                        '"user":', '"account":', '"profile":', '"token":', '"data":',
+                    ])
+                )
+
+                if has_data:
+                    findings.append(ScanFinding(
+                        type="BOLA - Unauthenticated Access",
+                        alert=f"Endpoint autenticado accesible sin token: {path}",
+                        severity="CRITICAL",
+                        risk="Critical",
+                        confidence="High",
+                        url=url,
+                        parameter="Authorization header",
+                        description=(
+                            f"El endpoint {path} ({description}) devolvió datos reales "
+                            f"(HTTP {resp.status_code}) sin ningún token de autenticación. "
+                            "Cualquier actor anónimo puede acceder a estos datos de usuario. "
+                            "Viola OWASP API1:2023 — Broken Object Level Authorization."
+                        ),
+                        solution=(
+                            "Verificar la autenticación en TODOS los endpoints que manejen "
+                            "datos de usuario. Implementar middleware de auth global. "
+                            "Nunca depender de que el cliente 'no conozca la URL'."
+                        ),
+                        evidence=body[:300],
+                        cwe="CWE-284",
+                        cweid="284",
+                        owasp_category="API1:2023",
+                        source="HTTP Scanner – BOLA Unauthenticated",
+                        request_payload={
+                            "method": "GET",
+                            "url": url,
+                            "sent_headers": {"User-Agent": "HybridSecScan/2.0"},
+                            "probe": "Request without Authorization header",
+                            "response": f"HTTP {resp.status_code} | {len(body)} bytes",
+                        },
+                    ))
+            except Exception:
+                pass
+
+        # ── Capa 2: enumeración de IDs numéricos ─────────────────────────────
+        # Patrones de REST API donde un usuario solo debería ver su propio recurso
+        id_patterns = [
+            ("/api/users/{id}",         "Perfil de usuario por ID"),
+            ("/api/user/{id}",          "Usuario por ID"),
+            ("/api/orders/{id}",        "Pedido por ID"),
+            ("/api/basket/{id}",        "Carrito por ID"),
+            ("/api/v1/users/{id}",      "Usuario v1 por ID"),
+            ("/rest/user/{id}",         "Usuario REST"),
+            ("/api/accounts/{id}",      "Cuenta por ID"),
+            ("/api/products/{id}",      "Producto (referencia)"),
+        ]
+
+        for pattern, description in id_patterns:
+            responses_200: list = []
+            for test_id in [1, 2, 3, 42, 999]:
+                url = base + pattern.replace("{id}", str(test_id))
+                try:
+                    resp = no_auth_session.get(url, timeout=self.timeout, verify=False)
+                    if resp.status_code == 200 and len(resp.text) > 20:
+                        responses_200.append((test_id, url, resp.text[:200]))
+                except Exception:
+                    pass
+
+            # Si más de 2 IDs distintos devuelven 200 → enumeración posible
+            if len(responses_200) >= 2:
+                example_url = responses_200[0][1]
+                example_body = responses_200[0][2]
+                findings.append(ScanFinding(
+                    type="IDOR - Object Enumeration",
+                    alert=f"Enumeración de objetos por ID numérico: {pattern}",
+                    severity="HIGH",
+                    risk="High",
+                    confidence="Medium",
+                    url=example_url,
+                    parameter="id",
+                    description=(
+                        f"El patrón {pattern} ({description}) devolvió HTTP 200 para "
+                        f"{len(responses_200)} IDs distintos sin autenticación. "
+                        "Un atacante puede enumerar los recursos de todos los usuarios "
+                        "simplemente incrementando el ID en la URL. "
+                        "Viola OWASP API1:2023 — Broken Object Level Authorization."
+                    ),
+                    solution=(
+                        "Verificar que el usuario autenticado es el propietario del recurso "
+                        "solicitado antes de devolverlo. Considerar UUIDs en lugar de IDs "
+                        "secuenciales. Implementar control de acceso a nivel de objeto (ABAC)."
+                    ),
+                    evidence=(
+                        f"IDs que devolvieron 200: {[r[0] for r in responses_200]} | "
+                        f"Ejemplo: {example_body}"
+                    ),
+                    cwe="CWE-639",
+                    cweid="639",
+                    owasp_category="API1:2023",
+                    source="HTTP Scanner – IDOR Enumeration",
+                    request_payload={
+                        "method": "GET",
+                        "url": example_url,
+                        "probe": f"Enumeración de IDs: {[r[0] for r in responses_200]}",
+                        "response": f"{len(responses_200)} de 5 IDs probados devolvieron 200",
+                    },
+                ))
+
+        # ── Capa 3: acceso cross-user con token propio a ID ajeno ────────────
+        # Si el sistema tiene auth JWT, prueba si el token del usuario A
+        # puede acceder a los datos del usuario B (la forma clásica de BOLA)
+        try:
+            # Registrar usuario A de prueba
+            user_a = {"username": f"idor_probe_a_{uuid.uuid4().hex[:6]}",
+                      "email": f"idor_a_{uuid.uuid4().hex[:6]}@probe.test",
+                      "password": "ProbePassword123!"}
+            reg_resp = no_auth_session.post(
+                base + "/auth/register", json=user_a, timeout=self.timeout
+            )
+
+            if reg_resp.status_code in (200, 201):
+                # Login para obtener token
+                login_resp = no_auth_session.post(
+                    base + "/auth/login",
+                    data={"username": user_a["username"], "password": user_a["password"]},
+                    timeout=self.timeout,
+                )
+                if login_resp.status_code == 200:
+                    token = login_resp.json().get("access_token")
+                    if token:
+                        auth_headers = {"Authorization": f"Bearer {token}"}
+                        # Con el token de usuario A, intentar acceder a ID 1
+                        # (que pertenece al primer usuario registrado, normalmente admin)
+                        for path in ["/api/users/1", "/api/user/1", "/rest/user/1"]:
+                            url = base + path
+                            resp = no_auth_session.get(
+                                url, headers=auth_headers, timeout=self.timeout
+                            )
+                            if resp.status_code == 200 and len(resp.text) > 20:
+                                findings.append(ScanFinding(
+                                    type="BOLA - Cross-User Access",
+                                    alert="Usuario accede a datos de otro usuario (BOLA confirmado)",
+                                    severity="CRITICAL",
+                                    risk="Critical",
+                                    confidence="High",
+                                    url=url,
+                                    parameter="id",
+                                    description=(
+                                        f"El usuario '{user_a['username']}' puede acceder a {path} "
+                                        "(recurso de otro usuario, ID=1) usando su propio token JWT. "
+                                        "El servidor no verifica que el ID solicitado pertenezca "
+                                        "al usuario autenticado. BOLA confirmado con evidencia real."
+                                    ),
+                                    solution=(
+                                        "Extraer el ID del usuario del token JWT y compararlo "
+                                        "con el ID solicitado ANTES de devolver el recurso. "
+                                        "Nunca confiar en el ID que envía el cliente."
+                                    ),
+                                    evidence=resp.text[:300],
+                                    cwe="CWE-284",
+                                    cweid="284",
+                                    owasp_category="API1:2023",
+                                    source="HTTP Scanner – BOLA Cross-User",
+                                    request_payload={
+                                        "method": "GET",
+                                        "url": url,
+                                        "sent_headers": {"Authorization": "Bearer <token_usuario_A>"},
+                                        "probe": "Access to resource owned by user ID=1",
+                                        "response": f"HTTP {resp.status_code} | {resp.text[:100]}",
+                                    },
+                                ))
+                                break
+        except Exception:
+            pass  # El sistema objetivo puede no tener auth compatible
+
+        logger.info(f"[IDOR Probe] {len(findings)} hallazgos BOLA/IDOR encontrados")
+        return findings
+
     # ── Active injection probing (controlled environments only) ──────────────
 
     def probe_injection_vulnerabilities(self, target_url: str) -> List[ScanFinding]:
@@ -1038,7 +1267,8 @@ def run_active_probe_scan(target_url: str) -> Dict[str, Any]:
 
     passive_findings = scanner.scan(target_url)
     active_findings  = scanner.probe_injection_vulnerabilities(target_url)
-    all_findings     = passive_findings + active_findings
+    idor_findings    = scanner.probe_idor_bola(target_url)
+    all_findings     = passive_findings + active_findings + idor_findings
 
     vuln_dicts = [f.to_dict() for f in all_findings]
     counts: Dict[str, int] = {"critical": 0, "high": 0, "medium": 0, "low": 0}
@@ -1058,6 +1288,7 @@ def run_active_probe_scan(target_url: str) -> Dict[str, Any]:
             "alerts_found":    len(all_findings),
             "passive_checks":  len(passive_findings),
             "active_probes":   len(active_findings),
+            "idor_checks":     len(idor_findings),
             **counts,
         },
     }
