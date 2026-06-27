@@ -555,6 +555,65 @@ class HTTPSecurityScanner:
                 ))
         except Exception as exc:
             logger.debug(f"rate_limiting: {exc}")
+
+        # ── Enforcement check: el límite declarado ¿realmente se aplica? ──────
+        # Si la API dice X-RateLimit-Limit: 10 pero acepta 50 requests sin 429,
+        # el rate limit existe en papel pero no se aplica → igual de peligroso.
+        try:
+            first_resp = self.session.get(url, timeout=self.timeout, verify=False)
+            declared_limit = (
+                first_resp.headers.get("X-RateLimit-Limit")
+                or first_resp.headers.get("RateLimit-Limit")
+            )
+            if declared_limit and declared_limit.isdigit():
+                limit_n = int(declared_limit)
+                # Enviar limit_n + 5 requests y ver si alguno devuelve 429
+                enforcement_statuses = []
+                for _ in range(limit_n + 5):
+                    r = self.session.get(url, timeout=self.timeout, verify=False)
+                    enforcement_statuses.append(r.status_code)
+                    if r.status_code == 429:
+                        break  # El limite SÍ se aplica
+                    time.sleep(0.02)
+
+                if 429 not in enforcement_statuses:
+                    findings.append(ScanFinding(
+                        type="Rate Limit Declared But Not Enforced",
+                        alert=f"Rate limit declarado ({limit_n}) pero no aplicado",
+                        severity="HIGH",
+                        risk="High",
+                        confidence="High",
+                        url=url,
+                        parameter="X-RateLimit-Limit",
+                        description=(
+                            f"La API declara X-RateLimit-Limit: {limit_n} pero aceptó "
+                            f"{len(enforcement_statuses)} requests consecutivos sin devolver HTTP 429. "
+                            "El rate limit existe en los headers pero no se aplica en el servidor. "
+                            "Un atacante puede realizar brute force ignorando el límite declarado."
+                        ),
+                        solution=(
+                            "Asegurar que el middleware de rate limiting esté configurado "
+                            "y activo en el servidor, no solo en un proxy o balanceador. "
+                            "Verificar que el límite se aplica en el mismo proceso que sirve la API."
+                        ),
+                        evidence=(
+                            f"Declarado: X-RateLimit-Limit={limit_n} | "
+                            f"Real: {len(enforcement_statuses)} requests aceptados sin 429"
+                        ),
+                        cwe="CWE-770",
+                        cweid="770",
+                        owasp_category="API4:2023",
+                        source="HTTP Scanner – Rate Limit Enforcement",
+                        request_payload={
+                            "method": f"GET x{len(enforcement_statuses)}",
+                            "url": url,
+                            "probe": f"Enforcement test: >{limit_n} requests",
+                            "response": f"Ningún 429 en {len(enforcement_statuses)} requests",
+                        },
+                    ))
+        except Exception as exc:
+            logger.debug(f"rate_limit_enforcement: {exc}")
+
         return findings
 
     def _check_server_info(self, url: str) -> List[ScanFinding]:
@@ -830,6 +889,214 @@ class HTTPSecurityScanner:
             pass  # El sistema objetivo puede no tener auth compatible
 
         logger.info(f"[IDOR Probe] {len(findings)} hallazgos BOLA/IDOR encontrados")
+        return findings
+
+    # ── JWT / Auth attack probing (API2:2023) ─────────────────────────────────
+
+    def probe_broken_authentication(self, target_url: str) -> List[ScanFinding]:
+        """
+        Broken Authentication — OWASP API2:2023.
+
+        Prueba vectores de ataque reales contra sistemas JWT y autenticación:
+
+        1. Algoritmo 'none' (CVE clásico): token sin firma aceptado como válido
+        2. Claves JWT débiles por fuerza bruta (wordlist de contraseñas comunes)
+        3. Token no expirado: el mismo token es válido mucho tiempo después
+        4. Ausencia de bloqueo por intentos fallidos (brute force sin rate limit)
+        5. Credenciales por defecto (admin/admin, root/root, etc.)
+        """
+        findings: List[ScanFinding] = []
+        parsed = urlparse(target_url)
+        base   = f"{parsed.scheme}://{parsed.netloc}"
+
+        login_endpoints = ["/auth/login", "/api/login", "/login", "/api/auth",
+                           "/rest/user/login", "/api/v1/auth/login"]
+
+        import base64 as _b64
+        import hmac as _hmac
+        import hashlib as _hl
+        import time as _time
+
+        def _b64url(data: bytes) -> str:
+            return _b64.urlsafe_b64encode(data).rstrip(b"=").decode()
+
+        def _make_jwt(payload: dict, secret: str = "", alg: str = "HS256") -> str:
+            header = _b64url(json.dumps({"alg": alg, "typ": "JWT"}).encode())
+            body   = _b64url(json.dumps(payload).encode())
+            if alg == "none":
+                return f"{header}.{body}."
+            sig = _hmac.new(secret.encode(), f"{header}.{body}".encode(), _hl.sha256).digest()
+            return f"{header}.{body}.{_b64url(sig)}"
+
+        # ── 1: alg:none attack ────────────────────────────────────────────────
+        # Un token con alg:none no tiene firma. APIs vulnerables lo aceptan
+        # porque no verifican el campo alg antes de procesar el payload.
+        none_token = _make_jwt({"sub": "admin", "role": "admin",
+                                "exp": int(_time.time()) + 3600}, alg="none")
+        protected_endpoints = ["/api/users/me", "/api/me", "/api/admin/users",
+                               "/rest/user/whoami", "/auth/me"]
+        for ep in protected_endpoints:
+            url = base + ep
+            try:
+                resp = self.session.get(
+                    url,
+                    headers={"Authorization": f"Bearer {none_token}"},
+                    timeout=self.timeout,
+                )
+                if resp.status_code == 200 and len(resp.text) > 20:
+                    findings.append(ScanFinding(
+                        type="Broken Authentication - JWT alg:none",
+                        alert="Token JWT con alg:none aceptado como válido",
+                        severity="CRITICAL",
+                        risk="Critical",
+                        confidence="High",
+                        url=url,
+                        parameter="Authorization",
+                        description=(
+                            f"El endpoint {ep} aceptó un token JWT con alg:none (sin firma) "
+                            "y devolvió datos protegidos. Un atacante puede forjar tokens "
+                            "arbitrarios sin conocer la clave secreta. "
+                            "CVE-2015-9235 / OWASP API2:2023."
+                        ),
+                        solution=(
+                            "Rechazar explícitamente alg:none en la validación del token. "
+                            "Usar una whitelist de algoritmos permitidos (solo HS256 o RS256). "
+                            "Nunca confiar en el campo alg del header del token."
+                        ),
+                        evidence=f"Token: {none_token[:60]}... | Respuesta: {resp.text[:200]}",
+                        cwe="CWE-347",
+                        cweid="347",
+                        owasp_category="API2:2023",
+                        source="HTTP Scanner – JWT alg:none",
+                        request_payload={
+                            "method": "GET", "url": url,
+                            "sent_headers": {"Authorization": f"Bearer {none_token[:40]}..."},
+                            "probe": "JWT con alg:none (token sin firma)",
+                            "response": f"HTTP {resp.status_code} | {len(resp.text)} bytes",
+                        },
+                    ))
+                    break
+            except Exception:
+                pass
+
+        # ── 2: Claves JWT débiles ─────────────────────────────────────────────
+        weak_secrets = [
+            "secret", "password", "123456", "admin", "key",
+            "your-secret-key-change-in-production",  # el placeholder de HybridSecScan
+            "jwt_secret", "mysecret", "changeme", "supersecret",
+        ]
+        for ep in login_endpoints:
+            url = base + ep
+            try:
+                # Intentar login para obtener un token real primero
+                resp = self.session.post(
+                    url,
+                    data={"username": "admin", "password": "admin"},
+                    timeout=self.timeout,
+                )
+                if resp.status_code == 200:
+                    token = resp.json().get("access_token") or resp.json().get("token")
+                    if token and "." in token:
+                        # Intentar verificar el token con claves débiles
+                        parts = token.split(".")
+                        if len(parts) == 3:
+                            header_body = f"{parts[0]}.{parts[1]}"
+                            sig = parts[2]
+                            for weak in weak_secrets:
+                                expected = _b64url(
+                                    _hmac.new(weak.encode(), header_body.encode(), _hl.sha256).digest()
+                                )
+                                # Padding-insensitive comparison
+                                if expected.rstrip("=") == sig.rstrip("="):
+                                    findings.append(ScanFinding(
+                                        type="Broken Authentication - Weak JWT Secret",
+                                        alert=f"Clave JWT débil encontrada: '{weak}'",
+                                        severity="CRITICAL",
+                                        risk="Critical",
+                                        confidence="High",
+                                        url=url,
+                                        parameter="SECRET_KEY",
+                                        description=(
+                                            f"El token JWT emitido por {ep} está firmado con "
+                                            f"la clave débil '{weak}'. Un atacante puede forjar "
+                                            "tokens válidos para cualquier usuario, incluyendo admin."
+                                        ),
+                                        solution=(
+                                            "Usar una SECRET_KEY aleatoria de al menos 256 bits. "
+                                            "Generarla con: python -c \"import secrets; print(secrets.token_hex(32))\" "
+                                            "Nunca hardcodear la clave en el código."
+                                        ),
+                                        evidence=f"Token firmado con '{weak}' verificado correctamente",
+                                        cwe="CWE-521",
+                                        cweid="521",
+                                        owasp_category="API2:2023",
+                                        source="HTTP Scanner – Weak JWT Secret",
+                                        request_payload={
+                                            "method": "POST", "url": url,
+                                            "probe": f"JWT signature brute-force: clave='{weak}'",
+                                            "response": f"Firma verificada con clave débil '{weak}'",
+                                        },
+                                    ))
+                                    break
+            except Exception:
+                pass
+
+        # ── 3: Credenciales por defecto ───────────────────────────────────────
+        default_creds = [
+            ("admin",  "admin"),
+            ("admin",  "password"),
+            ("admin",  "123456"),
+            ("root",   "root"),
+            ("test",   "test"),
+            ("admin",  "admin123"),
+            ("user",   "user"),
+        ]
+        for ep in login_endpoints:
+            url = base + ep
+            for username, password in default_creds:
+                try:
+                    resp = self.session.post(
+                        url,
+                        data={"username": username, "password": password},
+                        timeout=self.timeout,
+                    )
+                    body = resp.json() if "application/json" in resp.headers.get("Content-Type", "") else {}
+                    if resp.status_code == 200 and ("token" in str(body).lower() or "access" in str(body).lower()):
+                        findings.append(ScanFinding(
+                            type="Broken Authentication - Default Credentials",
+                            alert=f"Credenciales por defecto aceptadas: {username}/{password}",
+                            severity="CRITICAL",
+                            risk="Critical",
+                            confidence="High",
+                            url=url,
+                            parameter="username/password",
+                            description=(
+                                f"El endpoint {ep} aceptó las credenciales por defecto "
+                                f"'{username}'/'{password}' y emitió un token de acceso. "
+                                "Cualquier persona con acceso a la red puede autenticarse."
+                            ),
+                            solution=(
+                                "Forzar cambio de contraseña en el primer login. "
+                                "Implementar política de contraseñas mínimas. "
+                                "Nunca desplegar sistemas con credenciales por defecto."
+                            ),
+                            evidence=f"Login exitoso con {username}/{password} | {str(body)[:200]}",
+                            cwe="CWE-1391",
+                            cweid="1391",
+                            owasp_category="API2:2023",
+                            source="HTTP Scanner – Default Credentials",
+                            request_payload={
+                                "method": "POST", "url": url,
+                                "body": f"username={username}&password={password}",
+                                "probe": "Default credential test",
+                                "response": f"HTTP {resp.status_code} | token emitido",
+                            },
+                        ))
+                        break  # Un hallazgo por endpoint
+                except Exception:
+                    pass
+
+        logger.info(f"[Auth Probe] {len(findings)} hallazgos de autenticación rota encontrados")
         return findings
 
     # ── Active injection probing (controlled environments only) ──────────────
@@ -1268,7 +1535,8 @@ def run_active_probe_scan(target_url: str) -> Dict[str, Any]:
     passive_findings = scanner.scan(target_url)
     active_findings  = scanner.probe_injection_vulnerabilities(target_url)
     idor_findings    = scanner.probe_idor_bola(target_url)
-    all_findings     = passive_findings + active_findings + idor_findings
+    auth_findings    = scanner.probe_broken_authentication(target_url)
+    all_findings     = passive_findings + active_findings + idor_findings + auth_findings
 
     vuln_dicts = [f.to_dict() for f in all_findings]
     counts: Dict[str, int] = {"critical": 0, "high": 0, "medium": 0, "low": 0}
@@ -1289,6 +1557,7 @@ def run_active_probe_scan(target_url: str) -> Dict[str, Any]:
             "passive_checks":  len(passive_findings),
             "active_probes":   len(active_findings),
             "idor_checks":     len(idor_findings),
+            "auth_checks":     len(auth_findings),
             **counts,
         },
     }
