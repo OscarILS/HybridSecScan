@@ -603,6 +603,233 @@ class HTTPSecurityScanner:
             logger.debug(f"server_info: {exc}")
         return findings
 
+    # ── Active injection probing (controlled environments only) ──────────────
+
+    def probe_injection_vulnerabilities(self, target_url: str) -> List[ScanFinding]:
+        """
+        Probing activo de vulnerabilidades de inyección.
+
+        SOLO para entornos controlados (apps de prueba, labs, pentesting autorizado).
+        Prueba inyección SQL, path traversal y divulgación de errores con payloads
+        mínimos y seguros.  No prueba command injection (riesgo real de ejecución).
+
+        Args:
+            target_url: URL base de la aplicación objetivo
+
+        Returns:
+            Lista de ScanFinding con vulnerabilidades confirmadas
+        """
+        findings: List[ScanFinding] = []
+        parsed = urlparse(target_url)
+        base = f"{parsed.scheme}://{parsed.netloc}"
+
+        # ── SQL Injection ───────────────────────────────────────────────────────
+        sql_payload = "' OR '1'='1"
+        sql_endpoints = ["/login", "/auth", "/signin", "/api/login", "/user/login"]
+        for ep in sql_endpoints:
+            url = base + ep
+            try:
+                resp = self.session.post(
+                    url,
+                    data={"username": sql_payload, "password": sql_payload},
+                    timeout=self.timeout,
+                )
+                body = resp.text.lower()
+                # Indicadores de SQL injection: eco del query, error SQL, o la query modificada
+                sql_indicators = [
+                    "select ", "from ", "where ", "' or ", "syntax error",
+                    "sql", "query:", "mysql", "sqlite", "ora-", "unclosed",
+                ]
+                matched = [kw for kw in sql_indicators if kw in body]
+                if matched and resp.status_code < 500:
+                    findings.append(ScanFinding(
+                        type="SQL Injection",
+                        alert="Inyección SQL confirmada por respuesta del servidor",
+                        severity="HIGH",
+                        risk="High",
+                        confidence="High",
+                        url=url,
+                        parameter="username / password",
+                        description=(
+                            f"La respuesta del endpoint {ep} contiene fragmentos SQL "
+                            f"({', '.join(matched[:3])}) al recibir el payload '{sql_payload}'. "
+                            "Indica que la entrada del usuario se interpola directamente en la query SQL."
+                        ),
+                        solution=(
+                            "Usar consultas parametrizadas o prepared statements. "
+                            "Nunca construir queries SQL mediante concatenación/f-string de entradas de usuario."
+                        ),
+                        evidence=resp.text[:300],
+                        cwe="CWE-89",
+                        cweid="89",
+                        owasp_category="API3:2023",
+                        source="HTTP Scanner – Active SQL Injection Probe",
+                        request_payload={
+                            "method": "POST",
+                            "url": url,
+                            "body": f"username={sql_payload}&password={sql_payload}",
+                            "probe": "SQL injection via form login",
+                            "response": f"HTTP {resp.status_code} | indicadores: {matched}",
+                        },
+                    ))
+                    break  # Un hallazgo por tipo es suficiente
+            except Exception:
+                pass
+
+        # ── Path Traversal ──────────────────────────────────────────────────────
+        traversal_payloads = [
+            ("../../requirements.txt",  ["fastapi", "uvicorn", "sqlalchemy"]),
+            ("../../../requirements.txt", ["fastapi", "uvicorn", "sqlalchemy"]),
+            ("../../etc/passwd",         ["root:", "bin:", "daemon:"]),
+            ("C:\\Windows\\win.ini",     ["fonts", "windows", "[extensions]"]),
+        ]
+        traversal_endpoints = [
+            ("/read_file", "file"),
+            ("/download",  "filename"),
+            ("/file",      "path"),
+            ("/static",    "file"),
+        ]
+        for ep, param in traversal_endpoints:
+            for payload, indicators in traversal_payloads:
+                url = base + ep
+                try:
+                    resp = self.session.get(
+                        url, params={param: payload}, timeout=self.timeout
+                    )
+                    body = resp.text.lower()
+                    matched = [ind for ind in indicators if ind.lower() in body]
+                    if matched and resp.status_code == 200 and len(resp.text) > 10:
+                        findings.append(ScanFinding(
+                            type="Path Traversal",
+                            alert="Path traversal confirmado — acceso a archivos del sistema",
+                            severity="HIGH",
+                            risk="High",
+                            confidence="High",
+                            url=url,
+                            parameter=param,
+                            description=(
+                                f"El endpoint {ep} permite acceder a archivos fuera del directorio "
+                                f"de la aplicación. Payload '{payload}' devolvió contenido que "
+                                f"coincide con indicadores de sistema ({', '.join(matched)})."
+                            ),
+                            solution=(
+                                "Validar y sanitizar todos los parámetros de ruta de archivo. "
+                                "Usar os.path.realpath() y verificar que el path resultante "
+                                "esté dentro del directorio permitido."
+                            ),
+                            evidence=resp.text[:200],
+                            cwe="CWE-22",
+                            cweid="22",
+                            owasp_category="API1:2023",
+                            source="HTTP Scanner – Active Path Traversal Probe",
+                            request_payload={
+                                "method": "GET",
+                                "url": url,
+                                "params": {param: payload},
+                                "probe": "Path traversal via file parameter",
+                                "response": f"HTTP {resp.status_code} | {len(resp.text)} bytes | indicadores: {matched}",
+                            },
+                        ))
+                        break
+                except Exception:
+                    pass
+
+        # ── Error Disclosure / Debug Mode ───────────────────────────────────────
+        debug_endpoints = ["/login", "/process", "/deserialize", "/execute", "/validate"]
+        for ep in debug_endpoints:
+            url = base + ep
+            try:
+                # Enviar dato inválido que cause una excepción
+                resp = self.session.post(
+                    url,
+                    data={"input": "'; DROP TABLE users; --", "command": "", "data": ""},
+                    timeout=self.timeout,
+                )
+                body = resp.text
+                debug_indicators = [
+                    "Traceback (most recent call last)",
+                    'File "', "line ",
+                    "DebugFilesKeyError", "werkzeug", "jinja2",
+                    "InteractiveConsole",
+                ]
+                matched = [ind for ind in debug_indicators if ind in body]
+                if matched:
+                    findings.append(ScanFinding(
+                        type="Error Disclosure - Debug Mode",
+                        alert="Stack trace completo expuesto — modo debug activo",
+                        severity="HIGH",
+                        risk="High",
+                        confidence="High",
+                        url=url,
+                        parameter="debug_mode",
+                        description=(
+                            f"La aplicación está corriendo en modo debug y expone stack traces "
+                            f"completos de Python. Se detectó '{matched[0]}' en la respuesta HTTP. "
+                            "Revela rutas internas, versiones de librerías y lógica de la aplicación."
+                        ),
+                        solution=(
+                            "Deshabilitar debug=True en producción. "
+                            "Configurar app.run(debug=False) o usar FLASK_ENV=production."
+                        ),
+                        evidence=body[:400],
+                        cwe="CWE-209",
+                        cweid="209",
+                        owasp_category="API8:2023",
+                        source="HTTP Scanner – Active Debug Probe",
+                        request_payload={
+                            "method": "POST",
+                            "url": url,
+                            "probe": "Error disclosure via malformed input",
+                            "response": f"HTTP {resp.status_code} | indicadores: {matched}",
+                        },
+                    ))
+                    break
+            except Exception:
+                pass
+
+        # ── Insecure Random Token ───────────────────────────────────────────────
+        try:
+            r1 = self.session.get(base + "/token", timeout=self.timeout)
+            r2 = self.session.get(base + "/token", timeout=self.timeout)
+            # Si dos tokens son iguales o muy similares → insecure random
+            t1 = r1.text.replace("Token: ", "").strip()
+            t2 = r2.text.replace("Token: ", "").strip()
+            if t1 and t2 and t1 == t2:
+                findings.append(ScanFinding(
+                    type="Insecure Random - Predictable Token",
+                    alert="Token de seguridad predecible — PRNG no criptográfico",
+                    severity="HIGH",
+                    risk="High",
+                    confidence="Medium",
+                    url=base + "/token",
+                    parameter="token",
+                    description=(
+                        "Dos llamadas consecutivas al endpoint /token devolvieron el mismo valor, "
+                        "indicando uso de random.choice() (PRNG no criptográfico) en lugar de "
+                        "secrets.token_urlsafe() para generación de tokens de seguridad."
+                    ),
+                    solution=(
+                        "Usar secrets.token_urlsafe(32) o secrets.token_hex(32) "
+                        "del módulo secrets de Python para tokens criptográficamente seguros."
+                    ),
+                    evidence=f"Token 1: {t1} | Token 2: {t2}",
+                    cwe="CWE-338",
+                    cweid="338",
+                    owasp_category="API2:2023",
+                    source="HTTP Scanner – Insecure Random Probe",
+                    request_payload={
+                        "method": "GET × 2",
+                        "url": base + "/token",
+                        "probe": "Predictable token generation test",
+                        "response": f"Tokens idénticos: {t1[:20]}...",
+                    },
+                ))
+        except Exception:
+            pass
+
+        logger.info(f"[ActiveProbe] {len(findings)} vulnerabilidades de inyección encontradas")
+        return findings
+
     def _check_ssl(self, url: str) -> List[ScanFinding]:
         findings = []
         parsed = urlparse(url)
@@ -796,6 +1023,45 @@ class ZAPDaemonScanner:
 # ──────────────────────────────────────────────────────────────────────────────
 # Punto de entrada público
 # ──────────────────────────────────────────────────────────────────────────────
+
+def run_active_probe_scan(target_url: str) -> Dict[str, Any]:
+    """
+    Escaneo DAST con probing activo de inyecciones.
+
+    Combina los checks pasivos del HTTPSecurityScanner con probing activo
+    (SQL injection, path traversal, debug mode, insecure random).
+
+    USO EXCLUSIVO en entornos controlados: labs, apps vulnerables de prueba,
+    pentesting autorizado.  NO usar contra sistemas en producción.
+    """
+    scanner = HTTPSecurityScanner()
+
+    passive_findings = scanner.scan(target_url)
+    active_findings  = scanner.probe_injection_vulnerabilities(target_url)
+    all_findings     = passive_findings + active_findings
+
+    vuln_dicts = [f.to_dict() for f in all_findings]
+    counts: Dict[str, int] = {"critical": 0, "high": 0, "medium": 0, "low": 0}
+    for f in all_findings:
+        key = f.severity.lower()
+        if key in counts:
+            counts[key] += 1
+
+    return {
+        "scan_type":     "DAST",
+        "tool":          "HTTP Security Scanner (Active Probe)",
+        "zap_available": False,
+        "target_url":    target_url,
+        "vulnerabilities": vuln_dicts,
+        "summary": {
+            "total_issues":    len(all_findings),
+            "alerts_found":    len(all_findings),
+            "passive_checks":  len(passive_findings),
+            "active_probes":   len(active_findings),
+            **counts,
+        },
+    }
+
 
 def run_dast_scan(target_url: str) -> Dict[str, Any]:
     """
