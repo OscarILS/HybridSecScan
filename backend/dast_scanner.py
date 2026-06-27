@@ -9,6 +9,7 @@ La función pública `run_dast_scan()` intenta ZAP primero y cae al HTTP Scanner
 si ZAP no está disponible. Ambas rutas producen hallazgos reales y estructurados.
 """
 
+import json
 import logging
 import time
 import uuid
