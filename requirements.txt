@@ -55,5 +55,13 @@ matplotlib>=3.8.0
 seaborn>=0.13.0
 tqdm>=4.66.0
 
+# Embeddings semánticos para correlación (mejora sobre TF-IDF bag-of-words)
+# Instalar con: pip install sentence-transformers
+# El correlador usa este modelo si está disponible; si no, usa Jaccard como fallback.
+sentence-transformers>=2.6.0
+
+# Análisis de dependencias (SCA - Software Composition Analysis)
+pip-audit>=2.7.0
+
 # Análisis adicionales (opcional - requiere instalación manual)
 # semgrep==1.45.0  # Descomenta si tienes semgrep instalado
