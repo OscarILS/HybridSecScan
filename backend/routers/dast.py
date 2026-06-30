@@ -13,9 +13,13 @@ import logging
 import uuid
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, Form, HTTPException
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
+
+limiter = Limiter(key_func=get_remote_address)
 
 try:
     from backend.dependencies import BASE_DIR, ScanResult, get_db
@@ -33,7 +37,8 @@ logger = logging.getLogger(__name__)
 
 
 @router.post("/scan/dast")
-async def run_dast_scan(target_url: str = Form(...), db: Session = Depends(get_db)):
+@limiter.limit("5/minute")  # DAST es costoso: máx 5 escaneos/minuto por IP
+async def run_dast_scan(request: Request, target_url: str = Form(...), db: Session = Depends(get_db)):
     """
     Runs a real DAST scan against target_url.
 

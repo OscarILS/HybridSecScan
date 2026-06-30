@@ -9,8 +9,12 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
+
+limiter = Limiter(key_func=get_remote_address)
 
 try:
     from backend.dependencies import BASE_DIR, ScanResult, get_db
@@ -40,7 +44,9 @@ logger = logging.getLogger(__name__)
 
 
 @router.post("/scan/sast")
+@limiter.limit("10/minute")  # SAST lanza subprocesos: máx 10/minuto por IP
 def run_sast_scan(
+    request: Request,
     target_path: str = Form(...),
     tool: str = Form(...),
     db: Session = Depends(get_db),
@@ -154,7 +160,8 @@ def run_sast_scan(
 
 
 @router.post("/upload/")
-async def upload_code(file: UploadFile = File(...), db: Session = Depends(get_db)):
+@limiter.limit("20/minute")  # Subida de archivos: máx 20/minuto por IP
+async def upload_code(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)):
     file_info = await validate_uploaded_file(file)
 
     scan_result = ScanResult(
