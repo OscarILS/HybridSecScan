@@ -94,6 +94,16 @@ class TestHealthAndRoot:
         assert response.status_code == 200
         assert isinstance(response.json(), list)
 
+    def test_scale_evaluation_endpoint(self):
+        response = client.get("/api/scale-evaluation")
+        assert response.status_code == 200
+        data = response.json()
+        if data["available"]:
+            assert data["source"].startswith("scale_evaluation_")
+            for method in ("sast", "dast", "hybrid"):
+                assert 0.0 <= data[method]["mean_f1"] <= 1.0
+            assert "hybrid_vs_sast" in data["statistical_tests"]
+
 
 # ── File upload tests ──────────────────────────────────────────────────────────
 
