@@ -158,31 +158,32 @@ La organización del código fuente sigue una arquitectura modular que facilita 
 
 ```
 HybridSecScan/
-├── backend/                 # Núcleo de la API FastAPI
-│   ├── __init__.py
-│   ├── main.py             # Servidor principal y endpoints
-│   ├── correlation_engine.py # Motor de correlación ML
-│   └── evaluation_system.py  # Sistema de evaluación comparativa
-├── database/               # Capa de persistencia
-│   ├── __init__.py
-│   ├── models.py           # Modelos de datos SQLAlchemy
-│   └── hybridsecscan.db    # Base de datos SQLite
-├── frontend/               # Interfaz de usuario React
-│   ├── src/
-│   │   ├── App.tsx        # Componente principal de la aplicación
-│   │   ├── App.css        # Estilos de la aplicación
-│   │   └── main.tsx       # Punto de entrada de React
-│   ├── package.json       # Dependencias y scripts de Node.js
-│   └── index.html         # Plantilla HTML principal
-├── reports/                # Directorio de reportes generados
-├── scripts/               # Scripts de análisis independiente
-│   ├── run_bandit.py      # Ejecutor de análisis Bandit
-│   ├── run_semgrep.py     # Ejecutor de análisis Semgrep
-│   └── run_zap.py         # Ejecutor de análisis OWASP ZAP
-├── uploads/               # Almacenamiento temporal de archivos
-├── docs/                  # Documentación académica
-│   └── uml/               # Diagramas UML del sistema
-├── tests/                 # Suite de pruebas unitarias
+├── backend/                    # API FastAPI
+│   ├── main.py                 # Fábrica de la app, middleware y endpoints de métricas
+│   ├── routers/                # Endpoints: sast, dast, hybrid, auth_router, reports
+│   ├── correlation_engine.py   # Motor de correlación (confianza ponderada + Random Forest)
+│   ├── dast_scanner.py         # Escáner HTTP (y ZAP si está disponible)
+│   ├── ssrf_validator.py       # Bloqueo de destinos DAST internos (SSRF)
+│   ├── auth.py                 # JWT y hashing de contraseñas
+│   ├── pdf_generator.py        # Reportes PDF/JSON
+│   ├── train_ml_model.py       # Entrenamiento del Random Forest
+│   └── ...                     # utils, dependencies, cache, gestor de modelos
+├── database/
+│   └── models.py               # Modelos SQLAlchemy (ScanResult, User)
+├── frontend/src/
+│   ├── App.tsx                 # Escáner (SAST, DAST, híbrido)
+│   └── ResearchDashboard.tsx   # Panel de investigación (datos reales)
+├── data/
+│   ├── processed/              # Dataset sintético (train/validation/test)
+│   ├── models/                 # Modelo entrenado y metadata.json
+│   └── experiments/            # Ground truth, resultados y evaluación a escala
+├── scripts/
+│   ├── generate_training_dataset.py  # Genera los 1,300 pares sintéticos
+│   ├── run_scale_evaluation.py       # Evaluación en 4 apps vs ground truth
+│   ├── run_*_experiment.py           # Experimentos de correlación
+│   └── run_bandit.py / run_semgrep.py / run_zap.py
+├── ProgramasPruebas/           # Apps intencionalmente vulnerables para pruebas
+├── tests/                      # Pruebas (pytest)
 ├── requirements.txt       # Dependencias de Python
 └── README.md             # Este documento
 ```

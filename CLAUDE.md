@@ -62,7 +62,6 @@ chmod +x run_hybridscan.sh && ./run_hybridscan.sh
 - **`dast_scanner.py`** — Real HTTP probing engine. Public API: `run_dast_scan(target_url: str) -> Dict`. Falls back from ZAP daemon → `HTTPSecurityScanner` automatically.
 - **`pdf_generator.py`** — Generates PDF and JSON summary reports from scan data.
 - **`ml_model_manager.py`** / **`train_ml_model.py`** — ML model persistence and training utilities.
-- **`evaluation_system.py`** — Comparative evaluation of scan results against ground truth.
 - **`cache_manager.py`** — Caching layer for scan results.
 
 ### Database (`database/`)
@@ -160,7 +159,7 @@ See `ProgramasPruebas/GUIA_PRUEBAS.md` for a full testing walkthrough.
 
 ## Experimental Validation Data (`data/experiments/`)
 
-Ground-truth JSON files for four known-vulnerable apps (DVWA, Juice Shop, NodeGoat, WebGoat) live in `data/experiments/ground_truth/`. Bandit/Semgrep scan results against those apps are in `data/experiments/results/`. These are used by `evaluation_system.py` to validate correlation accuracy.
+Ground-truth JSON files for four known-vulnerable apps (DVWA, Juice Shop, NodeGoat, WebGoat) live in `data/experiments/ground_truth/`. Bandit/Semgrep scan results against those apps are in `data/experiments/results/`. `scripts/run_scale_evaluation.py --save` compares them against the ground truth (precision/recall/F1 per method, paired t-test) and writes `data/experiments/scale_evaluation_*.json`, which `GET /api/scale-evaluation` serves to the research dashboard.
 
 ## Standalone Scripts (`scripts/`)
 
