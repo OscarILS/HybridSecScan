@@ -14,10 +14,12 @@ import io
 
 # Importar modules del backend
 import sys
-sys.path.insert(0, '../backend')
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from main import app, validate_scan_path, validate_uploaded_file, ALLOWED_EXTENSIONS, MAX_FILE_SIZE
-from correlation_engine import VulnerabilityCorrelator, Vulnerability, VulnerabilityType, ConfidenceLevel
+from backend.main import app, validate_scan_path, validate_uploaded_file, ALLOWED_EXTENSIONS, MAX_FILE_SIZE  # noqa: E402
+from backend.correlation_engine import (  # noqa: E402
+    VulnerabilityCorrelator, Vulnerability, VulnerabilityType, ConfidenceLevel
+)
 
 client = TestClient(app)
 
