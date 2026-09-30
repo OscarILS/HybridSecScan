@@ -32,16 +32,22 @@ def override_get_db():
         db.close()
 
 
-app.dependency_overrides[get_db] = override_get_db
 client = TestClient(app)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="module", autouse=True)
 def setup_database():
-    """Fixture para crear y limpiar la base de datos de pruebas."""
+    """Crea la BD de pruebas y apunta get_db a ella solo mientras corre este módulo.
+
+    El override se instala aquí (no al importar) para que no pise al de otros
+    módulos cuando pytest ejecuta todos los tests en el mismo proceso.
+    """
+    app.dependency_overrides[get_db] = override_get_db
     Base.metadata.create_all(bind=test_engine)
     yield
     Base.metadata.drop_all(bind=test_engine)
+    app.dependency_overrides.pop(get_db, None)
+    test_engine.dispose()  # libera el archivo SQLite (en Windows no se puede borrar abierto)
     if os.path.exists("test_auth.db"):
         os.remove("test_auth.db")
 
@@ -250,7 +256,8 @@ class TestAuthenticationSecurity:
 
     def test_sql_injection_in_username(self, setup_database):
         """Prueba que el sistema es resistente a SQL injection en username."""
-        malicious_data = {"username": "admin' OR '1'='1", "email": "test@example.com", "password": "password123"}
+        # Email propio: la BD es compartida por el módulo y test@example.com ya existe
+        malicious_data = {"username": "admin' OR '1'='1", "email": "sqli@example.com", "password": "password123"}
 
         response = client.post("/auth/register", json=malicious_data)
         # Debe registrar con el username literal, no ejecutar SQL
@@ -265,8 +272,8 @@ class TestAuthenticationSecurity:
     def test_xss_in_user_data(self, setup_database):
         """Prueba que el sistema sanitiza datos contra XSS."""
         xss_data = {
-            "username": "testuser",
-            "email": "test@example.com",
+            "username": "xssuser",
+            "email": "xss@example.com",
             "password": "password123",
             "full_name": "<script>alert('XSS')</script>",
         }

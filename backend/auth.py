@@ -15,6 +15,11 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
+try:
+    from backend.dependencies import get_db
+except ImportError:
+    from dependencies import get_db  # type: ignore[no-redef]
+
 load_dotenv()
 
 _PLACEHOLDER = "your-secret-key-change-in-production"
@@ -115,16 +120,12 @@ def authenticate_user(db: Session, username: str, password: str):
     return user
 
 
-def get_current_user(token: str = Depends(oauth2_scheme)):
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     """
     Obtiene el usuario actual desde el token JWT.
-    Abre y cierra su propia sesión de DB para evitar fugas de recursos.
+    Usa la sesión inyectada por get_db (que se cierra sola y se puede
+    sustituir en los tests).
     """
-    try:
-        from backend.dependencies import SessionLocal
-    except ImportError:
-        from dependencies import SessionLocal  # type: ignore[no-redef]
-
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -139,16 +140,12 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     except JWTError:
         raise credentials_exception
 
-    db = SessionLocal()
-    try:
-        from models import User  # database dir on sys.path via dependencies
+    from models import User  # database dir on sys.path via dependencies
 
-        user = db.query(User).filter(User.username == username).first()
-        if user is None:
-            raise credentials_exception
-        return user
-    finally:
-        db.close()
+    user = db.query(User).filter(User.username == username).first()
+    if user is None:
+        raise credentials_exception
+    return user
 
 
 def get_current_active_user(current_user=Depends(get_current_user)):

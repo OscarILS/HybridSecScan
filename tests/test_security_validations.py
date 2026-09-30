@@ -94,7 +94,10 @@ class TestSecurityValidations:
         with pytest.raises(Exception) as exc_info:
             await validate_uploaded_file(malicious_file)
 
-        assert "no permitida" in str(exc_info.value).lower()
+        # Según haya python-magic o no, lo rechaza el filtro MIME ("no permitido")
+        # o el de extensión ("no permitida"); ambos deben devolver 400.
+        assert exc_info.value.status_code == 400
+        assert "no permitid" in str(exc_info.value.detail).lower()
 
     @pytest.mark.asyncio
     async def test_filename_sanitization(self):

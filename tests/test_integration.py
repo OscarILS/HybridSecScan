@@ -32,17 +32,21 @@ def override_get_db():
         db.close()
 
 
-app.dependency_overrides[get_db] = override_get_db
 client = TestClient(app)
 
 # ── Fixtures ───────────────────────────────────────────────────────────────────
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="module", autouse=True)
 def setup_database():
+    # El override se instala aquí (no al importar) para no pisar al de otros
+    # módulos cuando pytest ejecuta todos los tests en el mismo proceso.
+    app.dependency_overrides[get_db] = override_get_db
     Base.metadata.create_all(bind=test_engine)
     yield
     Base.metadata.drop_all(bind=test_engine)
+    app.dependency_overrides.pop(get_db, None)
+    test_engine.dispose()  # libera el archivo SQLite (en Windows no se puede borrar abierto)
     if os.path.exists("test_integration.db"):
         os.remove("test_integration.db")
 

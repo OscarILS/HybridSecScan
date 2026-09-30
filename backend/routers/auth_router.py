@@ -10,7 +10,13 @@ from pydantic import BaseModel, ConfigDict, EmailStr
 from sqlalchemy.orm import Session
 
 try:
-    from backend.auth import ACCESS_TOKEN_EXPIRE_MINUTES, authenticate_user, create_access_token, get_password_hash
+    from backend.auth import (
+        ACCESS_TOKEN_EXPIRE_MINUTES,
+        authenticate_user,
+        create_access_token,
+        get_current_active_user,
+        get_password_hash,
+    )
     from backend.dependencies import get_db
     from models import User  # database dir is on sys.path after dependencies import
 except ImportError:
@@ -18,6 +24,7 @@ except ImportError:
         ACCESS_TOKEN_EXPIRE_MINUTES,
         authenticate_user,
         create_access_token,
+        get_current_active_user,
         get_password_hash,
     )
     from dependencies import get_db  # type: ignore[no-redef]
@@ -61,7 +68,7 @@ async def register_user(user_data: UserRegister, db: Session = Depends(get_db)):
             db.query(User).filter((User.username == user_data.username) | (User.email == user_data.email)).first()
         )
         if existing:
-            field = "usuario" if existing.username == user_data.username else "correo electrónico"
+            field = "nombre de usuario" if existing.username == user_data.username else "correo electrónico"
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"El {field} ya está registrado")
 
         new_user = User(
@@ -127,6 +134,14 @@ async def login_user(request: Request, form_data: OAuth2PasswordRequestForm = De
 
 
 @router.get("/me", response_model=UserResponse)
-async def get_current_user_info(db: Session = Depends(get_db)):
-    """Placeholder — requires a valid Bearer token (wired via get_current_active_user dependency)."""
-    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+async def get_current_user_info(current_user=Depends(get_current_active_user)):
+    """Devuelve el usuario autenticado. Requiere un Bearer token válido."""
+    return {
+        "id": current_user.id,
+        "username": current_user.username,
+        "email": current_user.email,
+        "full_name": current_user.full_name,
+        "is_active": bool(current_user.is_active),
+        "is_admin": bool(current_user.is_admin),
+        "created_at": current_user.created_at.isoformat() if current_user.created_at else "",
+    }
