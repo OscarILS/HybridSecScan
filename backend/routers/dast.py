@@ -10,6 +10,7 @@ SSRF prevention is applied before any network request is made.
 
 import json
 import logging
+import os
 import uuid
 from datetime import datetime, timezone
 
@@ -22,15 +23,13 @@ from sqlalchemy.orm import Session
 limiter = Limiter(key_func=get_remote_address)
 
 try:
-    from backend.dependencies import BASE_DIR, ScanResult, get_db
     from backend.dast_scanner import run_dast_scan as _probe
+    from backend.dependencies import BASE_DIR, ScanResult, get_db
     from backend.ssrf_validator import validate_dast_target
 except ImportError:
-    from dependencies import BASE_DIR, ScanResult, get_db  # type: ignore[no-redef]
     from dast_scanner import run_dast_scan as _probe  # type: ignore[no-redef]
+    from dependencies import BASE_DIR, ScanResult, get_db  # type: ignore[no-redef]
     from ssrf_validator import validate_dast_target  # type: ignore[no-redef]
-
-import os
 
 router = APIRouter()
 logger = logging.getLogger(__name__)

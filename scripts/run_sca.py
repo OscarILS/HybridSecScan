@@ -19,22 +19,23 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-REPO_ROOT   = Path(__file__).resolve().parent.parent
-REQ_FILE    = REPO_ROOT / "requirements.txt"
-OUTPUT_DIR  = REPO_ROOT / "data" / "experiments" / "results"
+REPO_ROOT = Path(__file__).resolve().parent.parent
+REQ_FILE = REPO_ROOT / "requirements.txt"
+OUTPUT_DIR = REPO_ROOT / "data" / "experiments" / "results"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def run_sca(as_json: bool = False) -> dict:
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("  HybridSecScan — SCA (Software Composition Analysis)")
     print(f"  {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print("="*60)
+    print("=" * 60)
 
     # Verificar pip-audit
     check = subprocess.run(
         [sys.executable, "-m", "pip_audit", "--version"],
-        capture_output=True, text=True,
+        capture_output=True,
+        text=True,
     )
     if check.returncode != 0:
         print("\n  pip-audit no instalado. Instalando...")
@@ -48,11 +49,19 @@ def run_sca(as_json: bool = False) -> dict:
 
     # Ejecutar pip-audit
     result = subprocess.run(
-        [sys.executable, "-m", "pip_audit",
-         "--requirement", str(REQ_FILE),
-         "--format", "json",
-         "--progress-spinner", "off"],
-        capture_output=True, text=True,
+        [
+            sys.executable,
+            "-m",
+            "pip_audit",
+            "--requirement",
+            str(REQ_FILE),
+            "--format",
+            "json",
+            "--progress-spinner",
+            "off",
+        ],
+        capture_output=True,
+        text=True,
     )
 
     # pip-audit devuelve código != 0 si encuentra vulnerabilidades
@@ -63,8 +72,8 @@ def run_sca(as_json: bool = False) -> dict:
         print(f"  ERROR parseando salida de pip-audit:\n{output[:500]}")
         return {"error": output, "vulnerabilities": [], "dependencies": []}
 
-    vulns      = audit_data.get("vulnerabilities", [])
-    deps       = audit_data.get("dependencies", [])
+    vulns = audit_data.get("vulnerabilities", [])
+    deps = audit_data.get("dependencies", [])
     vuln_count = len(vulns)
 
     # ── Resumen ───────────────────────────────────────────────────────────────
@@ -80,17 +89,17 @@ def run_sca(as_json: bool = False) -> dict:
 
     print(f"  Dependencias analizadas: {len(deps)}")
     print(f"  Con CVEs conocidos:      {vuln_count}")
-    print(f"  Cobertura OWASP:         API10:2023 (Unsafe Consumption of APIs)")
+    print("  Cobertura OWASP:         API10:2023 (Unsafe Consumption of APIs)")
 
     # ── Guardar resultado ─────────────────────────────────────────────────────
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     out_file = OUTPUT_DIR / f"sca_pip_audit_{ts}.json"
     report = {
-        "scan_type":   "SCA",
-        "tool":        "pip-audit",
-        "timestamp":   datetime.now(timezone.utc).isoformat(),
-        "target":      str(REQ_FILE),
-        "owasp":       "API10:2023",
+        "scan_type": "SCA",
+        "tool": "pip-audit",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "target": str(REQ_FILE),
+        "owasp": "API10:2023",
         "dependencies_total": len(deps),
         "vulnerabilities_found": vuln_count,
         "vulnerabilities": vulns,

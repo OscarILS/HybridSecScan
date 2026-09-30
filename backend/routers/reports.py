@@ -68,17 +68,25 @@ def download_pdf_report(scan_id: str, db: Session = Depends(get_db)):
                     if not isinstance(vuln, dict):
                         continue
                     sev = str(vuln.get("issue_severity", vuln.get("severity", "low"))).upper()
-                    key = "critical" if "CRITICAL" in sev else "high" if "HIGH" in sev else "medium" if "MEDIUM" in sev else "low"
+                    key = (
+                        "critical"
+                        if "CRITICAL" in sev
+                        else "high" if "HIGH" in sev else "medium" if "MEDIUM" in sev else "low"
+                    )
                     severity_distribution[key] += 1
-                    vulnerabilities.append({
-                        "source": "SAST", "tool": sast_scan.tool,
-                        "type": vuln.get("test_name", vuln.get("type", "Unknown")),
-                        "severity": vuln.get("issue_severity", vuln.get("severity", "low")),
-                        "file": vuln.get("filename", ""), "line": vuln.get("line_number", 0),
-                        "description": vuln.get("issue_text", vuln.get("description", "No description")),
-                        "cwe": vuln.get("issue_cwe", {}).get("id", ""),
-                        "recommendation": vuln.get("more_info", ""),
-                    })
+                    vulnerabilities.append(
+                        {
+                            "source": "SAST",
+                            "tool": sast_scan.tool,
+                            "type": vuln.get("test_name", vuln.get("type", "Unknown")),
+                            "severity": vuln.get("issue_severity", vuln.get("severity", "low")),
+                            "file": vuln.get("filename", ""),
+                            "line": vuln.get("line_number", 0),
+                            "description": vuln.get("issue_text", vuln.get("description", "No description")),
+                            "cwe": vuln.get("issue_cwe", {}).get("id", ""),
+                            "recommendation": vuln.get("more_info", ""),
+                        }
+                    )
 
         if dast_id:
             dast_scan = db.query(ScanResult).filter(ScanResult.id == dast_id).first()
@@ -88,28 +96,39 @@ def download_pdf_report(scan_id: str, db: Session = Depends(get_db)):
                     if not isinstance(vuln, dict):
                         continue
                     sev = str(vuln.get("risk", vuln.get("severity", "low"))).upper()
-                    key = "critical" if "CRITICAL" in sev else "high" if "HIGH" in sev else "medium" if "MEDIUM" in sev else "low"
+                    key = (
+                        "critical"
+                        if "CRITICAL" in sev
+                        else "high" if "HIGH" in sev else "medium" if "MEDIUM" in sev else "low"
+                    )
                     severity_distribution[key] += 1
-                    vulnerabilities.append({
-                        "source": "DAST", "tool": dast_scan.tool,
-                        "type": vuln.get("alert", vuln.get("type", "Unknown")),
-                        "alert": vuln.get("alert", ""),
-                        "severity": vuln.get("risk", vuln.get("severity", "low")),
-                        "url": vuln.get("url", ""),
-                        "description": vuln.get("description", "No description"),
-                        "solution": vuln.get("solution", ""),
-                        "cwe": vuln.get("cweid", vuln.get("cwe", "")),
-                        "cweid": vuln.get("cweid", vuln.get("cwe", "")),
-                        "owasp_category": vuln.get("owasp_category", ""),
-                        "evidence": vuln.get("evidence", ""),
-                        "parameter": vuln.get("parameter", ""),
-                        "request_payload": vuln.get("request_payload", {}),
-                    })
+                    vulnerabilities.append(
+                        {
+                            "source": "DAST",
+                            "tool": dast_scan.tool,
+                            "type": vuln.get("alert", vuln.get("type", "Unknown")),
+                            "alert": vuln.get("alert", ""),
+                            "severity": vuln.get("risk", vuln.get("severity", "low")),
+                            "url": vuln.get("url", ""),
+                            "description": vuln.get("description", "No description"),
+                            "solution": vuln.get("solution", ""),
+                            "cwe": vuln.get("cweid", vuln.get("cwe", "")),
+                            "cweid": vuln.get("cweid", vuln.get("cwe", "")),
+                            "owasp_category": vuln.get("owasp_category", ""),
+                            "evidence": vuln.get("evidence", ""),
+                            "parameter": vuln.get("parameter", ""),
+                            "request_payload": vuln.get("request_payload", {}),
+                        }
+                    )
 
         pdf_data = {
             "scan_type": "HYBRID",
             "target": scan_result.target,
-            "timestamp": scan_result.created_at.isoformat() if hasattr(scan_result.created_at, "isoformat") else str(scan_result.created_at),
+            "timestamp": (
+                scan_result.created_at.isoformat()
+                if hasattr(scan_result.created_at, "isoformat")
+                else str(scan_result.created_at)
+            ),
             "vulnerabilities": vulnerabilities,
             "correlations": correlations,
             "summary": severity_distribution,
@@ -120,39 +139,53 @@ def download_pdf_report(scan_id: str, db: Session = Depends(get_db)):
             },
         }
     else:
-        raw_vulns = scan_data.get("results", scan_data.get("vulnerabilities", [])) if isinstance(scan_data, dict) else []
+        raw_vulns = (
+            scan_data.get("results", scan_data.get("vulnerabilities", [])) if isinstance(scan_data, dict) else []
+        )
         vulnerabilities = []
 
         if scan_result.scan_type == "SAST":
             for v in raw_vulns:
                 if isinstance(v, dict):
-                    vulnerabilities.append({
-                        "type": v.get("test_name", "Unknown"), "severity": v.get("issue_severity", "low"),
-                        "file": v.get("filename", ""), "line": v.get("line_number", 0),
-                        "description": v.get("issue_text", "No description"),
-                        "cwe": v.get("issue_cwe", {}).get("id", ""), "recommendation": v.get("more_info", ""),
-                    })
+                    vulnerabilities.append(
+                        {
+                            "type": v.get("test_name", "Unknown"),
+                            "severity": v.get("issue_severity", "low"),
+                            "file": v.get("filename", ""),
+                            "line": v.get("line_number", 0),
+                            "description": v.get("issue_text", "No description"),
+                            "cwe": v.get("issue_cwe", {}).get("id", ""),
+                            "recommendation": v.get("more_info", ""),
+                        }
+                    )
         else:
             for v in raw_vulns:
                 if isinstance(v, dict):
-                    vulnerabilities.append({
-                        "type": v.get("alert", v.get("type", "Unknown")),
-                        "severity": v.get("risk", v.get("severity", "low")),
-                        "url": v.get("url", ""), "description": v.get("description", "No description"),
-                        "solution": v.get("solution", ""),
-                        "cwe": v.get("cweid", v.get("cwe", "")),
-                        "cweid": v.get("cweid", v.get("cwe", "")),
-                        "owasp_category": v.get("owasp_category", ""),
-                        "evidence": v.get("evidence", ""), "parameter": v.get("parameter", ""),
-                        "source": v.get("source", ""), "alert": v.get("alert", ""),
-                        "request_payload": v.get("request_payload", {}),
-                    })
+                    vulnerabilities.append(
+                        {
+                            "type": v.get("alert", v.get("type", "Unknown")),
+                            "severity": v.get("risk", v.get("severity", "low")),
+                            "url": v.get("url", ""),
+                            "description": v.get("description", "No description"),
+                            "solution": v.get("solution", ""),
+                            "cwe": v.get("cweid", v.get("cwe", "")),
+                            "cweid": v.get("cweid", v.get("cwe", "")),
+                            "owasp_category": v.get("owasp_category", ""),
+                            "evidence": v.get("evidence", ""),
+                            "parameter": v.get("parameter", ""),
+                            "source": v.get("source", ""),
+                            "alert": v.get("alert", ""),
+                            "request_payload": v.get("request_payload", {}),
+                        }
+                    )
 
         for v in vulnerabilities:
             if isinstance(v, dict):
                 v["severity"] = str(v.get("severity") or "info").lower()
 
-        stored_breakdown = scan_data.get("severity_breakdown") or scan_data.get("summary") if isinstance(scan_data, dict) else None
+        stored_breakdown = (
+            scan_data.get("severity_breakdown") or scan_data.get("summary") if isinstance(scan_data, dict) else None
+        )
         if isinstance(stored_breakdown, dict):
             summary = {k: int(stored_breakdown.get(k, 0)) for k in ("critical", "high", "medium", "low")}
         else:
@@ -161,14 +194,20 @@ def download_pdf_report(scan_id: str, db: Session = Depends(get_db)):
         pdf_data = {
             "scan_type": scan_result.scan_type,
             "target": scan_result.target,
-            "timestamp": scan_result.created_at.isoformat() if hasattr(scan_result.created_at, "isoformat") else str(scan_result.created_at),
+            "timestamp": (
+                scan_result.created_at.isoformat()
+                if hasattr(scan_result.created_at, "isoformat")
+                else str(scan_result.created_at)
+            ),
             "vulnerabilities": vulnerabilities,
             "summary": summary,
         }
 
     try:
         pdf_bytes = generate_pdf_report(pdf_data)
-        filename = f"HybridSecScan_Report_{scan_result.scan_type.upper()}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        filename = (
+            f"HybridSecScan_Report_{scan_result.scan_type.upper()}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        )
         return StreamingResponse(
             iter([pdf_bytes]),
             media_type="application/pdf",
@@ -189,14 +228,20 @@ def download_json_summary(scan_id: str, db: Session = Depends(get_db)):
     pdf_data = {
         "scan_type": scan_result.scan_type,
         "target": scan_result.target,
-        "timestamp": scan_result.created_at.isoformat() if hasattr(scan_result.created_at, "isoformat") else str(scan_result.created_at),
+        "timestamp": (
+            scan_result.created_at.isoformat()
+            if hasattr(scan_result.created_at, "isoformat")
+            else str(scan_result.created_at)
+        ),
         "vulnerabilities": scan_data.get("vulnerabilities", []),
         "summary": {},
     }
 
     try:
         json_summary = generate_json_summary(pdf_data)
-        filename = f"HybridSecScan_Summary_{scan_result.scan_type.upper()}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        filename = (
+            f"HybridSecScan_Summary_{scan_result.scan_type.upper()}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        )
         return StreamingResponse(
             iter([json.dumps(json_summary, indent=2).encode()]),
             media_type="application/json",

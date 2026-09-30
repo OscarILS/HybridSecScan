@@ -2,7 +2,6 @@
 Tests de integración para flujos completos del sistema HybridSecScan.
 """
 
-import json
 import os
 import shutil
 import sys
@@ -16,7 +15,7 @@ from sqlalchemy.orm import sessionmaker
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from backend.main import app, Base, get_db  # noqa: E402 — path set above
+from backend.main import Base, app, get_db  # noqa: E402 — path set above
 
 # ── Test database ──────────────────────────────────────────────────────────────
 
@@ -38,6 +37,7 @@ client = TestClient(app)
 
 # ── Fixtures ───────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture(scope="module")
 def setup_database():
     Base.metadata.create_all(bind=test_engine)
@@ -50,7 +50,7 @@ def setup_database():
 @pytest.fixture
 def test_python_file():
     """Archivo Python con vulnerabilidades conocidas para SAST."""
-    test_code = '''
+    test_code = """
 import sqlite3
 
 def vulnerable_query(user_id):
@@ -63,7 +63,7 @@ def vulnerable_query(user_id):
 def hardcoded_secret():
     API_KEY = "sk-1234567890abcdef"  # Hardcoded secret
     return API_KEY
-'''
+"""
     temp_dir = tempfile.mkdtemp()
     test_file = Path(temp_dir) / "vulnerable_test.py"
     test_file.write_text(test_code)
@@ -72,6 +72,7 @@ def hardcoded_secret():
 
 
 # ── Core API tests ─────────────────────────────────────────────────────────────
+
 
 class TestHealthAndRoot:
     def test_health(self):
@@ -91,6 +92,7 @@ class TestHealthAndRoot:
 
 
 # ── File upload tests ──────────────────────────────────────────────────────────
+
 
 class TestFileUpload:
     def test_upload_valid_python_file(self, setup_database, test_python_file):
@@ -128,6 +130,7 @@ class TestFileUpload:
 
 
 # ── SAST scan tests ────────────────────────────────────────────────────────────
+
 
 class TestSASTScan:
     def test_sast_scan_rejects_unsupported_tool(self, setup_database, test_python_file):
@@ -171,6 +174,7 @@ class TestSASTScan:
 
 # ── DAST scan tests ────────────────────────────────────────────────────────────
 
+
 class TestDASTScan:
     def test_dast_rejects_non_http_url(self):
         response = client.post("/scan/dast", data={"target_url": "ftp://example.com"})
@@ -193,6 +197,7 @@ class TestDASTScan:
 
 
 # ── Hybrid correlation tests ───────────────────────────────────────────────────
+
 
 class TestHybridCorrelation:
     def test_hybrid_requires_existing_scan_ids(self, setup_database):
@@ -264,24 +269,38 @@ class TestHybridCorrelation:
         )
 
         correlator = VulnerabilityCorrelator()
-        correlator.add_sast_findings([
-            Vulnerability(
-                id="s1", type=VulnerabilityType.XSS, severity=ConfidenceLevel.MEDIUM,
-                file_path="frontend/src/App.tsx", line_number=42,
-                endpoint="/api/comments",
-                description="dangerouslySetInnerHTML usage without sanitization",
-                cwe_id="CWE-79", owasp_category="API8:2023", source_tool="semgrep",
-            )
-        ])
-        correlator.add_dast_findings([
-            Vulnerability(
-                id="d1", type=VulnerabilityType.XSS, severity=ConfidenceLevel.MEDIUM,
-                file_path="", line_number=0,
-                endpoint="http://localhost:3000/api/comments",
-                description="XSS payload reflected in response",
-                cwe_id="CWE-79", owasp_category="API8:2023", source_tool="zap",
-            )
-        ])
+        correlator.add_sast_findings(
+            [
+                Vulnerability(
+                    id="s1",
+                    type=VulnerabilityType.XSS,
+                    severity=ConfidenceLevel.MEDIUM,
+                    file_path="frontend/src/App.tsx",
+                    line_number=42,
+                    endpoint="/api/comments",
+                    description="dangerouslySetInnerHTML usage without sanitization",
+                    cwe_id="CWE-79",
+                    owasp_category="API8:2023",
+                    source_tool="semgrep",
+                )
+            ]
+        )
+        correlator.add_dast_findings(
+            [
+                Vulnerability(
+                    id="d1",
+                    type=VulnerabilityType.XSS,
+                    severity=ConfidenceLevel.MEDIUM,
+                    file_path="",
+                    line_number=0,
+                    endpoint="http://localhost:3000/api/comments",
+                    description="XSS payload reflected in response",
+                    cwe_id="CWE-79",
+                    owasp_category="API8:2023",
+                    source_tool="zap",
+                )
+            ]
+        )
 
         report = correlator.generate_correlation_report()
 
@@ -316,6 +335,7 @@ class TestHybridCorrelation:
 
 # ── Cache manager integration ──────────────────────────────────────────────────
 
+
 class TestCacheIntegration:
     def test_cache_manager_integration(self):
         from backend.cache_manager import CacheManager
@@ -339,6 +359,7 @@ class TestCacheIntegration:
 
 
 # ── ML model manager integration ──────────────────────────────────────────────
+
 
 class TestMLModelManager:
     def test_ml_model_manager_integration(self, tmp_path):

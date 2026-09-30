@@ -16,6 +16,7 @@ from fastapi import HTTPException, UploadFile
 
 try:
     import magic
+
     _MAGIC_AVAILABLE = True
 except ImportError:
     _MAGIC_AVAILABLE = False
@@ -44,6 +45,7 @@ SECURE_SCAN_BASE = Path(tempfile.gettempdir()) / "hybridscan_secure"
 SECURE_SCAN_BASE.mkdir(exist_ok=True)
 
 # ── Path / File Validation ─────────────────────────────────────────────────────
+
 
 def validate_scan_path(target_path: str) -> Optional[Path]:
     """
@@ -161,6 +163,7 @@ async def validate_uploaded_file(file: UploadFile) -> dict:
 
 # ── Scan-Result Helpers ────────────────────────────────────────────────────────
 
+
 def _calculate_severity_breakdown(results: dict) -> dict:
     breakdown = {"critical": 0, "high": 0, "medium": 0, "low": 0, "info": 0}
     vulnerabilities = results.get("vulnerabilities", results.get("results", []))
@@ -221,17 +224,19 @@ def update_scan_result(scan_result, results: dict, status: str = "completed", er
         if results and isinstance(results, dict):
             duration = (datetime.now(timezone.utc) - scan_result.timestamp).total_seconds()
             vulnerabilities = results.get("vulnerabilities", results.get("results", []))
-            scan_result.results.update({
-                "scan_duration_seconds": duration,
-                "vulnerabilities_found": len(vulnerabilities) if isinstance(vulnerabilities, list) else 0,
-                "severity_breakdown": _calculate_severity_breakdown(results),
-                "scan_completed_at": datetime.now(timezone.utc).isoformat(),
-                "metadata": {
-                    "scan_version": "2.0",
-                    "engine": "HybridSecScan",
-                    "owasp_categories_detected": _extract_owasp_categories(results),
-                },
-            })
+            scan_result.results.update(
+                {
+                    "scan_duration_seconds": duration,
+                    "vulnerabilities_found": len(vulnerabilities) if isinstance(vulnerabilities, list) else 0,
+                    "severity_breakdown": _calculate_severity_breakdown(results),
+                    "scan_completed_at": datetime.now(timezone.utc).isoformat(),
+                    "metadata": {
+                        "scan_version": "2.0",
+                        "engine": "HybridSecScan",
+                        "owasp_categories_detected": _extract_owasp_categories(results),
+                    },
+                }
+            )
     except Exception as e:
         logger.error(f"Error actualizando scan result {getattr(scan_result, 'id', '?')}: {e}")
         scan_result.status = "error"
@@ -239,6 +244,7 @@ def update_scan_result(scan_result, results: dict, status: str = "completed", er
 
 
 # ── Vulnerability Mappers ──────────────────────────────────────────────────────
+
 
 def map_bandit_to_vulnerability(bandit_issue: dict, file_path: str) -> Vulnerability:
     severity_map = {

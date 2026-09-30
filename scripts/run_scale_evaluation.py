@@ -211,11 +211,7 @@ def parse_semgrep(path: Path) -> List[dict]:
         # Endpoint desde el path relativo (últimos 3 segmentos del archivo)
         try:
             rel_parts = Path(file_path.replace("\\", "/")).parts
-            endpoint = (
-                "/" + "/".join(rel_parts[-3:])
-                if len(rel_parts) >= 3
-                else "/" + file_path
-            )
+            endpoint = "/" + "/".join(rel_parts[-3:]) if len(rel_parts) >= 3 else "/" + file_path
         except Exception:
             endpoint = "/" + file_path
 
@@ -244,9 +240,7 @@ def parse_bandit(path: Path) -> List[dict]:
     for r in d.get("results", []):
         cwe_info = r.get("issue_cwe", {})
         cwe_id = f"cwe-{cwe_info.get('id', 0)}" if isinstance(cwe_info, dict) else ""
-        vuln_type = (
-            normalize_type(cwe_id) if cwe_id else normalize_type(r.get("test_id", ""))
-        )
+        vuln_type = normalize_type(cwe_id) if cwe_id else normalize_type(r.get("test_id", ""))
         findings.append(
             {
                 "type": vuln_type,
@@ -329,9 +323,7 @@ def match_finding_to_gt(finding: dict, gt_entry: dict) -> float:
 MATCH_THRESHOLD = 0.40  # score >= 0.40 → TP
 
 
-def classify_findings(
-    findings: List[dict], ground_truth: List[dict]
-) -> Tuple[List, List, List]:
+def classify_findings(findings: List[dict], ground_truth: List[dict]) -> Tuple[List, List, List]:
     """
     Clasifica hallazgos en TP, FP, FN.
 
@@ -353,9 +345,7 @@ def classify_findings(
                 best_gt_idx = i
 
         if best_score >= MATCH_THRESHOLD:
-            tp.append(
-                {**f, "_gt_match": ground_truth[best_gt_idx], "_score": best_score}
-            )
+            tp.append({**f, "_gt_match": ground_truth[best_gt_idx], "_score": best_score})
             gt_matched[best_gt_idx] = True
         else:
             fp.append(f)
@@ -371,11 +361,7 @@ def compute_metrics(tp, fp, fn) -> dict:
     n_fn = len(fn)
     precision = n_tp / (n_tp + n_fp) if (n_tp + n_fp) > 0 else 0.0
     recall = n_tp / (n_tp + n_fn) if (n_tp + n_fn) > 0 else 0.0
-    f1 = (
-        2 * precision * recall / (precision + recall)
-        if (precision + recall) > 0
-        else 0.0
-    )
+    f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
     return {
         "tp": n_tp,
         "fp": n_fp,
@@ -442,16 +428,12 @@ def load_app_results(app_name: str, cfg: dict) -> dict:
 
     # SAST
     sast_findings = []
-    sast_file = best_result_file(cfg["sast_key"], "semgrep") or best_result_file(
-        cfg["sast_key"], "sast_semgrep"
-    )
+    sast_file = best_result_file(cfg["sast_key"], "semgrep") or best_result_file(cfg["sast_key"], "sast_semgrep")
     if sast_file:
         sast_findings = parse_semgrep(sast_file)
     else:
         # Intentar con bandit
-        sast_file = best_result_file(
-            cfg["sast_key"], "sast_bandit"
-        ) or best_result_file(cfg["sast_key"], "bandit")
+        sast_file = best_result_file(cfg["sast_key"], "sast_bandit") or best_result_file(cfg["sast_key"], "bandit")
         if sast_file:
             sast_findings = parse_bandit(sast_file)
 
@@ -504,9 +486,7 @@ def cohens_d(group_a: List[float], group_b: List[float]) -> float:
     return (mean(group_a) - mean(group_b)) / pooled_std if pooled_std > 0 else 0.0
 
 
-def paired_t_test(
-    before: List[float], after: List[float]
-) -> Tuple[float, float, float]:
+def paired_t_test(before: List[float], after: List[float]) -> Tuple[float, float, float]:
     """
     Prueba t de Student emparejada (H1 unilateral: after > before).
 
@@ -561,12 +541,8 @@ def run_evaluation() -> dict:
         gt = data["ground_truth"]
 
         print(f"  Ground truth: {len(gt)} vulnerabilidades conocidas")
-        print(
-            f"  SAST file:   {Path(data['sast_file']).name if data['sast_file'] else 'NO ENCONTRADO'}"
-        )
-        print(
-            f"  DAST file:   {Path(data['dast_file']).name if data['dast_file'] else 'NO ENCONTRADO'}"
-        )
+        print(f"  SAST file:   {Path(data['sast_file']).name if data['sast_file'] else 'NO ENCONTRADO'}")
+        print(f"  DAST file:   {Path(data['dast_file']).name if data['dast_file'] else 'NO ENCONTRADO'}")
         print(f"  SAST hallazgos totales: {len(data['sast_findings'])}")
         if len(data["sast_findings"]) == 0 and data["sast_file"]:
             print("  NOTA: 0 hallazgos SAST — probable incompatibilidad de lenguaje")
@@ -662,9 +638,7 @@ def run_evaluation() -> dict:
         return "pequeño" if abs(d) < 0.5 else ("mediano" if abs(d) < 0.8 else "grande")
 
     df = len(f1_sast) - 1
-    print(
-        f"\n  Prueba t emparejada (gl={df}; H₁ unilateral: Hybrid > método individual):"
-    )
+    print(f"\n  Prueba t emparejada (gl={df}; H₁ unilateral: Hybrid > método individual):")
     print(
         f"  F1     Hybrid vs SAST  → t={t_hyb_sast:+.3f}  p(unilat)={p_hyb_sast:.4f}  p(bilat)={p2_hyb_sast:.4f}"
         f"  Cohen's d={d_hyb_sast:+.3f} ({d_interpretation(d_hyb_sast)})"
@@ -673,9 +647,7 @@ def run_evaluation() -> dict:
         f"  F1     Hybrid vs DAST  → t={t_hyb_dast:+.3f}  p(unilat)={p_hyb_dast:.4f}  p(bilat)={p2_hyb_dast:.4f}"
         f"  Cohen's d={d_hyb_dast:+.3f} ({d_interpretation(d_hyb_dast)})"
     )
-    print(
-        f"  Recall Hybrid vs SAST  → t={t_rec_sast:+.3f}  p(unilat)={p_rec_sast:.4f}  p(bilat)={p2_rec_sast:.4f}"
-    )
+    print(f"  Recall Hybrid vs SAST  → t={t_rec_sast:+.3f}  p(unilat)={p_rec_sast:.4f}  p(bilat)={p2_rec_sast:.4f}")
 
     sig_sast = "SÍ (p < 0.05)" if p_hyb_sast < 0.05 else "NO (p ≥ 0.05)"
     sig_dast = "SÍ (p < 0.05)" if p_hyb_dast < 0.05 else "NO (p ≥ 0.05)"
@@ -686,9 +658,7 @@ def run_evaluation() -> dict:
     print("\n" + "=" * 70)
     print("  TABLA RESUMEN — Lista para Capítulo 5")
     print("=" * 70)
-    print(
-        f"\n  {'Método':<12}  {'Precision':>10}  {'Recall':>8}  {'F1-Score':>9}  {'IC95% F1':>18}"
-    )
+    print(f"\n  {'Método':<12}  {'Precision':>10}  {'Recall':>8}  {'F1-Score':>9}  {'IC95% F1':>18}")
     print(f"  {'─'*12}  {'─'*10}  {'─'*8}  {'─'*9}  {'─'*18}")
 
     for label, precs, recs, f1s in [
@@ -697,9 +667,7 @@ def run_evaluation() -> dict:
         ("Hybrid", prec_hybrid, rec_hybrid, f1_hybrid),
     ]:
         lo, hi = confidence_interval_95(f1s)
-        print(
-            f"  {label:<12}  {mean(precs):>10.3f}  {mean(recs):>8.3f}  {mean(f1s):>9.3f}  [{lo:.3f}, {hi:.3f}]"
-        )
+        print(f"  {label:<12}  {mean(precs):>10.3f}  {mean(recs):>8.3f}  {mean(f1s):>9.3f}  [{lo:.3f}, {hi:.3f}]")
 
     delta_f1 = mean(f1_hybrid) - mean(f1_sast)
     delta_rec = mean(rec_hybrid) - mean(rec_sast)
@@ -770,10 +738,7 @@ def main():
     if args.save:
         from datetime import datetime
 
-        out = (
-            OUTPUT_DIR
-            / f"scale_evaluation_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        )
+        out = OUTPUT_DIR / f"scale_evaluation_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
         out.write_text(json.dumps(stats, indent=2))
         print(f"\n  Resultados guardados: {out}")
 

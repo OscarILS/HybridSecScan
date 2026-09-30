@@ -3,6 +3,7 @@ Sistema de autenticación JWT para HybridSecScan.
 Proporciona funciones para crear y verificar tokens, autenticar usuarios y gestionar contraseñas.
 """
 
+import os
 import sys
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -13,7 +14,6 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
-import os
 
 load_dotenv()
 
@@ -47,11 +47,11 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     Verifica si una contraseña en texto plano coincide con el hash.
-    
+
     Args:
         plain_password: Contraseña en texto plano
         hashed_password: Hash de la contraseña almacenada
-        
+
     Returns:
         True si la contraseña es correcta, False en caso contrario
     """
@@ -61,10 +61,10 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def get_password_hash(password: str) -> str:
     """
     Genera un hash seguro de la contraseña.
-    
+
     Args:
         password: Contraseña en texto plano
-        
+
     Returns:
         Hash bcrypt de la contraseña
     """
@@ -74,11 +74,11 @@ def get_password_hash(password: str) -> str:
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """
     Crea un token JWT con los datos proporcionados.
-    
+
     Args:
         data: Datos a codificar en el token (típicamente {"sub": username})
         expires_delta: Tiempo de expiración personalizado
-        
+
     Returns:
         Token JWT codificado
     """
@@ -87,7 +87,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
         expire = datetime.now(timezone.utc) + expires_delta
     else:
         expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    
+
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -96,17 +96,17 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 def authenticate_user(db: Session, username: str, password: str):
     """
     Autentica un usuario verificando sus credenciales.
-    
+
     Args:
         db: Sesión de base de datos
         username: Nombre de usuario
         password: Contraseña en texto plano
-        
+
     Returns:
         Usuario si las credenciales son válidas, False en caso contrario
     """
     from database.models import User
-    
+
     user = db.query(User).filter(User.username == username).first()
     if not user:
         return False
@@ -142,6 +142,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     db = SessionLocal()
     try:
         from models import User  # database dir on sys.path via dependencies
+
         user = db.query(User).filter(User.username == username).first()
         if user is None:
             raise credentials_exception
@@ -150,16 +151,16 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
         db.close()
 
 
-def get_current_active_user(current_user = Depends(get_current_user)):
+def get_current_active_user(current_user=Depends(get_current_user)):
     """
     Verifica que el usuario actual esté activo.
-    
+
     Args:
         current_user: Usuario actual obtenido del token
-        
+
     Returns:
         Usuario actual si está activo
-        
+
     Raises:
         HTTPException: Si el usuario está inactivo
     """

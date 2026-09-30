@@ -18,32 +18,32 @@ from pathlib import Path
 import requests
 
 REPO = Path(__file__).resolve().parent.parent
-OUT  = REPO / "data" / "experiments" / "results"
+OUT = REPO / "data" / "experiments" / "results"
 OUT.mkdir(parents=True, exist_ok=True)
 
 sys.path.insert(0, str(REPO))
-from backend.dast_scanner import run_active_probe_scan
+from backend.dast_scanner import run_active_probe_scan  # noqa: E402 — requiere sys.path
 
 APPS = [
     {
-        "name":         "DVWA",
-        "image":        "vulnerables/web-dvwa",
-        "host_port":    8080,
+        "name": "DVWA",
+        "image": "vulnerables/web-dvwa",
+        "host_port": 8080,
         "container_port": 80,
-        "url":          "http://localhost:8080",
-        "wait_path":    "/",
-        "out_prefix":   "dast_active_dvwa",
-        "stop_after":   True,
+        "url": "http://localhost:8080",
+        "wait_path": "/",
+        "out_prefix": "dast_active_dvwa",
+        "stop_after": True,
     },
     {
-        "name":         "NodeGoat",
-        "image":        "1njected/nodegoat",
-        "host_port":    4000,
+        "name": "NodeGoat",
+        "image": "1njected/nodegoat",
+        "host_port": 4000,
         "container_port": 4000,
-        "url":          "http://localhost:4000",
-        "wait_path":    "/login",
-        "out_prefix":   "dast_active_nodegoat",
-        "stop_after":   True,
+        "url": "http://localhost:4000",
+        "wait_path": "/login",
+        "out_prefix": "dast_active_nodegoat",
+        "stop_after": True,
     },
 ]
 
@@ -53,14 +53,18 @@ def docker_run(image: str, host_port: int, container_port: int) -> str:
     # Pull explícito con timeout largo (imágenes grandes pueden tardar)
     pull = subprocess.run(
         ["docker", "pull", image],
-        capture_output=True, text=True, timeout=300,
+        capture_output=True,
+        text=True,
+        timeout=300,
     )
     if pull.returncode != 0:
         raise RuntimeError(f"docker pull falló: {pull.stderr.strip()[:300]}")
 
     result = subprocess.run(
         ["docker", "run", "-d", "--rm", "-p", f"{host_port}:{container_port}", image],
-        capture_output=True, text=True, timeout=60,
+        capture_output=True,
+        text=True,
+        timeout=60,
     )
     if result.returncode != 0:
         raise RuntimeError(f"docker run falló: {result.stderr.strip()}")
@@ -121,13 +125,15 @@ def scan_app(cfg: dict) -> dict:
 
     vulns = result.get("vulnerabilities", [])
     summary = result.get("summary", {})
-    print(f"  Hallazgos: {len(vulns)} (passive={summary.get('passive_checks',0)}, "
-          f"active={summary.get('active_probes',0)}, idor={summary.get('idor_checks',0)}, "
-          f"auth={summary.get('auth_checks',0)})")
+    print(
+        f"  Hallazgos: {len(vulns)} (passive={summary.get('passive_checks',0)}, "
+        f"active={summary.get('active_probes',0)}, idor={summary.get('idor_checks',0)}, "
+        f"auth={summary.get('auth_checks',0)})"
+    )
 
     for v in vulns:
         sev = v.get("severity", "?")
-        t   = v.get("type", "?")[:40]
+        t = v.get("type", "?")[:40]
         url = v.get("url", "?")[-30:]
         print(f"    [{sev:8}] {t:40} {url}")
 
@@ -135,11 +141,11 @@ def scan_app(cfg: dict) -> dict:
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     out_file = OUT / f"{cfg['out_prefix']}_{ts}.json"
     out_data = {
-        "scan_type":   "DAST",
-        "tool":        "HTTP Security Scanner (Active Probe)",
-        "target_url":  cfg["url"],
-        "app":         cfg["name"],
-        "timestamp":   datetime.now(timezone.utc).isoformat(),
+        "scan_type": "DAST",
+        "tool": "HTTP Security Scanner (Active Probe)",
+        "target_url": cfg["url"],
+        "app": cfg["name"],
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         **result,
     }
     out_file.write_text(json.dumps(out_data, indent=2))
@@ -172,9 +178,9 @@ def main():
             print(f"ERROR con {cfg['name']}: {e}")
             results[cfg["name"]] = {}
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("  RESUMEN")
-    print("="*60)
+    print("=" * 60)
     for name, r in results.items():
         n = len(r.get("vulnerabilities", []))
         print(f"  {name}: {n} hallazgos")

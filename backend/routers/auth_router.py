@@ -14,8 +14,14 @@ try:
     from backend.dependencies import get_db
     from models import User  # database dir is on sys.path after dependencies import
 except ImportError:
-    from auth import ACCESS_TOKEN_EXPIRE_MINUTES, authenticate_user, create_access_token, get_password_hash  # type: ignore[no-redef]
+    from auth import (  # type: ignore[no-redef]
+        ACCESS_TOKEN_EXPIRE_MINUTES,
+        authenticate_user,
+        create_access_token,
+        get_password_hash,
+    )
     from dependencies import get_db  # type: ignore[no-redef]
+
     from models import User  # type: ignore[no-redef]
 
 router = APIRouter(prefix="/auth")
@@ -51,9 +57,9 @@ class UserResponse(BaseModel):
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register_user(user_data: UserRegister, db: Session = Depends(get_db)):
     try:
-        existing = db.query(User).filter(
-            (User.username == user_data.username) | (User.email == user_data.email)
-        ).first()
+        existing = (
+            db.query(User).filter((User.username == user_data.username) | (User.email == user_data.email)).first()
+        )
         if existing:
             field = "usuario" if existing.username == user_data.username else "correo electrónico"
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"El {field} ya está registrado")
@@ -110,7 +116,13 @@ async def login_user(request: Request, form_data: OAuth2PasswordRequestForm = De
     return UserLogin(
         access_token=access_token,
         token_type="bearer",
-        user={"id": user.id, "username": user.username, "email": user.email, "full_name": user.full_name, "is_admin": user.is_admin},
+        user={
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "full_name": user.full_name,
+            "is_admin": user.is_admin,
+        },
     )
 
 
