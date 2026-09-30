@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-HybridSecScan is an academic thesis project (UNMSM, Ingeniería de Software) implementing a hybrid SAST+DAST security auditing system for REST APIs, focused on the OWASP API Security Top 10. The key innovation is an ML-based correlation engine (Random Forest) that combines static and dynamic analysis findings to reduce false positives.
+HybridSecScan is an academic thesis project (UNMSM, Ingeniería de Software) implementing a hybrid SAST+DAST security auditing system for REST APIs, focused on the OWASP API Security Top 10. The central contribution is a correlation engine (weighted score + Random Forest) that pairs static and dynamic findings to identify the ones both techniques confirm. Reducing false positives is the design goal; the current experiments do not demonstrate it (see "Experimental Validation Data").
 
 ## Development Commands
 
@@ -141,7 +141,7 @@ Real metrics from `data/models/metadata.json` (1,300 samples, 517 features):
 | Test       | 76.9%    | 66.3%     | 96.5%  | 0.786 | 0.785   |
 | Confusion  | TN=45    | FP=28     | FN=2   | TP=55 |         |
 
-High recall (96.5%) is intentional — in security, missing a real vulnerability is worse than a false alarm. The model trades precision for recall. **Never hardcode these values** — `correlation_engine.py` always reads them from `metadata.json` at load time.
+The model ends up with high recall (96.5%) and lower precision (66.3%). This is an observed result, not a configured choice: training uses the default 0.5 decision threshold and `class_weight='balanced'`, with no threshold tuning. **Never hardcode these values** — `correlation_engine.py` always reads them from `metadata.json` at load time.
 
 ## DAST Scanner
 

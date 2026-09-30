@@ -279,7 +279,7 @@ def run_correlation(sast_findings: list, dast_findings: list) -> dict:
     print(f"  Correlaciones media (0.55-0.70): {len(medium)}")
     print(f"  Correlaciones baja  (threshold): {len(low)}")
     print(f"  Total correlaciones encontradas: {len(raw_corrs)}")
-    print(f"  Reduccion FP estimada:           {summary['potential_false_positives_reduced']:.1f}%")
+    print(f"  SAST sin corroborar por DAST:    {summary['sast_uncorroborated_pct']:.1f}%")
     if raw_corrs:
         print("\n  Top correlaciones:")
         for sv, dv, conf in raw_corrs[:5]:
@@ -385,7 +385,7 @@ def print_thesis_summary(sast_data, dast_data, hybrid_data):
     print("  │  HYBRID (Correlación ML)            │")
     print(f"  │  Correlaciones altas:  {s['high_confidence_correlations']:>4}           │")
     print(f"  │  Correlaciones medias: {s['medium_confidence_correlations']:>4}           │")
-    print(f"  │  Reducción FP:    {s['potential_false_positives_reduced']:>6.1f}%           │")
+    print(f"  │  SAST sin corroborar: {s['sast_uncorroborated_pct']:>6.1f}%       │")
     print("  └─────────────────────────────────────┘")
 
     unique_hybrid = s["high_confidence_correlations"] + s["medium_confidence_correlations"]
@@ -396,11 +396,11 @@ def print_thesis_summary(sast_data, dast_data, hybrid_data):
     print("\n  Cobertura complementaria:")
     print(f"    SAST solo:    {len(sv):>3} hallazgos  (vulnerabilidades de codigo fuente)")
     print(f"    DAST solo:    {len(dv):>3} hallazgos  (problemas en runtime HTTP)")
-    print(f"    TOTAL hybrid: {total_unique:>3} hallazgos  ({total_unique/max(len(sv),1):.0f}x mas que SAST solo)")
+    print(f"    TOTAL hybrid: {total_unique:>3} hallazgos")
     if unique_hybrid > 0:
         print(f"    Correlaciones confirmadas: {unique_hybrid} ({unique_hybrid/total_unique*100:.1f}% overlap)")
-    print(f"\n  CONCLUSION: el sistema hibrido detecta {total_unique} vulnerabilidades")
-    print(f"  vs {len(sv)} con SAST solo y {len(dv)} con DAST solo")
+    print(f"\n  CONCLUSION: {total_unique} hallazgos combinados (SAST {len(sv)} + DAST {len(dv)}).")
+    print("  Son hallazgos sin verificar: la exactitud contra ground truth la mide run_scale_evaluation.py")
 
     print("\n  Archivos de resultado en: data/experiments/results/")
     print("=" * 60)

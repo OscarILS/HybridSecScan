@@ -363,6 +363,44 @@ class TestHybridCorrelation:
         vc = VulnerabilityCorrelator()
         assert vc._calculate_endpoint_similarity("api/xusers", "http://h/users") < 0.70
 
+    def test_report_counts_severities_and_uncorroborated_sast(self):
+        """El resumen cuenta cada severidad por su nombre y reporta el % de SAST sin corroborar."""
+        from backend.correlation_engine import (
+            ConfidenceLevel,
+            Vulnerability,
+            VulnerabilityCorrelator,
+            VulnerabilityType,
+        )
+
+        def vuln(vid, sev, tool):
+            return Vulnerability(
+                id=vid,
+                type=VulnerabilityType.XSS,
+                severity=sev,
+                file_path="app.py",
+                line_number=1,
+                endpoint=f"/{vid}",
+                description="x",
+                cwe_id="CWE-79",
+                owasp_category="API8:2023",
+                source_tool=tool,
+            )
+
+        vc = VulnerabilityCorrelator()
+        vc.add_sast_findings(
+            [vuln("s1", ConfidenceLevel.CRITICAL, "bandit"), vuln("s2", ConfidenceLevel.HIGH, "bandit")]
+        )
+        vc.add_dast_findings(
+            [vuln("d1", ConfidenceLevel.MEDIUM, "http_scanner"), vuln("d2", ConfidenceLevel.LOW, "zap")]
+        )
+        summary = vc.generate_correlation_report(threshold=1.0)["summary"]  # umbral 1.0: sin correlaciones
+        assert summary["critical_issues"] == 1
+        assert summary["high_severity_findings"] == 1
+        assert summary["medium_severity_findings"] == 1
+        assert summary["low_severity_findings"] == 1
+        assert summary["sast_uncorroborated_pct"] == 100.0
+        assert "potential_false_positives_reduced" not in summary
+
     def test_ml_features_use_training_encoders(self):
         """Las features categóricas se codifican con los LabelEncoder del entrenamiento (sin hash())."""
         import pytest

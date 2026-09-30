@@ -6,6 +6,10 @@
 
 ---
 
+> **Nota:** este resumen corresponde a una ejecución del 27/06/2026 (archivos `*_juiceshop_20260627_0107*.json`).
+> Es distinta de la evaluación a escala (`scale_evaluation_*.json`), que usa otra ejecución de Juice Shop
+> (17 hallazgos SAST y 20 DAST) y sí compara contra el ground truth. Las cifras de ambas no deben mezclarse.
+
 ## Aplicación objetivo: OWASP Juice Shop
 
 | Campo | Valor |
@@ -65,11 +69,13 @@
 
 | Métrica | Valor |
 |---|---|
-| Cobertura total única | **32 hallazgos** |
-| Incremento vs SAST solo | **+256%** (9 → 32) |
-| Incremento vs DAST solo | **+39%** (23 → 32) |
+| Hallazgos combinados (SAST + DAST) | **32 hallazgos** (sin verificar contra ground truth) |
 | Correlaciones ML (threshold 0.70) | 0 |
-| Modelo ML utilizado | Random Forest, F1=0.786, Recall=96.5% |
+| Modelo ML utilizado | Random Forest, F1=0.786, Recall=96.5% (sobre el test sintético) |
+
+Los hallazgos no son vulnerabilidades verificadas: cuántos son verdaderos positivos solo se sabe comparando
+contra el ground truth, que es lo que hace la evaluación a escala (en su ejecución de Juice Shop, 3 de 37
+hallazgos combinados fueron verdaderos positivos).
 
 **Interpretación de 0 correlaciones ML:**
 
@@ -80,7 +86,7 @@ Las 0 correlaciones con el modelo ML reflejan un **domain shift** entre los dato
 - Las descripciones reales de Semgrep ("Dangerous use of res.sendFile without validation") y del HTTP Scanner ("Content-Security-Policy header not set") **no comparten vocabulario** con el training set
 - Las 500 features TF-IDF resultan ≈0 para datos reales → el modelo no discrimina
 
-Este hallazgo es académicamente válido: motiva el fine-tuning del modelo con datos reales de herramientas. Es documentado como **trabajo futuro** en Capítulo 6.
+Este hallazgo es académicamente válido: motiva el fine-tuning del modelo con datos reales de herramientas. Se documenta como **trabajo futuro**.
 
 **Cobertura complementaria (hallazgo principal):**
 
@@ -120,7 +126,7 @@ Matriz de confusión (Test Set, n=130):
 | **Real No** | TN=45 | FP=28 |
 | **Real Sí** | FN=2  | TP=55 |
 
-**Alto recall (96.5%) es intencional:** en seguridad es peor pasar por alto una vulnerabilidad real (FN) que generar una falsa alarma (FP). El modelo fue diseñado con esta prioridad.
+**Recall alto, precisión menor:** es un resultado observado del modelo, no un ajuste configurado (umbral de decisión por defecto de 0.5, `class_weight='balanced'`). En seguridad este perfil es aceptable porque omitir una vulnerabilidad real (FN) suele ser más costoso que una falsa alarma (FP).
 
 ---
 
@@ -141,7 +147,7 @@ El gap entre datos de entrenamiento y datos reales es un problema conocido en ML
 
 ## Conclusión experimental
 
-El sistema HybridSecScan demuestra que la combinación SAST+DAST detecta **3.6× más vulnerabilidades** que el análisis estático solo sobre OWASP Juice Shop. La arquitectura es correcta y el modelo ML tiene métricas académicamente válidas (F1=0.786). El domain shift identificado es un hallazgo honesto que sustenta la necesidad de fine-tuning con datos reales — trabajo futuro claramente delimitado.
+En OWASP Juice Shop, SAST y DAST producen hallazgos de capas distintas (código fuente frente a comportamiento HTTP), por lo que su combinación amplía la cobertura: 32 hallazgos frente a 9 de SAST solo. Son hallazgos sin verificar; la exactitud de cada método contra el ground truth se reporta en la evaluación a escala. El motor de correlación no encontró correlaciones en esta aplicación por el domain shift entre el dataset sintético y las descripciones reales, lo que motiva reentrenar con datos reales como trabajo futuro.
 
 ---
 

@@ -241,6 +241,10 @@ const ResearchDashboard: React.FC = () => {
         <>
           <div className="chart-section">
             <h2>🧪 Evaluación en {scaleEval!.n_apps} aplicaciones vulnerables (media por método)</h2>
+            <p className="metric-improvement">
+              “Híbrido” = unión de los hallazgos SAST y DAST contra el ground truth. Mide la cobertura combinada; no
+              aplica el motor de correlación.
+            </p>
             <ResponsiveContainer width="100%" height={320}>
               <BarChart data={methodChart} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />

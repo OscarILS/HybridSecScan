@@ -15,6 +15,7 @@ data/experiments/
 ├── test_apps/                        # Código fuente de las apps vulnerables
 ├── results/                          # Salidas crudas de SAST/DAST y de los experimentos de correlación
 ├── scale_evaluation_*.json           # Evaluación a escala (una por ejecución)
+├── figures/                          # Figuras y tablas para la tesis (plot_scale_evaluation.py)
 └── EXPERIMENTAL_RESULTS_SUMMARY.md   # Resumen del experimento en Juice Shop
 ```
 
@@ -60,6 +61,16 @@ con el ground truth y calcula por método (SAST, DAST, híbrido = unión de hall
 
 El resultado se guarda en `scale_evaluation_AAAAMMDD_HHMMSS.json`. El panel de investigación
 lo muestra a través de `GET /api/scale-evaluation` (siempre el archivo más reciente).
+
+### Figuras y tablas para la tesis
+
+```bash
+python scripts/plot_scale_evaluation.py
+```
+
+Genera en `figures/`, a partir de la evaluación más reciente, figuras PNG a 300 ppp
+(métricas por método, F1 por aplicación y F1 emparejado SAST → híbrido) y
+`tablas_evaluacion.md` con las tablas de métricas y de pruebas t.
 
 ## Experimentos de correlación
 

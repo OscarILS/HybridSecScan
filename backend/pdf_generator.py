@@ -1176,10 +1176,10 @@ def _hybrid_correlations(story, scan_data: Dict, styles):
     m_data = [
         ["Hallazgos SAST analizados", str(metrics.get("total_sast", 0))],
         ["Hallazgos DAST analizados", str(metrics.get("total_dast", 0))],
-        ["Reducción de falsos positivos", f"{metrics.get('fp_reduction', 0):.1f}%"],
+        ["Hallazgos SAST sin corroborar por DAST", f"{metrics.get('sast_uncorroborated_pct', 0):.1f}%"],
         ["Correlaciones confirmadas", str(len([c for c in correlations if c.get("confidence_score", 0) >= 0.5]))],
     ]
-    m_t = Table(m_data, colWidths=[6 * cm, 4 * cm])
+    m_t = Table(m_data, colWidths=[7.5 * cm, 3 * cm])
     m_t.setStyle(
         TableStyle(
             [

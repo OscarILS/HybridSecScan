@@ -2,7 +2,7 @@
 
 ## Introducción
 
-En el desarrollo de este trabajo de investigación para mi tesis de grado, he identificado una problemática importante en el ámbito de la ciberseguridad: la falta de herramientas integradas que combinen efectivamente el análisis estático (SAST) y dinámico (DAST) de código, especialmente para APIs REST. Como parte de mi proyecto de titulación en Ingeniería de Sistemas, propongo HybridSecScan, un sistema híbrido que incorpora técnicas de aprendizaje automático para correlacionar vulnerabilidades y reducir los falsos positivos.
+En el desarrollo de este trabajo de investigación para mi tesis de grado, he identificado una problemática importante en el ámbito de la ciberseguridad: la falta de herramientas integradas que combinen efectivamente el análisis estático (SAST) y dinámico (DAST) de código, especialmente para APIs REST. Como parte de mi proyecto de titulación en Ingeniería de Software, propongo HybridSecScan, un sistema híbrido que incorpora técnicas de aprendizaje automático para correlacionar vulnerabilidades y reducir los falsos positivos.
 
 ## Fundamentación del Proyecto
 
@@ -203,12 +203,13 @@ A lo largo del desarrollo de este proyecto de grado, se han abordado múltiples 
 
 ### Algoritmo de Correlación ML
 
-Mi contribución principal radica en el desarrollo de un algoritmo de correlación basado en Random Forest que:
+Mi contribución principal es un motor de correlación que empareja hallazgos SAST y DAST:
 
-1. **Analiza Patrones de Vulnerabilidades**: Identifica correlaciones entre hallazgos SAST y DAST
-2. **Reduce Falsos Positivos**: Implementa filtros inteligentes basados en contexto
-3. **Mejora la Precisión**: Utiliza características específicas de APIs REST
-4. **Proporciona Confiabilidad**: Calcula métricas de confianza para cada hallazgo
+1. **Puntuación de confianza ponderada**: combina similitud de endpoint, tipo de vulnerabilidad, similitud semántica de las descripciones, probabilidad del Random Forest y severidad
+2. **Clasificador Random Forest**: entrenado con pares sintéticos etiquetados (correlacionado / no correlacionado)
+3. **Confirmación cruzada**: marca los hallazgos estáticos que la evidencia dinámica confirma
+
+El objetivo de diseño es reducir falsos positivos priorizando los hallazgos confirmados por ambas técnicas; los experimentos actuales no lo demuestran (ver Resultados).
 
 ## Validación del Sistema
 
@@ -229,9 +230,10 @@ La validación se realizó en dos niveles:
 | Validación | 80.8% | 69.4% | 94.3% | 0.800 | 0.851 |
 | Test | 76.9% | 66.3% | 96.5% | 0.786 | 0.785 |
 
-El alto recall es intencional: en seguridad es peor omitir una vulnerabilidad real que generar una falsa alarma.
+El modelo resulta con recall alto y precisión menor. Es un resultado observado, no un ajuste: se usa el umbral de decisión por defecto (0.5) con `class_weight='balanced'`.
 
-**Evaluación a escala en 4 aplicaciones** (fuente: `data/experiments/scale_evaluation_20260929_203402.json`):
+**Evaluación a escala en 4 aplicaciones** (fuente: `data/experiments/scale_evaluation_20260929_203402.json`).
+En esta evaluación, "Híbrido" es la **unión** de los hallazgos SAST y DAST comparada contra el ground truth; **no aplica el motor de correlación**, así que mide la cobertura combinada de ambas técnicas, no el correlador:
 
 | Método | Precision media | Recall medio | F1 medio |
 |---|---|---|---|
@@ -240,9 +242,13 @@ El alto recall es intencional: en seguridad es peor omitir una vulnerabilidad re
 | Híbrido | 0.158 | 0.550 | 0.203 |
 
 - El enfoque híbrido supera a DAST solo en F1 (t pareada, gl = 3, t = 2.37, p = 0.049 unilateral; p = 0.098 bilateral).
-- Frente a SAST solo, el híbrido aumenta el recall medio (+0.05) pero no mejora el F1 (−0.016); ninguna de las dos diferencias es estadísticamente significativa (F1: p = 0.20 bilateral; recall: p = 0.20 unilateral). Con n = 4 aplicaciones, la potencia estadística es baja.
-- En OWASP Juice Shop, SAST+DAST cubre capas complementarias: 9 hallazgos SAST y 23 DAST, 32 en total (ver `data/experiments/EXPERIMENTAL_RESULTS_SUMMARY.md`).
-- El modelo ML no produjo correlaciones sobre datos reales por *domain shift*: el vocabulario TF-IDF aprendido de descripciones sintéticas no coincide con el de Semgrep y el escáner HTTP. Reentrenar con salidas reales de las herramientas queda como trabajo futuro.
+- Frente a SAST solo, el híbrido no mejora el F1 (−0.016; t = −1.65, p = 0.20 bilateral, p = 0.90 unilateral). El recall medio sube +0.05 de forma descriptiva (p = 0.20 unilateral, no significativo); todo ese aumento viene de Juice Shop (0.40 → 0.60).
+- La precisión media del híbrido (0.158) es menor que la de SAST (0.171): los hallazgos DAST añaden sobre todo falsos positivos. Con n = 4 aplicaciones, la potencia estadística es baja.
+
+**Experimentos de correlación** (sí aplican el motor de correlación):
+
+- App vulnerable (Flask, SAST con Bandit): 1 correlación confirmada, SQL injection en `/login`, confianza 0.884 (`data/experiments/results/hybrid_vulnerable_20260930_095950.json`).
+- OWASP Juice Shop (SAST con Semgrep): 0 correlaciones. Es una ejecución distinta de la evaluación a escala (9 hallazgos SAST y 23 DAST; ver `data/experiments/EXPERIMENTAL_RESULTS_SUMMARY.md`). El modelo no correlaciona por *domain shift*: el vocabulario TF-IDF aprendido de descripciones sintéticas no coincide con el de Semgrep y el escáner HTTP. Reentrenar con salidas reales de las herramientas queda como trabajo futuro.
 
 ## Limitaciones y Trabajo Futuro
 

@@ -135,7 +135,10 @@ def download_pdf_report(scan_id: str, db: Session = Depends(get_db)):
             "hybrid_metrics": {
                 "total_sast": summary_data.get("total_sast_findings", 0),
                 "total_dast": summary_data.get("total_dast_findings", 0),
-                "fp_reduction": summary_data.get("potential_false_positives_reduced", 0),
+                # Reportes antiguos usaban la clave potential_false_positives_reduced (misma fórmula)
+                "sast_uncorroborated_pct": summary_data.get(
+                    "sast_uncorroborated_pct", summary_data.get("potential_false_positives_reduced", 0)
+                ),
             },
         }
     else:

@@ -5,7 +5,7 @@
   "target_url": "http://localhost:5000",
   "vulnerabilities": [
     {
-      "id": "aac2fb32-e193-456e-a27c-057082efb5bf",
+      "id": "2e54a23e-8854-48ad-8b04-1eeb62ea465a",
       "type": "Missing Security Header",
       "alert": "Header ausente: Content-Security-Policy",
       "severity": "HIGH",
@@ -32,7 +32,7 @@
       }
     },
     {
-      "id": "539df94a-80d0-4712-adbb-651b1c320aad",
+      "id": "8acb4be6-5035-4361-aab7-23a4c24c4ec2",
       "type": "Missing Security Header",
       "alert": "Header ausente: X-Frame-Options",
       "severity": "MEDIUM",
@@ -59,7 +59,7 @@
       }
     },
     {
-      "id": "46270851-c017-4e21-8020-f53ce0e453b5",
+      "id": "faa25ffa-5642-472f-b27c-52343c6363aa",
       "type": "Missing Security Header",
       "alert": "Header ausente: X-Content-Type-Options",
       "severity": "LOW",
@@ -86,7 +86,7 @@
       }
     },
     {
-      "id": "046d8cb8-80f4-4efa-b9ba-ffe12b515212",
+      "id": "d8238a48-eca9-43e1-8309-61528799a470",
       "type": "Missing Security Header",
       "alert": "Header ausente: Strict-Transport-Security",
       "severity": "HIGH",
@@ -113,7 +113,7 @@
       }
     },
     {
-      "id": "c90e2ef9-f4e6-4c01-bd86-b95c0c98ad6c",
+      "id": "3f399743-12c6-4ee5-a09f-6a5845bea74f",
       "type": "Missing Security Header",
       "alert": "Header ausente: Referrer-Policy",
       "severity": "LOW",
@@ -140,7 +140,7 @@
       }
     },
     {
-      "id": "09cd861a-3f25-4582-ba75-d7130e5bb35e",
+      "id": "140ea6a2-b38a-4741-9ce2-1ab0bb60ca8a",
       "type": "Missing Security Header",
       "alert": "Header ausente: Permissions-Policy",
       "severity": "LOW",
@@ -167,7 +167,7 @@
       }
     },
     {
-      "id": "db3a5c13-1efc-49c6-95c3-ee647e8bdf60",
+      "id": "35e7b909-55d2-4062-b752-317141242773",
       "type": "Missing Rate Limiting",
       "alert": "Sin control de tasa (rate limiting) detectable",
       "severity": "MEDIUM",
@@ -193,7 +193,7 @@
       }
     },
     {
-      "id": "9d19f913-ab69-47ed-b211-7463fe726328",
+      "id": "b34e383c-f671-458c-b0c1-37c8c204a904",
       "type": "Server Information Disclosure",
       "alert": "Header Server expone informaci\u00f3n del servidor",
       "severity": "LOW",
@@ -219,7 +219,7 @@
       }
     },
     {
-      "id": "e93ceda0-2bb8-410d-9846-1a203481ea46",
+      "id": "02023cb1-b57a-487b-854d-a61302f101db",
       "type": "Insecure Transport",
       "alert": "API accesible sin HTTPS sin redirecci\u00f3n",
       "severity": "HIGH",
@@ -245,7 +245,7 @@
       }
     },
     {
-      "id": "0872a8d1-4bf8-4081-a45b-67eb818c5664",
+      "id": "6c63c5b3-6088-46ec-aa92-8a38622b0eef",
       "type": "SQL Injection",
       "alert": "Inyecci\u00f3n SQL confirmada por respuesta del servidor",
       "severity": "HIGH",
@@ -269,7 +269,7 @@
       }
     },
     {
-      "id": "0e50344d-6f57-49df-a482-cfd3830c91ec",
+      "id": "549a6a1c-d99f-4a92-b3eb-e977b1553f9d",
       "type": "Path Traversal",
       "alert": "Path traversal confirmado \u2014 acceso a archivos del sistema",
       "severity": "HIGH",
@@ -295,7 +295,7 @@
       }
     },
     {
-      "id": "b9cd0dbf-fbe1-4921-b4f4-802237c5a0f9",
+      "id": "7ef5e76b-70b6-4309-a65a-ff48875719de",
       "type": "Error Disclosure - Debug Mode",
       "alert": "Stack trace completo expuesto \u2014 modo debug activo",
       "severity": "HIGH",

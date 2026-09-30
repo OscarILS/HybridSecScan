@@ -401,9 +401,9 @@ def save_and_summarize(sast_data, dast_data, hybrid_data):
     print("=" * 60)
     print(f"\n  Objetivo: {APP_PATH.name} → {TARGET_URL}")
     print("\n  ┌──────────────────────────────────────┐")
-    print(f"  │ SAST (Bandit)    : {len(sv):>3} vulnerabilidades │")
-    print(f"  │ DAST (Active)    : {len(dv):>3} vulnerabilidades │")
-    print(f"  │ Cobertura hibrida: {len(sv)+len(dv):>3} hallazgos unicos│")
+    print(f"  │ SAST (Bandit)    : {len(sv):>3} hallazgos        │")
+    print(f"  │ DAST (Active)    : {len(dv):>3} hallazgos        │")
+    print(f"  │ SAST + DAST      : {len(sv)+len(dv):>3} hallazgos        │")
     print("  ├──────────────────────────────────────┤")
     print(f"  │ CORRELACIONES    : {len(corr):>3}                  │")
 
@@ -420,12 +420,11 @@ def save_and_summarize(sast_data, dast_data, hybrid_data):
         for sv_v, dv_v, conf in corr:
             print(f"    [{conf:.3f}] {sv_v.type.value} @ {sv_v.endpoint}" f" <-> {dv_v.type.value} @ {dv_v.endpoint}")
 
-    print(f"\n  CONCLUSION: El sistema detecta {len(sv)+len(dv)} vulnerabilidades unicas")
-    print(f"  y confirma {len(corr)} mediante correlacion SAST+DAST.")
-    if corr:
-        reduction = len(corr) / len(sv) * 100 if sv else 0
-        print(f"  El {reduction:.0f}% de hallazgos SAST fueron corroborados por DAST")
-        print("  -> reduccion de falsos positivos en ese porcentaje.")
+    print(f"\n  CONCLUSION: {len(sv)+len(dv)} hallazgos (sin verificar contra ground truth);")
+    print(f"  {len(corr)} confirmados por ambas tecnicas mediante correlacion SAST+DAST.")
+    if corr and sv:
+        corroborated = len({c[0].id for c in corr}) / len(sv) * 100
+        print(f"  El {corroborated:.0f}% de los hallazgos SAST quedo corroborado por evidencia DAST.")
     print("=" * 60)
 
 

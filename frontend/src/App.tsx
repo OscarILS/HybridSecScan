@@ -533,8 +533,8 @@ function App() {
                   <div className="form-group">
                     <label>Correlación SAST + DAST</label>
                     <p className="hint-text">
-                      El motor Random Forest correlaciona hallazgos estáticos y dinámicos
-                      para reducir falsos positivos en hasta un 40%.
+                      El motor de correlación (suma ponderada + Random Forest) identifica
+                      qué hallazgos estáticos confirma la evidencia dinámica.
                     </p>
 
                     <label>Escaneo SAST base</label>

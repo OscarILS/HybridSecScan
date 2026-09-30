@@ -5,11 +5,11 @@
     "high_confidence_correlations": 1,
     "medium_confidence_correlations": 0,
     "low_confidence_correlations": 0,
-    "potential_false_positives_reduced": 91.67,
+    "sast_uncorroborated_pct": 91.67,
     "critical_issues": 0,
-    "high_severity_findings": 0,
-    "medium_severity_findings": 0,
-    "low_severity_findings": 24
+    "high_severity_findings": 8,
+    "medium_severity_findings": 6,
+    "low_severity_findings": 10
   },
   "correlations": [
     {
@@ -18,14 +18,14 @@
         "type": "sql_injection",
         "file": "C:\\Users\\OSCAR\\Documents\\GitHub\\HybridSecScan\\ProgramasPruebas\\vulnerable_app.py",
         "line": 25,
-        "severity": 2,
+        "severity": "MEDIUM",
         "tool": "bandit"
       },
       "dast_vulnerability": {
         "id": "DAST_SQL_Injection",
         "type": "sql_injection",
         "endpoint": "/login",
-        "severity": 3,
+        "severity": "HIGH",
         "tool": "http_scanner"
       },
       "confidence_score": 0.8844454132910653,

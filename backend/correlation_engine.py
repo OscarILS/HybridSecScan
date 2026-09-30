@@ -1,6 +1,6 @@
 """
 Algoritmo de Correlación Inteligente de Vulnerabilidades
-Sistema que correlaciona hallazgos SAST y DAST para reducir falsos positivos
+Correlaciona hallazgos SAST y DAST para identificar los que ambas técnicas confirman
 """
 
 import json
@@ -153,8 +153,7 @@ class VulnerabilityCorrelator:
         Justificación:
         - Interpretabilidad: Permite feature importance analysis
         - Robustez: Maneja bien datos mixtos (categóricos + numéricos)
-        - High recall intencional: en seguridad es preferible un falso positivo
-          a perder una vulnerabilidad real (ver metadata.json para métricas reales)
+        - Métricas reales en metadata.json (umbral de decisión por defecto, 0.5)
 
         Returns:
             bool: True si se inicializó correctamente, False en caso contrario
@@ -690,7 +689,8 @@ class VulnerabilityCorrelator:
         severity_counts = {"critical": 0, "high": 0, "medium": 0, "low": 0}
 
         for vuln in all_vulns:
-            sev = str(vuln.severity.value if hasattr(vuln.severity, "value") else vuln.severity).lower()
+            # ConfidenceLevel guarda enteros (1-4) en .value; el nombre es el que dice la severidad
+            sev = str(vuln.severity.name if hasattr(vuln.severity, "name") else vuln.severity).lower()
             if "critical" in sev:
                 severity_counts["critical"] += 1
             elif "high" in sev:
@@ -707,7 +707,7 @@ class VulnerabilityCorrelator:
                 "high_confidence_correlations": len([c for c in correlations if c[2] > 0.8]),
                 "medium_confidence_correlations": len([c for c in correlations if 0.6 <= c[2] <= 0.8]),
                 "low_confidence_correlations": len([c for c in correlations if c[2] < 0.6]),
-                "potential_false_positives_reduced": self._estimate_false_positive_reduction(correlations),
+                "sast_uncorroborated_pct": self._sast_uncorroborated_percentage(correlations),
                 # Agregar distribución de severidad
                 "critical_issues": severity_counts["critical"],
                 "high_severity_findings": severity_counts["high"],
@@ -722,7 +722,7 @@ class VulnerabilityCorrelator:
                         "file": corr[0].file_path,
                         "line": corr[0].line_number,
                         "severity": (
-                            corr[0].severity.value if hasattr(corr[0].severity, "value") else str(corr[0].severity)
+                            corr[0].severity.name if hasattr(corr[0].severity, "name") else str(corr[0].severity)
                         ),
                         "tool": corr[0].source_tool,
                     },
@@ -731,7 +731,7 @@ class VulnerabilityCorrelator:
                         "type": corr[1].type.value,
                         "endpoint": corr[1].endpoint,
                         "severity": (
-                            corr[1].severity.value if hasattr(corr[1].severity, "value") else str(corr[1].severity)
+                            corr[1].severity.name if hasattr(corr[1].severity, "name") else str(corr[1].severity)
                         ),
                         "tool": corr[1].source_tool,
                     },
@@ -744,27 +744,22 @@ class VulnerabilityCorrelator:
 
         return report
 
-    def _estimate_false_positive_reduction(self, correlations: List) -> float:
+    def _sast_uncorroborated_percentage(self, correlations: List) -> float:
         """
-        Estimates false-positive reduction as the percentage of SAST-only findings
-        that are NOT corroborated by a DAST finding.
+        Porcentaje de hallazgos SAST que ninguna evidencia DAST corrobora:
 
-        Rationale: A SAST finding that has no matching DAST evidence is a
-        candidate false positive — it exists in static code analysis but was
-        not observable at runtime.  The reduction estimate is:
+            (SAST sin correlación / SAST total) * 100
 
-            FP_reduction = (uncorroborated_sast / total_sast) * 100
-
-        This is a conservative lower-bound; the real reduction can be higher
-        because DAST also surfaces findings not present in SAST.
+        Es un indicador descriptivo, no una reducción de falsos positivos: sin
+        ground truth no se sabe si un hallazgo no corroborado es falso. Con cero
+        correlaciones vale 100 %, así que un valor alto no indica mejora.
         """
         if not self.sast_findings:
             return 0.0
 
-        corroborated_sast_ids = {c[0].id for c in correlations if c[2] > 0.7}
+        corroborated_sast_ids = {c[0].id for c in correlations}
         uncorroborated = len(self.sast_findings) - len(corroborated_sast_ids)
-        reduction = (uncorroborated / len(self.sast_findings)) * 100
-        return round(min(reduction, 100.0), 2)
+        return round(uncorroborated / len(self.sast_findings) * 100, 2)
 
     def _get_correlation_factors(self, sast_vuln: Vulnerability, dast_vuln: Vulnerability) -> Dict:
         """Obtiene factores que contribuyen a la correlación"""
