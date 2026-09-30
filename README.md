@@ -2,11 +2,11 @@
 
 ## Introducción
 
-En el desarrollo de este trabajo de investigación para mi tesis de grado, he identificado una problemática importante en el ámbito de la ciberseguridad: la falta de herramientas integradas que combinen efectivamente el análisis estático (SAST) y dinámico (DAST) de código, especialmente para APIs REST. Como parte de mi proyecto de titulación en Ingeniería de Software, propongo HybridSecScan, un sistema híbrido que incorpora técnicas de aprendizaje automático para correlacionar vulnerabilidades y reducir los falsos positivos.
+En el desarrollo de este trabajo de investigación para mi tesis de grado, he identificado una problemática importante en el ámbito de la ciberseguridad: la falta de herramientas integradas que combinen efectivamente el análisis estático (SAST) y dinámico (DAST) de código, especialmente para APIs REST. Como parte de mi proyecto de titulación en Ingeniería de Software, propongo HybridSecScan, un sistema híbrido que correlaciona hallazgos estáticos y dinámicos, apoyándose en un clasificador de aprendizaje automático, con el objetivo de reducir los falsos positivos.
 
 ## Fundamentación del Proyecto
 
-El sistema desarrollado se basa en la premisa de que la integración inteligente de múltiples metodologías de análisis de seguridad puede superar las limitaciones individuales de cada enfoque. Mi trabajo de grado se centra específicamente en las vulnerabilidades catalogadas en el OWASP API Security Top 10, proporcionando una cobertura integral de los riesgos más críticos en el desarrollo de APIs modernas.
+El sistema parte de la premisa de que combinar análisis estático y dinámico puede compensar las limitaciones de cada enfoque por separado. El trabajo toma como marco de referencia el OWASP API Security Top 10 (edición 2023); la sección "Cobertura del OWASP API Security Top 10" detalla qué categorías comprueba el sistema y cuáles no.
 
 ## Arquitectura del Sistema
 
@@ -15,42 +15,26 @@ La arquitectura propuesta implementa un diseño modular que facilita la escalabi
 - **Backend**: Implementado en FastAPI (Python) para garantizar un rendimiento óptimo en el procesamiento de análisis
 - **Frontend**: Desarrollado en React con TypeScript para proporcionar una interfaz de usuario moderna y mantenible
 - **Base de Datos**: SQLite para persistencia de resultados y metadatos de análisis
-- **Motor de Correlación**: Algoritmo basado en Random Forest para la correlación inteligente de vulnerabilidades
+- **Motor de Correlación**: puntuación de confianza ponderada que combina similitud de endpoint, tipo de vulnerabilidad, similitud semántica, severidad y la probabilidad de un clasificador Random Forest (uno de los cinco factores, con un 10 % del peso)
 
 ## Metodología de Implementación
 
-### 🐳 Despliegue con Docker (Recomendado para Producción)
-
-**La forma más rápida y segura de desplegar HybridSecScan es usando Docker:**
+### Inicio rápido (backend y frontend)
 
 ```bash
-# Linux/macOS
 git clone https://github.com/OscarILS/HybridSecScan.git
 cd HybridSecScan
-chmod +x deploy.sh
-./deploy.sh
-
-# Windows PowerShell
-git clone https://github.com/OscarILS/HybridSecScan.git
-cd HybridSecScan
-.\deploy.ps1
+chmod +x run_hybridscan.sh && ./run_hybridscan.sh
 ```
-
-**Acceso**: `http://localhost`
-
-📖 **Documentación completa de Docker**: Ver [DOCKER.md](DOCKER.md) y [DEPLOYMENT.md](DEPLOYMENT.md)
-
----
 
 ### Configuración del Entorno de Desarrollo (Manual)
 
 #### Prerrequisitos del Sistema
 
-Para la implementación completa del sistema, es necesario contar con:
-- Python 3.8 o superior (recomendado 3.11+)
+- Python 3.11 (versión con la que se probó el proyecto)
 - Node.js 18+ con npm
-- Git para control de versiones
-- **O alternativamente**: Docker + Docker Compose
+- Git
+- Opcional: Semgrep, OWASP ZAP (daemon en el puerto 8080) y Docker para levantar las aplicaciones vulnerables de prueba
 
 #### Configuración del Backend
 
@@ -102,12 +86,15 @@ El sistema proporciona una interfaz web intuitiva accesible a través de `http:/
 
 La API desarrollada expone los siguientes endpoints principales:
 
-- `GET /` - Información general del sistema
+- `GET /` y `GET /health` - Información y estado del sistema
 - `POST /upload/` - Carga de archivos para análisis
-- `POST /scan/sast` - Ejecución de análisis estático
-- `POST /scan/dast` - Ejecución de análisis dinámico
-- `GET /scan-results` - Recuperación del historial de análisis
-- `GET /health` - Verificación del estado del sistema
+- `POST /scan/sast` - Análisis estático (Bandit o Semgrep)
+- `POST /scan/dast` - Análisis dinámico (comprobaciones pasivas; ZAP si está disponible)
+- `POST /scan/hybrid` - Correlación de un escaneo SAST y uno DAST
+- `GET /scan-results` - Historial de análisis
+- `GET /download/pdf/{scan_id}` y `GET /download/json/{scan_id}` - Reportes
+- `POST /auth/register`, `POST /auth/login`, `GET /auth/me` - Autenticación JWT
+- `GET /api/model-metrics` y `GET /api/scale-evaluation` - Métricas del modelo y de la evaluación
 
 ### Scripts de Análisis Independiente
 
@@ -127,7 +114,7 @@ python scripts/run_zap.py https://api.ejemplo.com
 En el desarrollo del sistema, se han incorporado múltiples capas de seguridad:
 
 - Validación estricta de tipos de archivo permitidos
-- Limitación configurable de tamaño de archivos (máximo 10MB)
+- Limitación de tamaño de archivos (máximo 50 MB)
 - Generación de nombres de archivo seguros mediante UUID
 - Validación robusta de URLs para análisis DAST
 - Manejo seguro de procesos subprocess
@@ -267,83 +254,44 @@ En esta evaluación, "Híbrido" es la **unión** de los hallazgos SAST y DAST co
 
 ## Limitaciones y Trabajo Futuro
 
-### Limitaciones Actuales
+### Limitaciones
 
-Como parte de la honestidad académica, reconozco las siguientes limitaciones:
+1. **Domain shift del modelo**: el Random Forest se entrenó con 1,300 pares sintéticos; su vocabulario TF-IDF no coincide con el de Semgrep y el escáner HTTP, y no produjo correlaciones en OWASP Juice Shop.
+2. **Muestra pequeña**: la evaluación a escala usa 4 aplicaciones con 5 vulnerabilidades cada una, por lo que las pruebas estadísticas tienen poca potencia.
+3. **La evaluación a escala no mide el correlador**: compara la unión de hallazgos SAST+DAST; el motor de correlación solo se evaluó en un caso de estudio (una aplicación).
+4. **Fallas globales**: el correlador compara endpoints, por lo que no confirma vulnerabilidades que afectan a toda la aplicación (p. ej. el modo debug).
+5. **Pesos por diseño**: los pesos de la fórmula de confianza y el umbral de 0.70 no se optimizaron empíricamente.
+6. **Cobertura OWASP parcial**: no hay comprobaciones para API3, API6, API7 ni API10, y la cobertura por categoría no se validó experimentalmente.
 
-1. **Escalabilidad**: El sistema actual está optimizado para análisis de proyectos pequeños y medianos
-2. **Cobertura de Lenguajes**: Enfoque principal en Python, con soporte básico para otros lenguajes
-3. **Análisis en Tiempo Real**: La correlación ML requiere procesamiento offline
+### Trabajo futuro
 
-### Direcciones Futuras
-
-Mi trabajo continuará evolucionando en las siguientes áreas:
-
-- **Integración con CI/CD**: Desarrollo de plugins para pipelines de integración continua
-- **Análisis de Contenedores**: Extensión para análisis de vulnerabilidades en imágenes Docker
-- **Mejoras en ML**: Exploración de algoritmos más avanzados para mejor correlación
-- **Análisis de Dependencias**: Incorporación de Software Composition Analysis (SCA)
-- **Interfaz Mejorada**: Dashboard más completo para visualización de resultados
+- Reentrenar el clasificador con salidas reales de las herramientas SAST/DAST.
+- Ampliar la evaluación del correlador a más aplicaciones con ground truth.
+- Tratar las vulnerabilidades globales sin depender de la similitud de endpoint.
+- Calibrar los pesos y el umbral de la fórmula de confianza con datos etiquetados.
+- Añadir comprobaciones para las categorías OWASP no cubiertas y validarlas por categoría.
 
 ## Consideraciones del Proyecto
 
-El desarrollo de este trabajo de grado se ha realizado siguiendo principios éticos:
-
-- **Uso Responsable**: El sistema está diseñado exclusivamente para propósitos de seguridad defensiva
-- **Privacidad de Datos**: No se almacenan datos sensibles de los proyectos analizados
-- **Código Abierto**: MIT License para fomentar el aprendizaje y la colaboración
-- **Transparencia**: Todo el código fuente está disponible para revisión
+- **Uso Responsable**: diseñado para seguridad defensiva. Los probes activos solo se ejecutan desde los scripts de experimentos, contra aplicaciones de prueba en entornos controlados.
+- **Protección SSRF**: el endpoint DAST rechaza destinos en redes privadas, loopback y link-local.
+- **Código Abierto**: MIT License.
 
 ## Información Académica
 
 **Autor**: Oscar Laguna Santa Cruz
-**Institución**: Universidad Nacional Mayor de San Marcos - Facultad de Ingeniería de Sistemas e Informática 
-**Carrera**: Ingeniería de Software 
-**Proyecto**: Tesis de Grado / Proyecto de Titulación  
-**Director**: Dra. Luzmila
-**Año**: 2025
+**Institución**: Universidad Nacional Mayor de San Marcos - Facultad de Ingeniería de Sistemas e Informática
+**Carrera**: Ingeniería de Software
+**Proyecto**: Tesis de Grado / Proyecto de Titulación
+**Asesor(a)**: [por completar]
+**Año**: [por completar]
 
-Para consultas académicas o sobre el funcionamiento del sistema, puede contactar a través de los canales oficiales de la universidad.
+## Documentación
 
-## 📚 Documentación Completa
-
-Toda la documentación del proyecto está organizada en la carpeta [`docs/`](docs/):
-
-- **[Índice de Documentación](docs/README.md)** - Índice completo de toda la documentación disponible
-- **[Documentación Académica](docs/academic-documentation.md)** - Documentación completa para tesis
-- **[Propuesta del Sistema](docs/propuesta-sistema-cap4.md)** - Capítulo 4: Arquitectura y diseño
-- **[Validación Experimental](docs/validacion-experimental-cap5.md)** - Capítulo 5: Resultados experimentales
-- **[Diagramas UML](docs/uml/)** - Arquitectura completa del sistema
-- **[Configuración SAST](docs/configuracion-herramientas-sast.md)** - Resultados de validación con herramientas
-
-## Reconocimientos
-
-Agradezco especialmente a mi directora de tesis, a los docentes de la carrera, y a la comunidad open source por sus contribuciones que han hecho posible este proyecto de grado.
-
----
-
-*Este trabajo representa una contribución al campo de la ciberseguridad para APIs REST, desarrollado como proyecto de tesis para optar al título de Ingeniero de Sistemas.*
-
-## Problemas Solucionados
-
--  Configuración CORS para comunicación frontend-backend
--  Manejo de errores en subprocess calls
--  Validación de seguridad en subida de archivos
--  Timeouts para evitar procesos colgados
--  Estructura de directorios corregida
--  Scripts con rutas absolutas
--  Modelo de base de datos mejorado
--  Interfaz de usuario más robusta
-
-##  Mejoras Futuras
-
--  Autenticación y autorización de usuarios
--  Análisis de contenedores Docker
--  Integración con CI/CD pipelines
--  Reportes en PDF
--  Dashboard de métricas avanzado
--  Análisis de dependencias (SCA)
--  Integración con más herramientas SAST/DAST
+- **[CLAUDE.md](CLAUDE.md)** - Arquitectura técnica, comandos y convenciones del proyecto
+- **[data/experiments/README.md](data/experiments/README.md)** - Ground truth, evaluación a escala, evaluación del correlador y figuras
+- **[data/experiments/EXPERIMENTAL_RESULTS_SUMMARY.md](data/experiments/EXPERIMENTAL_RESULTS_SUMMARY.md)** - Experimento en OWASP Juice Shop
+- **[ProgramasPruebas/GUIA_PRUEBAS.md](ProgramasPruebas/GUIA_PRUEBAS.md)** - Aplicaciones vulnerables y guía de pruebas
 
 ## Licencia
 

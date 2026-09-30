@@ -94,7 +94,7 @@ SAST y DAST detectan **capas diferentes** de vulnerabilidades:
 - SAST: vulnerabilidades en código fuente (lógica, secretos, patrones peligrosos)
 - DAST: vulnerabilidades en runtime HTTP (headers, CORS, exposición de rutas)
 
-La **cobertura complementaria** es el aporte central del enfoque híbrido: ningún método solo cubre el espacio completo de vulnerabilidades.
+En esta ejecución, SAST y DAST reportan hallazgos de capas distintas, por lo que ninguno de los dos cubre por sí solo todos los tipos observados. La evaluación a escala contra ground truth matiza este resultado: la unión SAST+DAST aumenta el recall solo en Juice Shop y reduce la precisión media.
 
 ---
 
@@ -126,7 +126,7 @@ Matriz de confusión (Test Set, n=130):
 | **Real No** | TN=45 | FP=28 |
 | **Real Sí** | FN=2  | TP=55 |
 
-**Recall alto, precisión menor:** es un resultado observado del modelo, no un ajuste configurado (umbral de decisión por defecto de 0.5, `class_weight='balanced'`). En seguridad este perfil es aceptable porque omitir una vulnerabilidad real (FN) suele ser más costoso que una falsa alarma (FP).
+**Recall alto, precisión menor:** es un resultado observado del modelo, no un ajuste configurado (umbral de decisión por defecto de 0.5, `class_weight='balanced'`).
 
 ---
 
