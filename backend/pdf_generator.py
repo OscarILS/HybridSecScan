@@ -372,7 +372,13 @@ def _styles():
 
 
 def _health_bar_drawing(score: int, width: float = 380, height: float = 28) -> Drawing:
-    """Barra de salud estilo semáforo con marcador de posición."""
+    """Barra de salud estilo semáforo con marcador de posición.
+
+    Los tramos coinciden con _health_label (0–19 Crítico … 85–100 Excelente).
+    El margen horizontal evita que el marcador y las etiquetas 0/100 se corten.
+    """
+    pad = 8
+    bar_w = width - 2 * pad
     d = Drawing(width, height + 20)
     segments = [
         (0.00, 0.20, C["health_red"]),
@@ -383,12 +389,10 @@ def _health_bar_drawing(score: int, width: float = 380, height: float = 28) -> D
     ]
     bar_y = 8
     for lo, hi, col in segments:
-        x0 = lo * width
-        x1 = hi * width
-        d.add(Rect(x0, bar_y, x1 - x0, height, fillColor=col, strokeColor=None))
+        d.add(Rect(pad + lo * bar_w, bar_y, (hi - lo) * bar_w, height, fillColor=col, strokeColor=None))
 
     # Marcador
-    mx = (score / 100) * width
+    mx = pad + (max(0, min(100, score)) / 100) * bar_w
     d.add(
         Polygon(
             [mx, bar_y + height + 10, mx - 6, bar_y + height + 2, mx + 6, bar_y + height + 2],
@@ -401,7 +405,15 @@ def _health_bar_drawing(score: int, width: float = 380, height: float = 28) -> D
     # Etiquetas
     for pct, label in [(0, "0"), (20, "20"), (40, "40"), (60, "60"), (85, "85"), (100, "100")]:
         d.add(
-            String(pct / 100 * width, bar_y - 7, label, fontSize=6, fillColor=HexColor("#475569"), textAnchor="middle")
+            String(
+                pad + pct / 100 * bar_w,
+                bar_y - 7,
+                label,
+                fontName="Helvetica",
+                fontSize=6,
+                fillColor=HexColor("#475569"),
+                textAnchor="middle",
+            )
         )
     return d
 
@@ -624,7 +636,7 @@ def _cover_page(story, scan_data: Dict, styles, score: int, label: str, score_co
                 Paragraph(label, score_lbl_style),
             ]
         ],
-        colWidths=[1.6 * cm, 1.5 * cm, usable - 3.1 * cm],
+        colWidths=[2.2 * cm, 1.3 * cm, usable - 3.5 * cm],  # 2.2 cm: cabe "100" sin partirse
     )
     score_t.setStyle(
         TableStyle(
@@ -638,9 +650,11 @@ def _cover_page(story, scan_data: Dict, styles, score: int, label: str, score_co
         )
     )
     story.append(score_t)
-    story.append(Spacer(1, 0.4 * cm))
+    story.append(Spacer(1, 0.3 * cm))
 
-    story.append(Spacer(1, 0.5 * cm))
+    # Barra de health: ubica el puntaje en la escala de la nota inferior
+    story.append(_health_bar_drawing(score, width=usable))
+    story.append(Spacer(1, 0.3 * cm))
 
     # Nota de puntuación
     note_style = ParagraphStyle(
