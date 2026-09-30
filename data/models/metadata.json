@@ -24,6 +24,132 @@
     "n_val_samples": 130,
     "n_test_samples": 130,
     "n_features": 517,
-    "trained_at": "2026-09-30T09:18:36.144401"
+    "trained_at": "2026-09-30T18:27:37.269807"
+  },
+  "features": {
+    "tfidf": 500,
+    "categorical": [
+      "sast_type",
+      "dast_type",
+      "sast_severity",
+      "dast_severity",
+      "sast_cwe",
+      "dast_cwe",
+      "sast_tool",
+      "dast_tool"
+    ],
+    "numeric": [
+      "type_match",
+      "cwe_match",
+      "severity_match",
+      "same_tool_vendor",
+      "sast_desc_len",
+      "dast_desc_len",
+      "sast_line",
+      "sast_file_depth",
+      "dast_endpoint_depth"
+    ],
+    "top20_importance": [
+      {
+        "index": 509,
+        "name": "cwe_match",
+        "importance": 0.0783
+      },
+      {
+        "index": 508,
+        "name": "type_match",
+        "importance": 0.0488
+      },
+      {
+        "index": 473,
+        "name": "tfidf:v1",
+        "importance": 0.0332
+      },
+      {
+        "index": 505,
+        "name": "dast_cwe",
+        "importance": 0.0299
+      },
+      {
+        "index": 24,
+        "name": "tfidf:api v1",
+        "importance": 0.029
+      },
+      {
+        "index": 21,
+        "name": "tfidf:api",
+        "importance": 0.0244
+      },
+      {
+        "index": 501,
+        "name": "dast_type",
+        "importance": 0.0239
+      },
+      {
+        "index": 232,
+        "name": "tfidf:line",
+        "importance": 0.0145
+      },
+      {
+        "index": 258,
+        "name": "tfidf:origin",
+        "importance": 0.0131
+      },
+      {
+        "index": 504,
+        "name": "sast_cwe",
+        "importance": 0.0126
+      },
+      {
+        "index": 514,
+        "name": "sast_line",
+        "importance": 0.0121
+      },
+      {
+        "index": 464,
+        "name": "tfidf:user",
+        "importance": 0.0112
+      },
+      {
+        "index": 137,
+        "name": "tfidf:error",
+        "importance": 0.0111
+      },
+      {
+        "index": 500,
+        "name": "sast_type",
+        "importance": 0.0106
+      },
+      {
+        "index": 317,
+        "name": "tfidf:rate",
+        "importance": 0.0102
+      },
+      {
+        "index": 512,
+        "name": "sast_desc_len",
+        "importance": 0.0097
+      },
+      {
+        "index": 8,
+        "name": "tfidf:500",
+        "importance": 0.0085
+      },
+      {
+        "index": 513,
+        "name": "dast_desc_len",
+        "importance": 0.0083
+      },
+      {
+        "index": 383,
+        "name": "tfidf:security",
+        "importance": 0.0073
+      },
+      {
+        "index": 16,
+        "name": "tfidf:admin",
+        "importance": 0.0071
+      }
+    ]
   }
 }

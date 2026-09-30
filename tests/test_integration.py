@@ -363,6 +363,42 @@ class TestHybridCorrelation:
         vc = VulnerabilityCorrelator()
         assert vc._calculate_endpoint_similarity("api/xusers", "http://h/users") < 0.70
 
+    def test_confidence_breakdown_sums_to_confidence(self):
+        """El desglose registrado reproduce exactamente la confianza calculada."""
+        from backend.correlation_engine import (
+            CONFIDENCE_WEIGHTS,
+            ConfidenceLevel,
+            Vulnerability,
+            VulnerabilityCorrelator,
+            VulnerabilityType,
+        )
+
+        assert abs(sum(CONFIDENCE_WEIGHTS.values()) - 1.0) < 1e-9
+        common = dict(type=VulnerabilityType.SQL_INJECTION, endpoint="/login", cwe_id="CWE-89", owasp_category="")
+        s = Vulnerability(
+            id="s",
+            severity=ConfidenceLevel.MEDIUM,
+            file_path="app.py",
+            line_number=25,
+            description="SQL injection via string query",
+            source_tool="bandit",
+            **common,
+        )
+        d = Vulnerability(
+            id="d",
+            severity=ConfidenceLevel.HIGH,
+            file_path="",
+            line_number=0,
+            description="SQL error in response",
+            source_tool="http_scanner",
+            **common,
+        )
+        vc = VulnerabilityCorrelator()
+        bd = vc.confidence_breakdown(s, d)
+        assert abs(bd["confidence"] - vc._calculate_correlation_confidence(s, d)) < 1e-12
+        assert abs(sum(f["contribution"] for f in bd["factors"].values()) - bd["confidence"]) < 1e-3
+        assert bd["factors"]["endpoint"]["value"] == 1.0 and bd["factors"]["type"]["value"] == 1.0
+
     def test_report_counts_severities_and_uncorroborated_sast(self):
         """El resumen cuenta cada severidad por su nombre y reporta el % de SAST sin corroborar."""
         from backend.correlation_engine import (

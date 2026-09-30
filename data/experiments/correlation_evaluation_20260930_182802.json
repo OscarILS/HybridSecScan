@@ -84,5 +84,79 @@
         "VA_002"
       ]
     }
+  ],
+  "detected_by_both_pairs": [
+    {
+      "vulnerability": "VA_002",
+      "sast": "B608 línea 25 → /login",
+      "dast": "SQL Injection @ /login",
+      "confidence": 0.8844,
+      "confirmed": true,
+      "factors": {
+        "endpoint": {
+          "weight": 0.4,
+          "value": 1.0,
+          "contribution": 0.4
+        },
+        "type": {
+          "weight": 0.35,
+          "value": 1.0,
+          "contribution": 0.35
+        },
+        "semantic": {
+          "weight": 0.1,
+          "value": 0.368,
+          "contribution": 0.0368,
+          "method": "embeddings"
+        },
+        "ml": {
+          "weight": 0.1,
+          "value": 0.6431,
+          "contribution": 0.0643,
+          "source": "random_forest"
+        },
+        "severity": {
+          "weight": 0.05,
+          "value": 0.6667,
+          "contribution": 0.0333
+        }
+      }
+    },
+    {
+      "vulnerability": "VA_009",
+      "sast": "B201 línea 81 → /token",
+      "dast": "Error Disclosure - Debug Mode @ /deserialize",
+      "confidence": 0.5228,
+      "confirmed": false,
+      "factors": {
+        "endpoint": {
+          "weight": 0.4,
+          "value": 0.0909,
+          "contribution": 0.0364
+        },
+        "type": {
+          "weight": 0.35,
+          "value": 1.0,
+          "contribution": 0.35
+        },
+        "semantic": {
+          "weight": 0.1,
+          "value": 0.4508,
+          "contribution": 0.0451,
+          "method": "embeddings"
+        },
+        "ml": {
+          "weight": 0.1,
+          "value": 0.4135,
+          "contribution": 0.0414,
+          "source": "random_forest"
+        },
+        "severity": {
+          "weight": 0.05,
+          "value": 1.0,
+          "contribution": 0.05
+        }
+      }
+    }
   ]
 }

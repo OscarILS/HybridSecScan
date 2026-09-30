@@ -104,6 +104,17 @@ class Vulnerability:
     source_tool: str  # 'bandit', 'semgrep', 'zap'
 
 
+# Pesos de la confianza de correlación (decisión de diseño; suman 1.0).
+CONFIDENCE_WEIGHTS: Dict[str, float] = {
+    "endpoint": 0.40,
+    "type": 0.35,
+    "semantic": 0.10,
+    "ml": 0.10,
+    "severity": 0.05,
+}
+RELATED_TYPE_CREDIT = 0.20  # aporte del factor "type" cuando los tipos están relacionados
+
+
 class VulnerabilityCorrelator:
     """
     Correlaciona vulnerabilidades encontradas por herramientas SAST y DAST
@@ -466,73 +477,60 @@ class VulnerabilityCorrelator:
         Returns:
             float: Confidence score en [0, 1].
         """
-        score = 0.0
+        return self.confidence_breakdown(sast_vuln, dast_vuln)["confidence"]
 
-        # Factor 1: Similitud de endpoint/archivo (40% del peso)
-        endpoint_similarity = self._calculate_endpoint_similarity(sast_vuln.endpoint, dast_vuln.endpoint)
-        score += endpoint_similarity * 0.40
+    def confidence_breakdown(self, sast_vuln: Vulnerability, dast_vuln: Vulnerability) -> Dict:
+        """
+        Desglose de la confianza: valor de cada factor, su peso y su aporte.
+        _calculate_correlation_confidence devuelve exactamente el total de este desglose.
+        """
+        endpoint = self._calculate_endpoint_similarity(sast_vuln.endpoint, dast_vuln.endpoint)
 
-        # Factor 2: Coincidencia de tipo de vulnerabilidad (35% del peso)
         if sast_vuln.type == dast_vuln.type:
-            score += 0.35
+            type_value = 1.0
         elif self._are_related_vulnerabilities(sast_vuln.type, dast_vuln.type):
-            score += 0.20  # Correlación parcial para tipos relacionados
+            type_value = RELATED_TYPE_CREDIT / CONFIDENCE_WEIGHTS["type"]  # tipos relacionados: aporte 0.20
+        else:
+            type_value = 0.0
 
-        # Factor 3a: Similitud semántica de descripciones (nuevo, 10% del peso)
-        # Reemplaza el análisis puramente léxico (Jaccard) por embeddings de oraciones,
-        # resolviendo el domain shift entre herramientas con distinto vocabulario.
-        # Ejemplos de alta similitud semántica:
-        #   "SQL injection via f-string" ↔ "SQL error response on query param" → ~0.80
-        #   "Hardcoded JWT secret" ↔ "weak signing key detected" → ~0.75
-        semantic_sim = self._description_similarity(sast_vuln.description, dast_vuln.description)
-        score += semantic_sim * 0.10
+        semantic = self._description_similarity(sast_vuln.description, dast_vuln.description)
 
-        # Factor 3b: Probabilidad del Random Forest (10% del peso)
-        ml_confidence = 0.0
-        if hasattr(self, "ml_classifier") and self.ml_classifier is not None:
+        ml_source = "random_forest"
+        ml_value = None
+        if getattr(self, "ml_classifier", None) is not None:
             try:
-                # Generar feature vector completo usando el modelo entrenado
                 feature_vector = self._engineer_features_for_prediction(sast_vuln, dast_vuln)
-
-                # Verificar dimensionalidad del feature vector
-                expected_features = self.model_metrics.get("n_features", 517)
-                if len(feature_vector) != expected_features:
-                    print(f"⚠️ Feature vector mismatch: {len(feature_vector)} vs {expected_features} esperados")
-                    raise ValueError("Feature dimension mismatch")
-
-                # Obtener probabilidad de correlación válida (clase 1)
-                X_reshaped = feature_vector.reshape(1, -1)
-                ml_confidence = self.ml_classifier.predict_proba(X_reshaped)[0][1]
-                score += ml_confidence * 0.10
-
+                expected = self.model_metrics.get("n_features", 517)
+                if len(feature_vector) != expected:
+                    raise ValueError(f"Feature dimension mismatch: {len(feature_vector)} vs {expected}")
+                ml_value = float(self.ml_classifier.predict_proba(feature_vector.reshape(1, -1))[0][1])
             except Exception as e:
                 logger.warning(f"Error en predicción ML, usando fallback: {e}")
-                context_score = self._analyze_context_patterns(sast_vuln, dast_vuln)
-                score += context_score * 0.10
-        else:
-            context_score = self._analyze_context_patterns(sast_vuln, dast_vuln)
-            score += context_score * 0.10
+        if ml_value is None:
+            ml_source = "context_fallback"
+            ml_value = float(self._analyze_context_patterns(sast_vuln, dast_vuln))
 
-        # Factor 4: Severidad similar (5% del peso)
-        severity_similarity = self._calculate_severity_similarity(sast_vuln.severity, dast_vuln.severity)
-        score += severity_similarity * 0.05
+        severity = self._calculate_severity_similarity(sast_vuln.severity, dast_vuln.severity)
 
-        confidence = min(score, 1.0)
-
-        # Log para análisis posterior (solo en modo debug)
-        if confidence > 0.7:
-            correlation_factors = {
-                "endpoint_sim": endpoint_similarity,
-                "type_match": sast_vuln.type == dast_vuln.type,
-                "ml_confidence": ml_confidence if "ml_confidence" in locals() else 0.0,
-                "severity_sim": severity_similarity,
-                "final_confidence": confidence,
+        values = {
+            "endpoint": float(endpoint),
+            "type": float(type_value),
+            "semantic": float(semantic),
+            "ml": ml_value,
+            "severity": float(severity),
+        }
+        factors = {
+            name: {
+                "weight": CONFIDENCE_WEIGHTS[name],
+                "value": round(values[name], 4),
+                "contribution": round(CONFIDENCE_WEIGHTS[name] * values[name], 4),
             }
-            # Store for evaluation metrics
-            if hasattr(self, "correlation_log"):
-                self.correlation_log.append(correlation_factors)
-
-        return confidence
+            for name in CONFIDENCE_WEIGHTS
+        }
+        factors["ml"]["source"] = ml_source
+        factors["semantic"]["method"] = "embeddings" if _SEMANTIC_AVAILABLE else "jaccard"
+        total = min(sum(CONFIDENCE_WEIGHTS[n] * values[n] for n in CONFIDENCE_WEIGHTS), 1.0)
+        return {"confidence": total, "factors": factors}
 
     def _are_related_vulnerabilities(self, type1: VulnerabilityType, type2: VulnerabilityType) -> bool:
         """Determina si dos tipos de vulnerabilidades están relacionados"""
@@ -762,13 +760,14 @@ class VulnerabilityCorrelator:
         return round(uncorroborated / len(self.sast_findings) * 100, 2)
 
     def _get_correlation_factors(self, sast_vuln: Vulnerability, dast_vuln: Vulnerability) -> Dict:
-        """Obtiene factores que contribuyen a la correlación"""
+        """Obtiene factores que contribuyen a la correlación, con el desglose ponderado de la confianza."""
         return {
             "type_match": sast_vuln.type == dast_vuln.type,
             "endpoint_similarity": self._calculate_endpoint_similarity(sast_vuln.endpoint, dast_vuln.endpoint),
             "severity_similarity": self._calculate_severity_similarity(sast_vuln.severity, dast_vuln.severity),
             "cwe_match": sast_vuln.cwe_id == dast_vuln.cwe_id,
             "owasp_category_match": sast_vuln.owasp_category == dast_vuln.owasp_category,
+            "confidence_breakdown": self.confidence_breakdown(sast_vuln, dast_vuln)["factors"],
         }
 
 

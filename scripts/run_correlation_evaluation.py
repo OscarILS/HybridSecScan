@@ -137,6 +137,31 @@ def evaluate(sast_file: Path, dast_file: Path) -> Dict:
 
     n_gt = len(gt)
     both = set().union(*sast_hits) & set().union(*dast_hits)
+
+    # Para cada vulnerabilidad detectada por ambas técnicas: el par SAST↔DAST de mayor confianza
+    # y el desglose ponderado de esa confianza (confirmado o no por el umbral).
+    both_pairs = []
+    with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+        for vid in sorted(both):
+            candidates = [
+                (si, di, correlator.confidence_breakdown(sast_v[si], dast_v[di]))
+                for si in range(len(sast_v))
+                if vid in sast_hits[si]
+                for di in range(len(dast_v))
+                if vid in dast_hits[di]
+            ]
+            si, di, bd = max(candidates, key=lambda c: c[2]["confidence"])
+            both_pairs.append(
+                {
+                    "vulnerability": vid,
+                    "sast": f"{sast_raw[si]['test_id']} línea {sast_raw[si]['line_number']} → {sast_v[si].endpoint}",
+                    "dast": f"{dast_raw[di].get('type')} @ {_endpoint(dast_raw[di].get('url'))}",
+                    "confidence": round(bd["confidence"], 4),
+                    "confirmed": bd["confidence"] > THRESHOLD,
+                    "factors": bd["factors"],
+                }
+            )
+
     return {
         "application": "ProgramasPruebas/vulnerable_app.py",
         "ground_truth_file": GT_FILE.name,
@@ -154,6 +179,7 @@ def evaluate(sast_file: Path, dast_file: Path) -> Dict:
         "detected_by_both": sorted(both),
         "confirmed_by_correlation": sorted(set().union(*corr_hits)) if corr_hits else [],
         "correlations": corr_detail,
+        "detected_by_both_pairs": both_pairs,
     }
 
 
@@ -195,6 +221,40 @@ def markdown(res: Dict) -> str:
     for c in res["correlations"]:
         out.append(
             f"| {c['confidence']:.3f} | {c['sast']} | {c['dast']} | {', '.join(c['ground_truth'] or ['ninguna'])} |"
+        )
+
+    pairs = res.get("detected_by_both_pairs", [])
+    if pairs:
+        labels = {
+            "endpoint": "Similitud de endpoint",
+            "type": "Tipo de vulnerabilidad",
+            "semantic": "Similitud semántica",
+            "ml": "Probabilidad del Random Forest",
+            "severity": "Similitud de severidad",
+        }
+        head = " | ".join(f"{p['vulnerability']} (valor → aporte)" for p in pairs)
+        out += [
+            "",
+            "## Desglose de la confianza (vulnerabilidades detectadas por ambas técnicas)",
+            "",
+        ]
+        for p in pairs:
+            estado = "confirmada" if p["confirmed"] else f"no confirmada (< {res['threshold']})"
+            out.append(f"- **{p['vulnerability']}**: SAST {p['sast']}; DAST {p['dast']} — {estado}.")
+        out += ["", f"| Factor | Peso | {head} |", "|---|---|" + "---|" * len(pairs)]
+        for key, label in labels.items():
+            weight = pairs[0]["factors"][key]["weight"]
+            cells = " | ".join(
+                f"{p['factors'][key]['value']:.3f} → {p['factors'][key]['contribution']:.3f}" for p in pairs
+            )
+            out.append(f"| {label} | {weight:.2f} | {cells} |")
+        totals = " | ".join(f"**{p['confidence']:.3f}**" for p in pairs)
+        out.append(f"| **Confianza total** | 1.00 | {totals} |")
+        method = pairs[0]["factors"]["semantic"].get("method", "")
+        out.append("")
+        out.append(
+            f"Aporte = peso × valor. Similitud semántica calculada con {method}. "
+            "Los pesos son una decisión de diseño (backend/correlation_engine.py, CONFIDENCE_WEIGHTS)."
         )
     out += [
         "",

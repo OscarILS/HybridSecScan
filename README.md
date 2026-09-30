@@ -240,7 +240,7 @@ En esta evaluación, "Híbrido" es la **unión** de los hallazgos SAST y DAST co
 **Experimentos de correlación** (sí aplican el motor de correlación):
 
 - App vulnerable (Flask, SAST con Bandit): 1 correlación confirmada, SQL injection en `/login`, confianza 0.884 (`data/experiments/results/hybrid_vulnerable_20260930_095950.json`).
-  Contra su ground truth de 9 vulnerabilidades (`data/experiments/correlation_evaluation_20260930_131217.json`, caso de estudio):
+  Contra su ground truth de 9 vulnerabilidades (`data/experiments/correlation_evaluation_20260930_182802.json`, caso de estudio):
 
   | Método | Precisión | Recall |
   |---|---|---|
@@ -249,7 +249,9 @@ En esta evaluación, "Híbrido" es la **unión** de los hallazgos SAST y DAST co
   | Unión SAST+DAST | 0.500 | 1.000 (9 de 9) |
   | Correlación (pares confirmados) | 1.000 (1 de 1) | 0.111 (1 de 9) |
 
-  La correlación confirmada es correcta, pero solo confirma 1 de las 2 vulnerabilidades que ambas técnicas detectaron. La otra, el modo debug (falla global de la aplicación), queda en 0.523 porque el correlador compara endpoints y esa falla no pertenece a ninguno.
+  La correlación confirmada es correcta, pero solo confirma 1 de las 2 vulnerabilidades que ambas técnicas detectaron. La otra, el modo debug (falla global de la aplicación), queda en 0.523 porque el correlador compara endpoints y esa falla no pertenece a ninguno. El desglose de ambas confianzas (valor, peso y aporte de cada factor) está en `data/experiments/figures/tabla_evaluacion_correlacion.md`.
+
+  Pesos de la confianza (`CONFIDENCE_WEIGHTS` en `backend/correlation_engine.py`, decisión de diseño): endpoint 0.40, tipo 0.35, similitud semántica 0.10, Random Forest 0.10, severidad 0.05.
 - OWASP Juice Shop (SAST con Semgrep): 0 correlaciones. Es una ejecución distinta de la evaluación a escala (9 hallazgos SAST y 23 DAST; ver `data/experiments/EXPERIMENTAL_RESULTS_SUMMARY.md`). El modelo no correlaciona por *domain shift*: el vocabulario TF-IDF aprendido de descripciones sintéticas no coincide con el de Semgrep y el escáner HTTP. Reentrenar con salidas reales de las herramientas queda como trabajo futuro.
 
 ## Limitaciones y Trabajo Futuro

@@ -92,11 +92,11 @@ class TrainingVisualizer:
         plt.close()
         print("   ✅ Gráfica guardada: 01_class_distribution.png")
 
-    def plot_feature_importance(self, importances, top_n=20):
-        """Gráfica de barras: Top N features más importantes"""
+    def plot_feature_importance(self, importances, feature_names=None, top_n=20):
+        """Gráfica de barras: Top N features más importantes (con nombre si se proporciona)"""
         indices = np.argsort(importances)[::-1][:top_n]
         top_importances = importances[indices]
-        top_features = [f"Feature {i}" for i in indices]
+        top_features = [f"{feature_names[i]} [{i}]" if feature_names else f"Feature {i}" for i in indices]
 
         fig, ax = plt.subplots(figsize=(12, 8))
         colors_gradient = plt.cm.viridis(np.linspace(0.3, 0.9, len(top_features)))
@@ -247,9 +247,7 @@ class TrainingVisualizer:
         print("   ✅ Gráfica guardada: 06_metrics_comparison.png")
 
     def plot_correlation_heatmap(self, X_train, feature_names, top_n=20):
-        """Mapa de calor de correlación entre features principales"""
-        # Seleccionar las top_n features más importantes (últimas features que son las categóricas/numéricas)
-        # Las features 500-516 son las más interpretables
+        """Mapa de calor de correlación entre las últimas top_n features (las no textuales)"""
         start_idx = max(0, len(feature_names) - top_n)
         selected_features = feature_names[start_idx:]
         X_subset = X_train[:, start_idx:]
@@ -276,7 +274,7 @@ class TrainingVisualizer:
             ax=ax,
         )
 
-        ax.set_title("Mapa de Calor de Correlación entre Features Principales", fontsize=16, fontweight="bold", pad=20)
+        ax.set_title("Correlación entre las features no textuales", fontsize=16, fontweight="bold", pad=20)
         ax.set_xlabel("Features", fontsize=12, fontweight="bold")
         ax.set_ylabel("Features", fontsize=12, fontweight="bold")
 
@@ -290,8 +288,7 @@ class TrainingVisualizer:
         print("   ✅ Gráfica guardada: correlation_heatmap.png")
 
     def plot_feature_distribution_by_class(self, X_train, y_train, feature_names, top_n=8):
-        """Boxplots comparativos de distribución de features por clase"""
-        # Seleccionar las últimas features (categóricas/numéricas más interpretables)
+        """Boxplots comparativos de las últimas top_n features (las numéricas) por clase"""
         start_idx = max(0, len(feature_names) - top_n)
         selected_features = feature_names[start_idx:]
         X_subset = X_train[:, start_idx:]
@@ -358,8 +355,38 @@ class TrainingVisualizer:
         print("   ✅ Gráfica guardada: feature_distribution_boxplots.png")
 
 
+# Orden de las columnas del vector de features (debe coincidir con engineer_features):
+# [TF-IDF (500)] + CATEGORICAL_FEATURES (8) + NUMERIC_FEATURES (9) = 517
+CATEGORICAL_FEATURES = [
+    "sast_type",
+    "dast_type",
+    "sast_severity",
+    "dast_severity",
+    "sast_cwe",
+    "dast_cwe",
+    "sast_tool",
+    "dast_tool",
+]
+NUMERIC_FEATURES = [
+    "type_match",
+    "cwe_match",
+    "severity_match",
+    "same_tool_vendor",
+    "sast_desc_len",
+    "dast_desc_len",
+    "sast_line",
+    "sast_file_depth",
+    "dast_endpoint_depth",
+]
+
+
 class CorrelationMLTrainer:
     """Entrenador del modelo de ML para correlación de vulnerabilidades"""
+
+    def feature_names(self) -> list:
+        """Nombre de cada columna del vector de features, en orden."""
+        tfidf = [f"tfidf:{t}" for t in self.tfidf_vectorizer.get_feature_names_out()]
+        return tfidf + CATEGORICAL_FEATURES + NUMERIC_FEATURES
 
     def __init__(self, data_dir: Path = Path("data/processed"), model_dir: Path = Path("data/models")):
         self.data_dir = data_dir
@@ -442,18 +469,7 @@ class CorrelationMLTrainer:
 
         # 2. Features categóricas (Label Encoding)
         print("   🏷️  Codificando features categóricas...")
-        categorical_cols = [
-            "sast_type",
-            "dast_type",
-            "sast_severity",
-            "dast_severity",
-            "sast_cwe",
-            "dast_cwe",
-            "sast_tool",
-            "dast_tool",
-        ]
-
-        for col in categorical_cols:
+        for col in CATEGORICAL_FEATURES:
             if fit:
                 le = LabelEncoder()
                 encoded = le.fit_transform(df[col].fillna("UNKNOWN"))
@@ -625,13 +641,24 @@ class CorrelationMLTrainer:
             },
         }
 
-        # Feature importance
-        print("\n🔝 Top 15 Features Más Importantes:")
+        # Feature importance (con nombre de cada feature)
+        names = self.feature_names()
         feature_importance = self.rf_classifier.feature_importances_
-        top_indices = np.argsort(feature_importance)[-15:][::-1]
+        top_indices = np.argsort(feature_importance)[-20:][::-1]
+        print("\n🔝 Top 15 Features Más Importantes:")
+        for idx in top_indices[:15]:
+            print(f"   [{idx}] {names[idx]}: {feature_importance[idx]:.4f}")
 
-        for idx in top_indices:
-            print(f"   Feature {idx}: {feature_importance[idx]:.4f}")
+        n_tfidf = len(names) - len(CATEGORICAL_FEATURES) - len(NUMERIC_FEATURES)
+        self.training_metrics["features"] = {
+            "tfidf": n_tfidf,
+            "categorical": CATEGORICAL_FEATURES,
+            "numeric": NUMERIC_FEATURES,
+            "top20_importance": [
+                {"index": int(i), "name": names[i], "importance": round(float(feature_importance[i]), 4)}
+                for i in top_indices
+            ],
+        }
 
         # Generar visualizaciones
         print("\n📊 Generando visualizaciones...")
@@ -639,15 +666,17 @@ class CorrelationMLTrainer:
             # 1. Distribución de clases
             self.visualizer.plot_class_distribution(self.y_train, self.y_test)
 
-            # 2. Mapa de calor de correlación
-            feature_names_list = [f"Feature_{i}" for i in range(self.X_train.shape[1])]
-            self.visualizer.plot_correlation_heatmap(self.X_train, feature_names_list, top_n=20)
+            # 2. Mapa de calor de correlación (las 17 features no textuales)
+            n_engineered = len(CATEGORICAL_FEATURES) + len(NUMERIC_FEATURES)
+            self.visualizer.plot_correlation_heatmap(self.X_train, names, top_n=n_engineered)
 
-            # 3. Distribución de features por clase (boxplots)
-            self.visualizer.plot_feature_distribution_by_class(self.X_train, self.y_train, feature_names_list, top_n=8)
+            # 3. Distribución de las features numéricas por clase (boxplots)
+            self.visualizer.plot_feature_distribution_by_class(
+                self.X_train, self.y_train, names, top_n=len(NUMERIC_FEATURES)
+            )
 
             # 4. Importancia de features
-            self.visualizer.plot_feature_importance(feature_importance)
+            self.visualizer.plot_feature_importance(feature_importance, names)
 
             # 5. Matriz de confusión
             self.visualizer.plot_confusion_matrix(cm)
