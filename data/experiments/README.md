@@ -1,46 +1,33 @@
 # Datos de Validación Experimental
 
-Este directorio contiene los datos y resultados de la validación experimental del sistema HybridSecScan.
+Este directorio contiene los datos y resultados de la validación experimental de HybridSecScan.
+Todas las cifras se generan con los scripts indicados abajo; no hay resultados simulados.
 
-## 📁 Estructura de Directorios
+## Estructura
 
 ```
 data/experiments/
-├── ground_truth/          # Vulnerabilidades conocidas (ground truth)
-│   ├── webgoat_ground_truth.json
+├── ground_truth/                     # Vulnerabilidades conocidas por aplicación
+│   ├── juiceshop_ground_truth.json
 │   ├── dvwa_ground_truth.json
 │   ├── nodegoat_ground_truth.json
-│   └── juiceshop_ground_truth.json
-├── test_apps/            # Aplicaciones vulnerables descargadas
-│   ├── owasp_webgoat/
-│   ├── dvwa/
-│   ├── nodegoat/
-│   └── juice-shop/
-├── results/              # Resultados de experimentos
-│   └── experimental_validation_YYYYMMDD_HHMMSS.json
-├── processed/            # Datos procesados para análisis
-└── README.md            # Este archivo
+│   └── webgoat_ground_truth.json
+├── test_apps/                        # Código fuente de las apps vulnerables
+├── results/                          # Salidas crudas de SAST/DAST y de los experimentos de correlación
+├── scale_evaluation_*.json           # Evaluación a escala (una por ejecución)
+└── EXPERIMENTAL_RESULTS_SUMMARY.md   # Resumen del experimento en Juice Shop
 ```
 
-## 🎯 Ground Truth (Vulnerabilidades Conocidas)
+## Ground Truth
 
-Los archivos de ground truth contienen las vulnerabilidades **documentadas oficialmente** por cada proyecto:
-
-- **webgoat_ground_truth.json**: 5 vulnerabilidades conocidas de WebGoat
-- **dvwa_ground_truth.json**: 5 vulnerabilidades conocidas de DVWA
-- **nodegoat_ground_truth.json**: 5 vulnerabilidades conocidas de NodeGoat
-- **juiceshop_ground_truth.json**: 5 vulnerabilidades conocidas de Juice Shop
-
-**Total: 20 vulnerabilidades documentadas**
-
-### Formato de Ground Truth
+Cada archivo documenta 5 vulnerabilidades conocidas de su aplicación (20 en total):
+OWASP Juice Shop, DVWA, NodeGoat y OWASP WebGoat.
 
 ```json
 {
   "application": "Nombre de la aplicación",
   "version": "X.Y.Z",
   "source": "Fuente de la información",
-  "last_updated": "2025-11-21",
   "vulnerabilities": [
     {
       "id": "APP_001",
@@ -58,151 +45,40 @@ Los archivos de ground truth contienen las vulnerabilidades **documentadas ofici
 }
 ```
 
-## 📊 Resultados de Experimentos
-
-Los archivos de resultados contienen:
-
-1. **Información de la aplicación**
-2. **Ground truth utilizado**
-3. **Resultados SAST** (Bandit + Semgrep)
-4. **Resultados DAST** (OWASP ZAP)
-5. **Resultados Híbridos** (HybridSecScan)
-6. **Métricas comparativas**:
-   - Precision
-   - Recall
-   - F1-Score
-   - Accuracy
-   - True Positives
-   - False Positives
-   - False Negatives
-7. **Reducción de falsos positivos**
-
-### Formato de Resultados
-
-```json
-{
-  "experiment_date": "2025-11-21T10:30:00",
-  "total_applications": 4,
-  "results": [
-    {
-      "application": {...},
-      "ground_truth": [...],
-      "sast_results": {...},
-      "dast_results": {...},
-      "hybrid_results": {...},
-      "metrics_comparison": {
-        "sast": {
-          "precision": 0.6823,
-          "recall": 0.7140,
-          "f1_score": 0.6978,
-          "false_positives": 17
-        },
-        "hybrid": {
-          "precision": 0.8956,
-          "recall": 0.8421,
-          "f1_score": 0.8680,
-          "false_positives": 4
-        }
-      },
-      "false_positive_reduction": {
-        "sast_fp": 17,
-        "hybrid_fp": 4,
-        "absolute": 13,
-        "percentage": 76.47
-      }
-    }
-  ],
-  "aggregate_metrics": {
-    "sast": {...},
-    "dast": {...},
-    "hybrid": {...},
-    "false_positive_reduction": {
-      "avg_percentage": 68.5
-    }
-  }
-}
-```
-
-## 🚀 Ejecutar Validación Experimental
-
-### Requisitos
+## Evaluación a escala (4 aplicaciones)
 
 ```bash
-pip install -r requirements.txt
+python scripts/run_scale_evaluation.py --save
 ```
 
-Herramientas necesarias:
-- Python 3.11+
-- Bandit
-- Semgrep
-- OWASP ZAP (opcional, se simula si no está instalado)
-- Git
+Lee los resultados SAST (Semgrep) y DAST (escáner HTTP) ya generados en `results/`, los compara
+con el ground truth y calcula por método (SAST, DAST, híbrido = unión de hallazgos):
 
-### Ejecución
+- Precision `TP / (TP + FP)`, Recall `TP / (TP + FN)` y F1 por aplicación
+- Media e intervalo de confianza al 95 % por método
+- Prueba t de Student emparejada (scipy, H₁: híbrido > método individual), con p unilateral y bilateral
+
+El resultado se guarda en `scale_evaluation_AAAAMMDD_HHMMSS.json`. El panel de investigación
+lo muestra a través de `GET /api/scale-evaluation` (siempre el archivo más reciente).
+
+## Experimentos de correlación
 
 ```bash
-# Activar entorno virtual
-.\.venv\Scripts\activate  # Windows
-source .venv/bin/activate  # Linux/Mac
-
-# Ejecutar validación completa
-python scripts/experimental_validation.py
+python scripts/run_vulnerable_app_experiment.py   # app Flask de ProgramasPruebas/ (la levanta el script)
+python scripts/run_juiceshop_experiment.py        # requiere Juice Shop en Docker (puerto 3000)
+python scripts/run_dast_docker_apps.py            # DAST activo contra las apps en Docker
 ```
 
-### Proceso Automático
+Guardan en `results/` los hallazgos SAST y DAST y el reporte de correlación (`hybrid_*.json`).
 
-El script ejecuta automáticamente:
+## Referencias
 
-1. ✅ Descarga de aplicaciones vulnerables
-2. ✅ Carga de ground truth
-3. ✅ Análisis SAST con Bandit
-4. ✅ Análisis SAST con Semgrep
-5. ✅ Análisis DAST con ZAP (simulado)
-6. ✅ Correlación híbrida
-7. ✅ Cálculo de métricas
-8. ✅ Generación de reportes
-
-## 📈 Análisis de Resultados
-
-### Visualizar Resultados
-
-```bash
-# Análisis estadístico
-python scripts/analyze_experimental_results.py
-
-# Generar gráficos
-python scripts/plot_experimental_metrics.py
-```
-
-### Métricas Principales
-
-- **Precision**: `TP / (TP + FP)`
-- **Recall**: `TP / (TP + FN)`
-- **F1-Score**: `2 * (Precision * Recall) / (Precision + Recall)`
-- **Accuracy**: `(TP + TN) / (TP + TN + FP + FN)`
-
-### Reducción de Falsos Positivos
-
-```
-Reducción (%) = ((FP_SAST - FP_Hybrid) / FP_SAST) × 100
-```
-
-## 📚 Referencias
-
-- **OWASP WebGoat**: https://owasp.org/www-project-webgoat/
-- **DVWA**: https://dvwa.co.uk/
-- **NodeGoat**: https://github.com/OWASP/NodeGoat
 - **OWASP Juice Shop**: https://owasp.org/www-project-juice-shop/
-
-## 📝 Notas
-
-- Los ground truth están basados en documentación oficial de cada proyecto
-- Las vulnerabilidades están validadas manualmente
-- Los resultados son reproducibles ejecutando el script
-- Se recomienda ejecutar en un entorno controlado
+- **DVWA**: https://github.com/digininja/DVWA
+- **NodeGoat**: https://github.com/OWASP/NodeGoat
+- **OWASP WebGoat**: https://owasp.org/www-project-webgoat/
 
 ---
 
-**Autor**: Oscar Isaac Laguna Santa Cruz  
-**Universidad**: UNMSM - FISI  
-**Fecha**: Noviembre 2025
+**Autor**: Oscar Isaac Laguna Santa Cruz
+**Universidad**: UNMSM - FISI
