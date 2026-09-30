@@ -336,6 +336,32 @@ class TestHybridCorrelation:
         sim_none = vc._calculate_endpoint_similarity("backend/auth.py", "http://target/products")
         assert sim_none < 0.5
 
+    def test_endpoint_similarity_is_monotonic(self):
+        """Más evidencia de coincidencia nunca debe puntuar menos."""
+        from backend.correlation_engine import VulnerabilityCorrelator
+
+        vc = VulnerabilityCorrelator()
+        exact = vc._calculate_endpoint_similarity("/api/users", "/api/users")
+        suffix = vc._calculate_endpoint_similarity("backend/api/users.py", "http://h/api/users")
+        last_seg = vc._calculate_endpoint_similarity("backend/admin/users.py", "http://h/api/users")
+        assert exact > suffix >= last_seg == 0.70
+
+    def test_endpoint_suffix_respects_segment_boundaries(self):
+        """'xusers' no es la ruta 'users': el sufijo debe coincidir por segmentos."""
+        from backend.correlation_engine import VulnerabilityCorrelator
+
+        vc = VulnerabilityCorrelator()
+        assert vc._calculate_endpoint_similarity("api/xusers", "http://h/users") < 0.70
+
+    def test_endpoint_windows_paths(self):
+        """Las rutas con '\\' (Windows) se comparan igual que con '/'."""
+        from backend.correlation_engine import VulnerabilityCorrelator
+
+        vc = VulnerabilityCorrelator()
+        win = vc._calculate_endpoint_similarity("backend\\api\\users.py", "http://h/api/users")
+        posix = vc._calculate_endpoint_similarity("backend/api/users.py", "http://h/api/users")
+        assert win == posix
+
 
 # ── Cache manager integration ──────────────────────────────────────────────────
 

@@ -581,21 +581,29 @@ class VulnerabilityCorrelator:
             path = parsed.path
         else:
             path = raw
-        # Strip extension (e.g. .py) so 'users.py' == 'users'
-        path = path.strip("/")
+        # Separador único '/' (las rutas de Windows llegan con '\')
+        path = path.replace("\\", "/").strip("/")
         if not path:
             return ""
-        from pathlib import Path as _Path
+        # Strip extension (e.g. .py) so 'users.py' == 'users'.
+        # PurePosixPath: str() conserva '/' también en Windows.
+        from pathlib import PurePosixPath
 
         try:
-            path = str(_Path(path).with_suffix(""))
+            path = str(PurePosixPath(path).with_suffix(""))
         except ValueError:
             pass  # path like "." or root — keep as-is
         return path.strip("/").lower()
 
     def _calculate_endpoint_similarity(self, endpoint1: str, endpoint2: str) -> float:
         """
-        Calculates similarity between two endpoints using normalized Levenshtein.
+        Calculates similarity between two endpoints.
+
+        Escala (de más a menos evidencia):
+          1.0          rutas idénticas tras normalizar
+          0.70–0.85    una ruta es sufijo completo de la otra, por segmentos
+          0.70         solo coincide el último segmento
+          Levenshtein  resto de casos
 
         Both SAST file paths and DAST URLs are first normalized to their
         path-only, extension-stripped form before comparison, so that
@@ -613,17 +621,19 @@ class VulnerabilityCorrelator:
         if ep1 == ep2:
             return 1.0
 
-        # Partial match: if one is a suffix of the other (common case:
-        # 'api/users' is a suffix of 'backend/api/users')
-        if ep1.endswith(ep2) or ep2.endswith(ep1):
-            shorter = min(len(ep1), len(ep2))
-            longer = max(len(ep1), len(ep2))
-            return 0.85 * (shorter / longer)
+        segs1 = ep1.split("/")
+        segs2 = ep2.split("/")
+
+        # Partial match por segmentos: una ruta es sufijo completo de la otra
+        # (caso típico: 'api/users' es sufijo de 'backend/api/users').
+        # Es más evidencia que coincidir solo el último segmento, así que
+        # puntúa en [0.70, 0.85]: nunca por debajo del caso de último segmento.
+        shorter, longer = sorted((segs1, segs2), key=len)
+        if longer[-len(shorter) :] == shorter:
+            return 0.70 + 0.15 * (len(shorter) / len(longer))
 
         # Last-segment match (e.g. both end with 'users')
-        seg1 = ep1.split("/")[-1]
-        seg2 = ep2.split("/")[-1]
-        if seg1 and seg1 == seg2:
+        if segs1[-1] and segs1[-1] == segs2[-1]:
             return 0.70
 
         # Levenshtein on the normalized paths
