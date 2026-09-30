@@ -72,6 +72,17 @@ class VulnerabilityType(Enum):
     INSUFFICIENT_LOGGING = "insufficient_logging"
 
 
+# Etiquetas de tipo usadas en el dataset de entrenamiento (scripts/generate_training_dataset.py).
+# Tipos sin equivalente en el dataset se codifican como -1 (valor no visto).
+_TRAINING_TYPE_LABELS = {
+    VulnerabilityType.SQL_INJECTION: "SQL_INJECTION",
+    VulnerabilityType.XSS: "XSS",
+    VulnerabilityType.BROKEN_AUTH: "BROKEN_AUTH",
+    VulnerabilityType.SENSITIVE_DATA: "SENSITIVE_DATA_EXPOSURE",
+    VulnerabilityType.SECURITY_MISCONFIG: "SECURITY_MISCONFIG",
+}
+
+
 class ConfidenceLevel(Enum):
     LOW = 1
     MEDIUM = 2
@@ -96,38 +107,26 @@ class Vulnerability:
 class VulnerabilityCorrelator:
     """
     Correlaciona vulnerabilidades encontradas por herramientas SAST y DAST
-    usando algoritmos de machine learning y análisis contextual.
+    usando una suma ponderada de factores y un modelo Random Forest.
 
-    Fundamentación Teórica:
-    - Basado en Teoría de Información y Mutual Information entre SAST/DAST
-    - Algoritmo multi-factor con pesos validados empíricamente
-    - Modelo Random Forest entrenado con 1,247+ correlaciones validadas
-    - Validación estadística: p<0.05, Cohen's d=0.73 (efecto grande)
-
-    Referencias:
-    - Zhang, L. et al. (2022). "Vulnerability Correlation in Security Analysis"
-    - OWASP API Security Top 10 (2023)
-    - Mutual Information: Cover & Thomas, "Elements of Information Theory"
+    - Confianza: ver _calculate_correlation_confidence (pesos por diseño).
+    - Modelo: Random Forest entrenado con 1,300 pares sintéticos
+      (scripts/generate_training_dataset.py); métricas reales en
+      data/models/metadata.json.
+    - Marco de referencia: OWASP API Security Top 10 (2023).
     """
 
     def __init__(self):
         self.sast_findings: List[Vulnerability] = []
         self.dast_findings: List[Vulnerability] = []
         self.correlation_rules = self._load_correlation_rules()
+        # Métricas del modelo: las rellena _initialize_ml_model desde metadata.json.
+        # Queda vacío si no hay modelo entrenado; nunca se hardcodean.
+        self.model_metrics: Dict = {}
         self.ml_model = self._initialize_ml_model()
 
-        # Métricas de validación del modelo
-        self.model_metrics = {
-            "cross_validation_f1": 0.909,
-            "test_accuracy": 0.913,
-            "precision": 0.897,
-            "recall": 0.921,
-            "training_samples": 1247,
-            "inter_rater_agreement": 0.87,  # Kappa coefficient
-        }
-
     def _load_correlation_rules(self) -> Dict:
-        """Carga reglas de correlación basadas en investigación empírica"""
+        """Carga las reglas de correlación por tipo (indicadores SAST y DAST)."""
         return {
             "sql_injection": {
                 "sast_indicators": ["execute", "query", "cursor.execute", "raw SQL"],
@@ -242,6 +241,19 @@ class VulnerabilityCorrelator:
             self.ml_classifier = None
             return False
 
+    def _encode_categorical(self, column: str, value: str) -> int:
+        """Codifica con el LabelEncoder del entrenamiento; -1 si no existe o el valor no se vio."""
+        encoder = getattr(self, "label_encoders", {}).get(column)
+        if encoder is None or value not in encoder.classes_:
+            return -1
+        return int(encoder.transform([value])[0])
+
+    @staticmethod
+    def _training_tool_label(tool: str) -> str:
+        """Normaliza el nombre de herramienta al vocabulario del dataset ('http_scanner' → 'http-scanner')."""
+        tool = (tool or "").lower().replace("_", "-")
+        return {"zap": "owasp-zap"}.get(tool, tool)
+
     def _engineer_features_for_prediction(self, sast_vuln: Vulnerability, dast_vuln: Vulnerability) -> np.array:
         """
         Genera vector de features para predicción usando el modelo entrenado.
@@ -262,47 +274,21 @@ class VulnerabilityCorrelator:
             tfidf_features = self.tfidf_vectorizer.transform([combined_text]).toarray()[0]
             features_list.append(tfidf_features)
 
-        # 2. Features categóricas (Label Encoding)
-        categorical_values = []
-
-        # Mapear tipos de vulnerabilidad a valores numéricos
-        type_mapping = {
-            VulnerabilityType.SQL_INJECTION: 0,
-            VulnerabilityType.XSS: 1,
-            VulnerabilityType.BROKEN_AUTH: 2,
-            VulnerabilityType.SENSITIVE_DATA: 3,
-            VulnerabilityType.BROKEN_ACCESS: 4,
-            VulnerabilityType.SECURITY_MISCONFIG: 5,
-            VulnerabilityType.INSUFFICIENT_LOGGING: 6,
-        }
-
-        sast_type_encoded = type_mapping.get(sast_vuln.type, -1)
-        dast_type_encoded = type_mapping.get(dast_vuln.type, -1)
-        categorical_values.extend([sast_type_encoded, dast_type_encoded])
-
-        # Mapear severidad a valores numéricos
-        severity_mapping = {
-            ConfidenceLevel.LOW: 0,
-            ConfidenceLevel.MEDIUM: 1,
-            ConfidenceLevel.HIGH: 2,
-            ConfidenceLevel.CRITICAL: 3,
-        }
-
-        sast_severity_encoded = severity_mapping.get(sast_vuln.severity, -1)
-        dast_severity_encoded = severity_mapping.get(dast_vuln.severity, -1)
-        categorical_values.extend([sast_severity_encoded, dast_severity_encoded])
-
-        # CWE encoding (simplificado)
-        cwe_values = [hash(sast_vuln.cwe_id) % 1000, hash(dast_vuln.cwe_id) % 1000]
-        categorical_values.extend(cwe_values)
-
-        # Tool encoding
-        tool_mapping = {"bandit": 0, "semgrep": 1, "sonarqube": 2, "zap": 3, "burp": 4, "acunetix": 5}
-        sast_tool_encoded = tool_mapping.get(sast_vuln.source_tool, -1)
-        dast_tool_encoded = tool_mapping.get(dast_vuln.source_tool, -1)
-        categorical_values.extend([sast_tool_encoded, dast_tool_encoded])
-
-        # Agregar valores categóricos como array 1D
+        # 2. Features categóricas: mismos LabelEncoder que en el entrenamiento
+        # (guardados en rf_correlator_v1.pkl). Valores no vistos → -1, igual que
+        # hace train_ml_model.py al transformar validación/test.
+        sast_tool = self._training_tool_label(sast_vuln.source_tool)
+        dast_tool = self._training_tool_label(dast_vuln.source_tool)
+        categorical_values = [
+            self._encode_categorical("sast_type", _TRAINING_TYPE_LABELS.get(sast_vuln.type, "")),
+            self._encode_categorical("dast_type", _TRAINING_TYPE_LABELS.get(dast_vuln.type, "")),
+            self._encode_categorical("sast_severity", sast_vuln.severity.name),
+            self._encode_categorical("dast_severity", dast_vuln.severity.name),
+            self._encode_categorical("sast_cwe", sast_vuln.cwe_id),
+            self._encode_categorical("dast_cwe", dast_vuln.cwe_id),
+            self._encode_categorical("sast_tool", sast_tool),
+            self._encode_categorical("dast_tool", dast_tool),
+        ]
         features_list.append(np.array(categorical_values))
 
         # 3. Features numéricas
@@ -320,8 +306,8 @@ class VulnerabilityCorrelator:
         severity_match = 1 if sast_vuln.severity == dast_vuln.severity else 0
         numeric_features.append(severity_match)
 
-        # Same tool vendor (simplificado)
-        same_tool_vendor = 0
+        # Misma definición que en el entrenamiento: sast_tool == 'bandit' y dast_tool == 'zap'
+        same_tool_vendor = int(sast_tool == "bandit" and dast_tool == "zap")
         numeric_features.append(same_tool_vendor)
 
         # Longitud de descripciones
@@ -334,7 +320,7 @@ class VulnerabilityCorrelator:
         numeric_features.append(sast_line)
 
         # Profundidad de path/endpoint
-        sast_file_depth = sast_vuln.file_path.count("/") if sast_vuln.file_path else 0
+        sast_file_depth = sast_vuln.file_path.replace("\\", "/").count("/") if sast_vuln.file_path else 0
         dast_endpoint_depth = dast_vuln.endpoint.count("/") if dast_vuln.endpoint else 0
         numeric_features.extend([sast_file_depth, dast_endpoint_depth])
 
@@ -462,31 +448,32 @@ class VulnerabilityCorrelator:
 
     def _calculate_correlation_confidence(self, sast_vuln: Vulnerability, dast_vuln: Vulnerability) -> float:
         """
-        Calcula confianza de correlación usando múltiples factores ponderados.
+        Calcula la confianza de correlación como suma ponderada de factores.
 
-        Metodología basada en:
-        1. Análisis empírico de 1,247+ correlaciones validadas manualmente
-        2. Optimización de pesos usando Grid Search con validación cruzada
-        3. Validación estadística con pruebas de significancia (p<0.05)
+        Los pesos son una decisión de diseño, no el resultado de una optimización
+        empírica: se priorizan las señales más directas de que ambos hallazgos son
+        el mismo problema (mismo lugar y mismo tipo) sobre las señales auxiliares.
 
-        Factores y Justificación:
-        - Endpoint Similarity (40%): 89% precisión cuando endpoints coinciden (n=1,247)
-        - Vulnerability Type (35%): 82% de correlaciones verdaderas tienen mismo tipo (CVE analysis)
-        - ML Context (15%): Random Forest mejora precisión en 7.3% vs reglas determinísticas
-        - Severity Match (10%): Correlación débil (r=0.34) pero estadísticamente significativa
+        Factores (suman 1.0):
+        - Similitud de endpoint (40%): señal más fuerte; mismo lugar de la API.
+        - Tipo de vulnerabilidad (35%): mismo tipo, o 20% si son tipos relacionados.
+        - Similitud semántica de descripciones (10%): embeddings (sentence-transformers)
+          o Jaccard si no están disponibles.
+        - Probabilidad del Random Forest (10%): ver data/models/metadata.json.
+        - Similitud de severidad (5%): señal débil de apoyo.
+
+        El umbral de 0.70 (con modelo ML) también es un criterio de diseño.
 
         Returns:
-            float: Confidence score [0,1] donde >0.7 indica correlación probable
+            float: Confidence score en [0, 1].
         """
         score = 0.0
 
         # Factor 1: Similitud de endpoint/archivo (40% del peso)
-        # Justificación empírica: 89% precisión cuando endpoints coinciden exactamente
         endpoint_similarity = self._calculate_endpoint_similarity(sast_vuln.endpoint, dast_vuln.endpoint)
         score += endpoint_similarity * 0.40
 
         # Factor 2: Coincidencia de tipo de vulnerabilidad (35% del peso)
-        # Justificación: Análisis de CVE database muestra 82% correlación para mismo tipo
         if sast_vuln.type == dast_vuln.type:
             score += 0.35
         elif self._are_related_vulnerabilities(sast_vuln.type, dast_vuln.type):
@@ -501,8 +488,7 @@ class VulnerabilityCorrelator:
         semantic_sim = self._description_similarity(sast_vuln.description, dast_vuln.description)
         score += semantic_sim * 0.10
 
-        # Factor 3b: Análisis contextual con ML (10% del peso, reducido desde 15%)
-        # Justificación: Random Forest captura patrones complejos no detectables por reglas
+        # Factor 3b: Probabilidad del Random Forest (10% del peso)
         ml_confidence = 0.0
         if hasattr(self, "ml_classifier") and self.ml_classifier is not None:
             try:
@@ -529,12 +515,9 @@ class VulnerabilityCorrelator:
             score += context_score * 0.10
 
         # Factor 4: Severidad similar (5% del peso)
-        # Vulnerabilidades correlacionadas tienden a tener severidad similar (r=0.34)
         severity_similarity = self._calculate_severity_similarity(sast_vuln.severity, dast_vuln.severity)
         score += severity_similarity * 0.05
 
-        # Aplicar threshold de confianza basado en análisis ROC
-        # Threshold óptimo: 0.72 (maximiza F1-Score en conjunto de validación)
         confidence = min(score, 1.0)
 
         # Log para análisis posterior (solo en modo debug)
