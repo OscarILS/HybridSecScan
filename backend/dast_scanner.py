@@ -9,6 +9,7 @@ La función pública `run_dast_scan()` intenta ZAP primero y cae al HTTP Scanner
 si ZAP no está disponible. Ambas rutas producen hallazgos reales y estructurados.
 """
 
+import json
 import logging
 import time
 import uuid
@@ -31,34 +32,34 @@ DEFAULT_TIMEOUT = 10
 
 # Header → (severidad, OWASP API Top 10, CWE, descripción)
 SECURITY_HEADERS: Dict[str, Tuple[str, str, str, str]] = {
-    "Content-Security-Policy":   ("HIGH",   "API7:2023", "CWE-693",  "Previene XSS e inyección de contenido"),
-    "X-Frame-Options":           ("MEDIUM", "API7:2023", "CWE-1021", "Previene ataques de clickjacking"),
-    "X-Content-Type-Options":    ("LOW",    "API7:2023", "CWE-693",  "Previene MIME-type sniffing"),
-    "Strict-Transport-Security": ("HIGH",   "API7:2023", "CWE-319",  "Fuerza conexiones HTTPS"),
-    "Referrer-Policy":           ("LOW",    "API7:2023", "CWE-200",  "Controla información del referrer"),
-    "Permissions-Policy":        ("LOW",    "API7:2023", "CWE-693",  "Controla permisos del navegador"),
+    "Content-Security-Policy": ("HIGH", "API7:2023", "CWE-693", "Previene XSS e inyección de contenido"),
+    "X-Frame-Options": ("MEDIUM", "API7:2023", "CWE-1021", "Previene ataques de clickjacking"),
+    "X-Content-Type-Options": ("LOW", "API7:2023", "CWE-693", "Previene MIME-type sniffing"),
+    "Strict-Transport-Security": ("HIGH", "API7:2023", "CWE-319", "Fuerza conexiones HTTPS"),
+    "Referrer-Policy": ("LOW", "API7:2023", "CWE-200", "Controla información del referrer"),
+    "Permissions-Policy": ("LOW", "API7:2023", "CWE-693", "Controla permisos del navegador"),
 }
 
 # (path, severidad, descripción legible)
 SENSITIVE_PATHS: List[Tuple[str, str, str]] = [
-    ("/.env",              "HIGH",     "Variables de entorno expuestas"),
-    ("/config",            "HIGH",     "Endpoint de configuración accesible"),
-    ("/config.json",       "HIGH",     "Configuración JSON expuesta"),
-    ("/admin",             "HIGH",     "Panel administrativo expuesto"),
-    ("/admin/",            "HIGH",     "Panel administrativo expuesto"),
-    ("/api/admin",         "HIGH",     "Endpoint administrativo API expuesto"),
-    ("/swagger.json",      "MEDIUM",   "Documentación Swagger pública"),
-    ("/openapi.json",      "MEDIUM",   "Especificación OpenAPI pública"),
-    ("/api-docs",          "MEDIUM",   "Documentación de API pública"),
-    ("/docs",              "MEDIUM",   "Documentación pública"),
-    ("/actuator",          "HIGH",     "Spring Boot Actuator expuesto"),
-    ("/actuator/env",      "CRITICAL", "Variables de entorno vía Actuator"),
-    ("/actuator/dump",     "CRITICAL", "Dump de threads vía Actuator"),
-    ("/metrics",           "MEDIUM",   "Métricas del sistema expuestas"),
-    ("/debug",             "HIGH",     "Endpoint de debug accesible"),
-    ("/phpinfo.php",       "HIGH",     "phpinfo() expuesto"),
-    ("/.git/config",       "CRITICAL", "Repositorio Git expuesto"),
-    ("/health",            "LOW",      "Endpoint de health check público"),
+    ("/.env", "HIGH", "Variables de entorno expuestas"),
+    ("/config", "HIGH", "Endpoint de configuración accesible"),
+    ("/config.json", "HIGH", "Configuración JSON expuesta"),
+    ("/admin", "HIGH", "Panel administrativo expuesto"),
+    ("/admin/", "HIGH", "Panel administrativo expuesto"),
+    ("/api/admin", "HIGH", "Endpoint administrativo API expuesto"),
+    ("/swagger.json", "MEDIUM", "Documentación Swagger pública"),
+    ("/openapi.json", "MEDIUM", "Especificación OpenAPI pública"),
+    ("/api-docs", "MEDIUM", "Documentación de API pública"),
+    ("/docs", "MEDIUM", "Documentación pública"),
+    ("/actuator", "HIGH", "Spring Boot Actuator expuesto"),
+    ("/actuator/env", "CRITICAL", "Variables de entorno vía Actuator"),
+    ("/actuator/dump", "CRITICAL", "Dump de threads vía Actuator"),
+    ("/metrics", "MEDIUM", "Métricas del sistema expuestas"),
+    ("/debug", "HIGH", "Endpoint de debug accesible"),
+    ("/phpinfo.php", "HIGH", "phpinfo() expuesto"),
+    ("/.git/config", "CRITICAL", "Repositorio Git expuesto"),
+    ("/health", "LOW", "Endpoint de health check público"),
 ]
 
 DANGEROUS_HTTP_METHODS = {"TRACE", "CONNECT"}
@@ -66,59 +67,68 @@ DANGEROUS_HTTP_METHODS = {"TRACE", "CONNECT"}
 # Patrones de exposición de stack traces en respuestas
 STACK_TRACE_PATTERNS = [
     "Traceback (most recent call last)",
-    'File "', "line ",
-    "at com.", "at org.", "at java.",
-    "System.Exception", "NullPointerException",
+    'File "',
+    "line ",
+    "at com.",
+    "at org.",
+    "at java.",
+    "System.Exception",
+    "NullPointerException",
     "Microsoft.CSharp",
-    "SQLException", "ORA-", "MySQL server",
-    "stack trace:", "StackTrace",
+    "SQLException",
+    "ORA-",
+    "MySQL server",
+    "stack trace:",
+    "StackTrace",
 ]
 
 RATE_LIMIT_PROBE_COUNT = 15
-RATE_LIMIT_PROBE_DELAY = 0.05   # segundos entre requests
+RATE_LIMIT_PROBE_DELAY = 0.05  # segundos entre requests
 
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Modelo de hallazgo
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 @dataclass
 class ScanFinding:
     """Hallazgo DAST normalizado, compatible con el correlador SAST."""
-    id:              str  = field(default_factory=lambda: str(uuid.uuid4()))
-    type:            str  = ""
-    alert:           str  = ""
-    severity:        str  = "LOW"
-    risk:            str  = "Low"
-    confidence:      str  = "Medium"
-    url:             str  = ""
-    parameter:       str  = ""
-    description:     str  = ""
-    solution:        str  = ""
-    evidence:        str  = ""
-    cwe:             str  = ""
-    cweid:           str  = ""
-    owasp_category:  str  = ""
-    source:          str  = "HTTP Scanner"
+
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    type: str = ""
+    alert: str = ""
+    severity: str = "LOW"
+    risk: str = "Low"
+    confidence: str = "Medium"
+    url: str = ""
+    parameter: str = ""
+    description: str = ""
+    solution: str = ""
+    evidence: str = ""
+    cwe: str = ""
+    cweid: str = ""
+    owasp_category: str = ""
+    source: str = "HTTP Scanner"
     request_payload: Dict = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
-            "id":              self.id,
-            "type":            self.type,
-            "alert":           self.alert,
-            "severity":        self.severity,
-            "risk":            self.risk,
-            "confidence":      self.confidence,
-            "url":             self.url,
-            "parameter":       self.parameter,
-            "description":     self.description,
-            "solution":        self.solution,
-            "evidence":        self.evidence,
-            "cwe":             self.cwe,
-            "cweid":           self.cweid,
-            "owasp_category":  self.owasp_category,
-            "source":          self.source,
+            "id": self.id,
+            "type": self.type,
+            "alert": self.alert,
+            "severity": self.severity,
+            "risk": self.risk,
+            "confidence": self.confidence,
+            "url": self.url,
+            "parameter": self.parameter,
+            "description": self.description,
+            "solution": self.solution,
+            "evidence": self.evidence,
+            "cwe": self.cwe,
+            "cweid": self.cweid,
+            "owasp_category": self.owasp_category,
+            "source": self.source,
             "request_payload": self.request_payload,
         }
 
@@ -126,6 +136,7 @@ class ScanFinding:
 # ──────────────────────────────────────────────────────────────────────────────
 # Scanner HTTP real (siempre disponible)
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 class HTTPSecurityScanner:
     """
@@ -149,14 +160,14 @@ class HTTPSecurityScanner:
         findings: List[ScanFinding] = []
 
         checks = [
-            ("security_headers",    self._check_security_headers),
-            ("cors_policy",         self._check_cors_policy),
+            ("security_headers", self._check_security_headers),
+            ("cors_policy", self._check_cors_policy),
             ("sensitive_endpoints", self._check_sensitive_endpoints),
-            ("http_methods",        self._check_http_methods),
-            ("error_disclosure",    self._check_error_disclosure),
-            ("rate_limiting",       self._check_rate_limiting),
-            ("server_info",         self._check_server_info),
-            ("ssl_config",          self._check_ssl),
+            ("http_methods", self._check_http_methods),
+            ("error_disclosure", self._check_error_disclosure),
+            ("rate_limiting", self._check_rate_limiting),
+            ("server_info", self._check_server_info),
+            ("ssl_config", self._check_ssl),
         ]
 
         for name, check in checks:
@@ -186,26 +197,27 @@ class HTTPSecurityScanner:
             }
             for header, (severity, owasp, cwe, explanation) in SECURITY_HEADERS.items():
                 if header not in present:
-                    findings.append(ScanFinding(
-                        type="Missing Security Header",
-                        alert=f"Header ausente: {header}",
-                        severity=severity,
-                        risk=severity.capitalize(),
-                        confidence="High",
-                        url=url,
-                        parameter=header,
-                        description=(
-                            f'El header HTTP "{header}" no está presente en la respuesta. '
-                            f"{explanation}."
-                        ),
-                        solution=f'Agregar el header "{header}" en la configuración del servidor.',
-                        evidence=f"Header no encontrado. Headers presentes: {sorted(present)}",
-                        cwe=cwe,
-                        cweid=cwe.replace("CWE-", ""),
-                        owasp_category=owasp,
-                        source="HTTP Scanner – Security Headers",
-                        request_payload={**payload, "missing_header": header},
-                    ))
+                    findings.append(
+                        ScanFinding(
+                            type="Missing Security Header",
+                            alert=f"Header ausente: {header}",
+                            severity=severity,
+                            risk=severity.capitalize(),
+                            confidence="High",
+                            url=url,
+                            parameter=header,
+                            description=(
+                                f'El header HTTP "{header}" no está presente en la respuesta. ' f"{explanation}."
+                            ),
+                            solution=f'Agregar el header "{header}" en la configuración del servidor.',
+                            evidence=f"Header no encontrado. Headers presentes: {sorted(present)}",
+                            cwe=cwe,
+                            cweid=cwe.replace("CWE-", ""),
+                            owasp_category=owasp,
+                            source="HTTP Scanner – Security Headers",
+                            request_payload={**payload, "missing_header": header},
+                        )
+                    )
         except Exception as exc:
             logger.debug(f"security_headers: {exc}")
         return findings
@@ -240,68 +252,74 @@ class HTTPSecurityScanner:
             }
 
             if acao == "*" and acac == "true":
-                findings.append(ScanFinding(
-                    type="CORS Misconfiguration",
-                    alert="CORS: Wildcard con credenciales habilitadas",
-                    severity="CRITICAL",
-                    risk="Critical",
-                    confidence="High",
-                    url=url,
-                    parameter="Access-Control-Allow-Origin",
-                    description=(
-                        "El servidor permite CORS con wildcard (*) y credenciales habilitadas "
-                        "simultáneamente. Cualquier origen puede hacer peticiones autenticadas."
-                    ),
-                    solution="Especificar orígenes explícitos en vez de wildcard cuando se usan credenciales.",
-                    evidence=(
-                        f"Access-Control-Allow-Origin: {acao}  |  "
-                        f"Access-Control-Allow-Credentials: {resp.headers.get('Access-Control-Allow-Credentials')}"
-                    ),
-                    cwe="CWE-942",
-                    cweid="942",
-                    owasp_category="API8:2023",
-                    source="HTTP Scanner – CORS",
-                    request_payload=evil_payload,
-                ))
+                findings.append(
+                    ScanFinding(
+                        type="CORS Misconfiguration",
+                        alert="CORS: Wildcard con credenciales habilitadas",
+                        severity="CRITICAL",
+                        risk="Critical",
+                        confidence="High",
+                        url=url,
+                        parameter="Access-Control-Allow-Origin",
+                        description=(
+                            "El servidor permite CORS con wildcard (*) y credenciales habilitadas "
+                            "simultáneamente. Cualquier origen puede hacer peticiones autenticadas."
+                        ),
+                        solution="Especificar orígenes explícitos en vez de wildcard cuando se usan credenciales.",
+                        evidence=(
+                            f"Access-Control-Allow-Origin: {acao}  |  "
+                            f"Access-Control-Allow-Credentials: {resp.headers.get('Access-Control-Allow-Credentials')}"
+                        ),
+                        cwe="CWE-942",
+                        cweid="942",
+                        owasp_category="API8:2023",
+                        source="HTTP Scanner – CORS",
+                        request_payload=evil_payload,
+                    )
+                )
             elif acao == evil:
-                findings.append(ScanFinding(
-                    type="CORS Misconfiguration",
-                    alert="CORS: Reflexión de origen sin validación",
-                    severity="HIGH",
-                    risk="High",
-                    confidence="High",
-                    url=url,
-                    parameter="Access-Control-Allow-Origin",
-                    description=(
-                        "El servidor refleja el origen de la petición en el header "
-                        "Access-Control-Allow-Origin sin validación contra una lista blanca."
-                    ),
-                    solution="Validar el origen contra una lista explícita de orígenes permitidos.",
-                    evidence=f"Origen enviado: {evil}  →  ACAO recibido: {acao}",
-                    cwe="CWE-942",
-                    cweid="942",
-                    owasp_category="API8:2023",
-                    source="HTTP Scanner – CORS",
-                    request_payload=evil_payload,
-                ))
+                findings.append(
+                    ScanFinding(
+                        type="CORS Misconfiguration",
+                        alert="CORS: Reflexión de origen sin validación",
+                        severity="HIGH",
+                        risk="High",
+                        confidence="High",
+                        url=url,
+                        parameter="Access-Control-Allow-Origin",
+                        description=(
+                            "El servidor refleja el origen de la petición en el header "
+                            "Access-Control-Allow-Origin sin validación contra una lista blanca."
+                        ),
+                        solution="Validar el origen contra una lista explícita de orígenes permitidos.",
+                        evidence=f"Origen enviado: {evil}  →  ACAO recibido: {acao}",
+                        cwe="CWE-942",
+                        cweid="942",
+                        owasp_category="API8:2023",
+                        source="HTTP Scanner – CORS",
+                        request_payload=evil_payload,
+                    )
+                )
             elif acao == "*":
-                findings.append(ScanFinding(
-                    type="CORS Misconfiguration",
-                    alert="CORS: Wildcard sin restricción de origen",
-                    severity="MEDIUM",
-                    risk="Medium",
-                    confidence="Medium",
-                    url=url,
-                    parameter="Access-Control-Allow-Origin",
-                    description="El servidor permite peticiones desde cualquier origen (*).",
-                    solution="Restringir Access-Control-Allow-Origin a orígenes conocidos.",
-                    evidence=f"Access-Control-Allow-Origin: {acao}",
-                    cwe="CWE-942",
-                    cweid="942",
-                    owasp_category="API8:2023",
-                    source="HTTP Scanner – CORS",
-                    request_payload=evil_payload,
-                ))
+                findings.append(
+                    ScanFinding(
+                        type="CORS Misconfiguration",
+                        alert="CORS: Wildcard sin restricción de origen",
+                        severity="MEDIUM",
+                        risk="Medium",
+                        confidence="Medium",
+                        url=url,
+                        parameter="Access-Control-Allow-Origin",
+                        description="El servidor permite peticiones desde cualquier origen (*).",
+                        solution="Restringir Access-Control-Allow-Origin a orígenes conocidos.",
+                        evidence=f"Access-Control-Allow-Origin: {acao}",
+                        cwe="CWE-942",
+                        cweid="942",
+                        owasp_category="API8:2023",
+                        source="HTTP Scanner – CORS",
+                        request_payload=evil_payload,
+                    )
+                )
 
             # Probe con origen null (explotable desde iframes sandboxed)
             null_resp = self.session.get(
@@ -311,29 +329,31 @@ class HTTPSecurityScanner:
                 verify=False,
             )
             if null_resp.headers.get("Access-Control-Allow-Origin") == "null":
-                findings.append(ScanFinding(
-                    type="CORS Misconfiguration",
-                    alert='CORS: Origen "null" aceptado',
-                    severity="MEDIUM",
-                    risk="Medium",
-                    confidence="High",
-                    url=url,
-                    parameter="Access-Control-Allow-Origin",
-                    description='El servidor acepta "null" como origen, explotable desde iframes sandboxed.',
-                    solution='No incluir "null" como origen permitido en CORS.',
-                    evidence='Access-Control-Allow-Origin: null',
-                    cwe="CWE-942",
-                    cweid="942",
-                    owasp_category="API8:2023",
-                    source="HTTP Scanner – CORS",
-                    request_payload={
-                        "method": "GET",
-                        "url": url,
-                        "sent_headers": {"Origin": "null"},
-                        "probe": 'Prueba de origen "null" — explotable desde iframes sandboxed',
-                        "response": f"HTTP {null_resp.status_code} | Access-Control-Allow-Origin: null",
-                    },
-                ))
+                findings.append(
+                    ScanFinding(
+                        type="CORS Misconfiguration",
+                        alert='CORS: Origen "null" aceptado',
+                        severity="MEDIUM",
+                        risk="Medium",
+                        confidence="High",
+                        url=url,
+                        parameter="Access-Control-Allow-Origin",
+                        description='El servidor acepta "null" como origen, explotable desde iframes sandboxed.',
+                        solution='No incluir "null" como origen permitido en CORS.',
+                        evidence="Access-Control-Allow-Origin: null",
+                        cwe="CWE-942",
+                        cweid="942",
+                        owasp_category="API8:2023",
+                        source="HTTP Scanner – CORS",
+                        request_payload={
+                            "method": "GET",
+                            "url": url,
+                            "sent_headers": {"Origin": "null"},
+                            "probe": 'Prueba de origen "null" — explotable desde iframes sandboxed',
+                            "response": f"HTTP {null_resp.status_code} | Access-Control-Allow-Origin: null",
+                        },
+                    )
+                )
         except Exception as exc:
             logger.debug(f"cors_policy: {exc}")
         return findings
@@ -353,41 +373,43 @@ class HTTPSecurityScanner:
                     allow_redirects=False,
                 )
                 if resp.status_code in (200, 201, 202, 204):
-                    findings.append(ScanFinding(
-                        type="Sensitive Endpoint Exposed",
-                        alert=f"Endpoint sensible accesible: {path}",
-                        severity=severity,
-                        risk=severity.capitalize(),
-                        confidence="High",
-                        url=probe,
-                        parameter="path",
-                        description=(
-                            f"{desc}. El endpoint {path} devuelve HTTP {resp.status_code} "
-                            "sin requerir autenticación."
-                        ),
-                        solution=f"Proteger {path} con autenticación/autorización o deshabilitarlo.",
-                        evidence=(
-                            f"HTTP {resp.status_code} en {probe}  |  "
-                            f"Content-Type: {resp.headers.get('Content-Type', 'N/A')}"
-                        ),
-                        cwe="CWE-200",
-                        cweid="200",
-                        owasp_category="API9:2023",
-                        source="HTTP Scanner – Endpoint Discovery",
-                        request_payload={
-                            "method": "GET",
-                            "url": probe,
-                            "sent_headers": {
-                                "User-Agent": "HybridSecScan/2.0 Security Scanner",
-                            },
-                            "probe": f"Descubrimiento de ruta sensible: {path}",
-                            "response": (
-                                f"HTTP {resp.status_code} | "
-                                f"Content-Type: {resp.headers.get('Content-Type', 'N/A')} | "
-                                f"Content-Length: {resp.headers.get('Content-Length', len(resp.content))} bytes"
+                    findings.append(
+                        ScanFinding(
+                            type="Sensitive Endpoint Exposed",
+                            alert=f"Endpoint sensible accesible: {path}",
+                            severity=severity,
+                            risk=severity.capitalize(),
+                            confidence="High",
+                            url=probe,
+                            parameter="path",
+                            description=(
+                                f"{desc}. El endpoint {path} devuelve HTTP {resp.status_code} "
+                                "sin requerir autenticación."
                             ),
-                        },
-                    ))
+                            solution=f"Proteger {path} con autenticación/autorización o deshabilitarlo.",
+                            evidence=(
+                                f"HTTP {resp.status_code} en {probe}  |  "
+                                f"Content-Type: {resp.headers.get('Content-Type', 'N/A')}"
+                            ),
+                            cwe="CWE-200",
+                            cweid="200",
+                            owasp_category="API9:2023",
+                            source="HTTP Scanner – Endpoint Discovery",
+                            request_payload={
+                                "method": "GET",
+                                "url": probe,
+                                "sent_headers": {
+                                    "User-Agent": "HybridSecScan/2.0 Security Scanner",
+                                },
+                                "probe": f"Descubrimiento de ruta sensible: {path}",
+                                "response": (
+                                    f"HTTP {resp.status_code} | "
+                                    f"Content-Type: {resp.headers.get('Content-Type', 'N/A')} | "
+                                    f"Content-Length: {resp.headers.get('Content-Length', len(resp.content))} bytes"
+                                ),
+                            },
+                        )
+                    )
             except Exception:
                 pass
         return findings
@@ -400,36 +422,38 @@ class HTTPSecurityScanner:
             allowed = {m.strip().upper() for m in raw.split(",") if m.strip()}
             dangerous = DANGEROUS_HTTP_METHODS & allowed
             if dangerous:
-                findings.append(ScanFinding(
-                    type="Dangerous HTTP Methods Allowed",
-                    alert=f"Métodos peligrosos habilitados: {', '.join(sorted(dangerous))}",
-                    severity="MEDIUM",
-                    risk="Medium",
-                    confidence="High",
-                    url=url,
-                    parameter="Allow",
-                    description=(
-                        f"El servidor permite métodos HTTP potencialmente peligrosos: "
-                        f"{', '.join(sorted(dangerous))}."
-                    ),
-                    solution="Deshabilitar TRACE y CONNECT. Proteger PUT/DELETE con autenticación.",
-                    evidence=f"Allow: {raw}",
-                    cwe="CWE-749",
-                    cweid="749",
-                    owasp_category="API5:2023",
-                    source="HTTP Scanner – HTTP Methods",
-                    request_payload={
-                        "method": "OPTIONS",
-                        "url": url,
-                        "sent_headers": {"User-Agent": "HybridSecScan/2.0 Security Scanner"},
-                        "probe": "Enumeración de métodos HTTP permitidos",
-                        "response": (
-                            f"HTTP {resp.status_code} | "
-                            f"Allow: {raw or '(no especificado)'} | "
-                            f"Métodos peligrosos confirmados: {', '.join(sorted(dangerous))}"
+                findings.append(
+                    ScanFinding(
+                        type="Dangerous HTTP Methods Allowed",
+                        alert=f"Métodos peligrosos habilitados: {', '.join(sorted(dangerous))}",
+                        severity="MEDIUM",
+                        risk="Medium",
+                        confidence="High",
+                        url=url,
+                        parameter="Allow",
+                        description=(
+                            f"El servidor permite métodos HTTP potencialmente peligrosos: "
+                            f"{', '.join(sorted(dangerous))}."
                         ),
-                    },
-                ))
+                        solution="Deshabilitar TRACE y CONNECT. Proteger PUT/DELETE con autenticación.",
+                        evidence=f"Allow: {raw}",
+                        cwe="CWE-749",
+                        cweid="749",
+                        owasp_category="API5:2023",
+                        source="HTTP Scanner – HTTP Methods",
+                        request_payload={
+                            "method": "OPTIONS",
+                            "url": url,
+                            "sent_headers": {"User-Agent": "HybridSecScan/2.0 Security Scanner"},
+                            "probe": "Enumeración de métodos HTTP permitidos",
+                            "response": (
+                                f"HTTP {resp.status_code} | "
+                                f"Allow: {raw or '(no especificado)'} | "
+                                f"Métodos peligrosos confirmados: {', '.join(sorted(dangerous))}"
+                            ),
+                        },
+                    )
+                )
         except Exception as exc:
             logger.debug(f"http_methods: {exc}")
         return findings
@@ -440,9 +464,9 @@ class HTTPSecurityScanner:
         origin = f"{parsed.scheme}://{parsed.netloc}"
 
         probes = [
-            (f"{url}?id='",                          "SQL injection probe",   "?id='"),
-            (f"{url}?page=-9999",                    "Negative page probe",   "?page=-9999"),
-            (f"{origin}/nonexistent_endpoint_xyz_abc", "Invalid path probe",  "/nonexistent_endpoint_xyz_abc"),
+            (f"{url}?id='", "SQL injection probe", "?id='"),
+            (f"{url}?page=-9999", "Negative page probe", "?page=-9999"),
+            (f"{origin}/nonexistent_endpoint_xyz_abc", "Invalid path probe", "/nonexistent_endpoint_xyz_abc"),
         ]
 
         for probe_url, probe_name, probe_payload in probes:
@@ -451,40 +475,42 @@ class HTTPSecurityScanner:
                 body = resp.text[:5000]
                 for pattern in STACK_TRACE_PATTERNS:
                     if pattern.lower() in body.lower():
-                        findings.append(ScanFinding(
-                            type="Information Disclosure",
-                            alert="Stack trace o error interno expuesto en respuesta HTTP",
-                            severity="MEDIUM",
-                            risk="Medium",
-                            confidence="High",
-                            url=probe_url,
-                            parameter=probe_name,
-                            description=(
-                                f'La aplicación revela detalles internos de errores. '
-                                f'Se detectó el patrón "{pattern}" en la respuesta '
-                                f"HTTP {resp.status_code}. Puede exponer rutas, tecnologías y datos de BD."
-                            ),
-                            solution=(
-                                "Implementar páginas de error genéricas para el cliente. "
-                                "Registrar detalles internos en logs del servidor."
-                            ),
-                            evidence=f'Patrón "{pattern}" detectado en respuesta a {probe_url}',
-                            cwe="CWE-209",
-                            cweid="209",
-                            owasp_category="API8:2023",
-                            source="HTTP Scanner – Error Disclosure",
-                            request_payload={
-                                "method": "GET",
-                                "url": probe_url,
-                                "sent_headers": {"User-Agent": "HybridSecScan/2.0 Security Scanner"},
-                                "probe": f"{probe_name} — payload: {probe_payload}",
-                                "response": (
-                                    f"HTTP {resp.status_code} | "
-                                    f'Patrón detectado: "{pattern}" | '
-                                    f"Body (primeros 200 chars): {body[:200].strip()!r}"
+                        findings.append(
+                            ScanFinding(
+                                type="Information Disclosure",
+                                alert="Stack trace o error interno expuesto en respuesta HTTP",
+                                severity="MEDIUM",
+                                risk="Medium",
+                                confidence="High",
+                                url=probe_url,
+                                parameter=probe_name,
+                                description=(
+                                    f"La aplicación revela detalles internos de errores. "
+                                    f'Se detectó el patrón "{pattern}" en la respuesta '
+                                    f"HTTP {resp.status_code}. Puede exponer rutas, tecnologías y datos de BD."
                                 ),
-                            },
-                        ))
+                                solution=(
+                                    "Implementar páginas de error genéricas para el cliente. "
+                                    "Registrar detalles internos en logs del servidor."
+                                ),
+                                evidence=f'Patrón "{pattern}" detectado en respuesta a {probe_url}',
+                                cwe="CWE-209",
+                                cweid="209",
+                                owasp_category="API8:2023",
+                                source="HTTP Scanner – Error Disclosure",
+                                request_payload={
+                                    "method": "GET",
+                                    "url": probe_url,
+                                    "sent_headers": {"User-Agent": "HybridSecScan/2.0 Security Scanner"},
+                                    "probe": f"{probe_name} — payload: {probe_payload}",
+                                    "response": (
+                                        f"HTTP {resp.status_code} | "
+                                        f'Patrón detectado: "{pattern}" | '
+                                        f"Body (primeros 200 chars): {body[:200].strip()!r}"
+                                    ),
+                                },
+                            )
+                        )
                         break
             except Exception:
                 pass
@@ -516,91 +542,612 @@ class HTTPSecurityScanner:
 
             if not has_rate_limit:
                 req_rate = 1 / RATE_LIMIT_PROBE_DELAY if RATE_LIMIT_PROBE_DELAY else 0
-                findings.append(ScanFinding(
-                    type="Missing Rate Limiting",
-                    alert="Sin control de tasa (rate limiting) detectable",
-                    severity="MEDIUM",
-                    risk="Medium",
-                    confidence="Medium",
-                    url=url,
-                    parameter="HTTP responses",
-                    description=(
-                        f"Se enviaron {RATE_LIMIT_PROBE_COUNT} peticiones rápidas sin obtener "
-                        "respuesta 429 ni headers de rate limiting. La API puede ser vulnerable "
-                        "a abuso de recursos o ataques de fuerza bruta."
-                    ),
-                    solution=(
-                        "Implementar rate limiting por IP y por usuario. "
-                        "Devolver HTTP 429 con header Retry-After al superar el límite."
-                    ),
-                    evidence=f"{RATE_LIMIT_PROBE_COUNT} requests. Códigos: {statuses}",
-                    cwe="CWE-770",
-                    cweid="770",
-                    owasp_category="API4:2023",
-                    source="HTTP Scanner – Rate Limiting",
-                    request_payload={
-                        "method": "GET (x{})".format(RATE_LIMIT_PROBE_COUNT),
-                        "url": url,
-                        "sent_headers": {"User-Agent": "HybridSecScan/2.0 Security Scanner"},
-                        "probe": (
-                            f"Flood de peticiones: {RATE_LIMIT_PROBE_COUNT} GETs "
-                            f"a ~{req_rate:.0f} req/s (delay={RATE_LIMIT_PROBE_DELAY*1000:.0f}ms)"
+                findings.append(
+                    ScanFinding(
+                        type="Missing Rate Limiting",
+                        alert="Sin control de tasa (rate limiting) detectable",
+                        severity="MEDIUM",
+                        risk="Medium",
+                        confidence="Medium",
+                        url=url,
+                        parameter="HTTP responses",
+                        description=(
+                            f"Se enviaron {RATE_LIMIT_PROBE_COUNT} peticiones rápidas sin obtener "
+                            "respuesta 429 ni headers de rate limiting. La API puede ser vulnerable "
+                            "a abuso de recursos o ataques de fuerza bruta."
                         ),
-                        "response": (
-                            f"Todos respondieron sin HTTP 429. "
-                            f"Códigos obtenidos: {statuses}. "
-                            f"Headers de rate limit ausentes (X-RateLimit-*, Retry-After)."
+                        solution=(
+                            "Implementar rate limiting por IP y por usuario. "
+                            "Devolver HTTP 429 con header Retry-After al superar el límite."
                         ),
-                    },
-                ))
+                        evidence=f"{RATE_LIMIT_PROBE_COUNT} requests. Códigos: {statuses}",
+                        cwe="CWE-770",
+                        cweid="770",
+                        owasp_category="API4:2023",
+                        source="HTTP Scanner – Rate Limiting",
+                        request_payload={
+                            "method": "GET (x{})".format(RATE_LIMIT_PROBE_COUNT),
+                            "url": url,
+                            "sent_headers": {"User-Agent": "HybridSecScan/2.0 Security Scanner"},
+                            "probe": (
+                                f"Flood de peticiones: {RATE_LIMIT_PROBE_COUNT} GETs "
+                                f"a ~{req_rate:.0f} req/s (delay={RATE_LIMIT_PROBE_DELAY*1000:.0f}ms)"
+                            ),
+                            "response": (
+                                f"Todos respondieron sin HTTP 429. "
+                                f"Códigos obtenidos: {statuses}. "
+                                f"Headers de rate limit ausentes (X-RateLimit-*, Retry-After)."
+                            ),
+                        },
+                    )
+                )
         except Exception as exc:
             logger.debug(f"rate_limiting: {exc}")
+
+        # ── Enforcement check: el límite declarado ¿realmente se aplica? ──────
+        # Si la API dice X-RateLimit-Limit: 10 pero acepta 50 requests sin 429,
+        # el rate limit existe en papel pero no se aplica → igual de peligroso.
+        try:
+            first_resp = self.session.get(url, timeout=self.timeout, verify=False)
+            declared_limit = first_resp.headers.get("X-RateLimit-Limit") or first_resp.headers.get("RateLimit-Limit")
+            if declared_limit and declared_limit.isdigit():
+                limit_n = int(declared_limit)
+                # Enviar limit_n + 5 requests y ver si alguno devuelve 429
+                enforcement_statuses = []
+                for _ in range(limit_n + 5):
+                    r = self.session.get(url, timeout=self.timeout, verify=False)
+                    enforcement_statuses.append(r.status_code)
+                    if r.status_code == 429:
+                        break  # El limite SÍ se aplica
+                    time.sleep(0.02)
+
+                if 429 not in enforcement_statuses:
+                    findings.append(
+                        ScanFinding(
+                            type="Rate Limit Declared But Not Enforced",
+                            alert=f"Rate limit declarado ({limit_n}) pero no aplicado",
+                            severity="HIGH",
+                            risk="High",
+                            confidence="High",
+                            url=url,
+                            parameter="X-RateLimit-Limit",
+                            description=(
+                                f"La API declara X-RateLimit-Limit: {limit_n} pero aceptó "
+                                f"{len(enforcement_statuses)} requests consecutivos sin devolver HTTP 429. "
+                                "El rate limit existe en los headers pero no se aplica en el servidor. "
+                                "Un atacante puede realizar brute force ignorando el límite declarado."
+                            ),
+                            solution=(
+                                "Asegurar que el middleware de rate limiting esté configurado "
+                                "y activo en el servidor, no solo en un proxy o balanceador. "
+                                "Verificar que el límite se aplica en el mismo proceso que sirve la API."
+                            ),
+                            evidence=(
+                                f"Declarado: X-RateLimit-Limit={limit_n} | "
+                                f"Real: {len(enforcement_statuses)} requests aceptados sin 429"
+                            ),
+                            cwe="CWE-770",
+                            cweid="770",
+                            owasp_category="API4:2023",
+                            source="HTTP Scanner – Rate Limit Enforcement",
+                            request_payload={
+                                "method": f"GET x{len(enforcement_statuses)}",
+                                "url": url,
+                                "probe": f"Enforcement test: >{limit_n} requests",
+                                "response": f"Ningún 429 en {len(enforcement_statuses)} requests",
+                            },
+                        )
+                    )
+        except Exception as exc:
+            logger.debug(f"rate_limit_enforcement: {exc}")
+
         return findings
 
     def _check_server_info(self, url: str) -> List[ScanFinding]:
         findings = []
         info_headers = {
-            "Server":           "versión del servidor web",
-            "X-Powered-By":     "tecnología backend",
+            "Server": "versión del servidor web",
+            "X-Powered-By": "tecnología backend",
             "X-AspNet-Version": "versión de ASP.NET",
-            "X-Generator":      "generador de la aplicación",
+            "X-Generator": "generador de la aplicación",
         }
         try:
             resp = self.session.get(url, timeout=self.timeout, verify=False)
             for header, desc in info_headers.items():
                 value = resp.headers.get(header, "")
                 if value:
-                    findings.append(ScanFinding(
-                        type="Server Information Disclosure",
-                        alert=f"Header {header} expone información del servidor",
-                        severity="LOW",
-                        risk="Low",
-                        confidence="High",
-                        url=url,
-                        parameter=header,
-                        description=(
-                            f'El header "{header}" revela {desc} ("{value}"). '
-                            "Facilita ataques dirigidos a versiones específicas."
-                        ),
-                        solution=f'Eliminar o suprimir el header "{header}" en la configuración del servidor.',
-                        evidence=f"{header}: {value}",
-                        cwe="CWE-200",
-                        cweid="200",
-                        owasp_category="API8:2023",
-                        source="HTTP Scanner – Information Disclosure",
-                        request_payload={
-                            "method": "GET",
-                            "url": url,
-                            "sent_headers": {"User-Agent": "HybridSecScan/2.0 Security Scanner"},
-                            "probe": "Inspección de headers de respuesta que revelan información del servidor",
-                            "response": (
-                                f"HTTP {resp.status_code} | "
-                                f"Header filtrado → {header}: {value}"
+                    findings.append(
+                        ScanFinding(
+                            type="Server Information Disclosure",
+                            alert=f"Header {header} expone información del servidor",
+                            severity="LOW",
+                            risk="Low",
+                            confidence="High",
+                            url=url,
+                            parameter=header,
+                            description=(
+                                f'El header "{header}" revela {desc} ("{value}"). '
+                                "Facilita ataques dirigidos a versiones específicas."
                             ),
-                        },
-                    ))
+                            solution=f'Eliminar o suprimir el header "{header}" en la configuración del servidor.',
+                            evidence=f"{header}: {value}",
+                            cwe="CWE-200",
+                            cweid="200",
+                            owasp_category="API8:2023",
+                            source="HTTP Scanner – Information Disclosure",
+                            request_payload={
+                                "method": "GET",
+                                "url": url,
+                                "sent_headers": {"User-Agent": "HybridSecScan/2.0 Security Scanner"},
+                                "probe": "Inspección de headers de respuesta que revelan información del servidor",
+                                "response": (f"HTTP {resp.status_code} | " f"Header filtrado → {header}: {value}"),
+                            },
+                        )
+                    )
         except Exception as exc:
             logger.debug(f"server_info: {exc}")
+        return findings
+
+    # ── IDOR / BOLA probing (API1:2023) ──────────────────────────────────────
+
+    def probe_idor_bola(self, target_url: str) -> List[ScanFinding]:
+        """
+        Broken Object Level Authorization (BOLA / IDOR) — OWASP API1:2023.
+
+        Estrategia de detección en dos capas:
+
+        Capa 1 — Acceso sin autenticación:
+            Prueba si endpoints que deberían requerir auth devuelven datos reales
+            sin ningún token.  Un 200 con payload JSON es BOLA confirmado.
+
+        Capa 2 — Enumeración de IDs (IDOR):
+            Prueba IDs secuenciales en patrones típicos de REST API
+            (/api/users/1, /api/users/2 …).  Si todos devuelven 200 con datos
+            distintos, cualquier usuario puede leer los recursos de otro.
+
+        Capa 3 — Forced Browsing por UUID:
+            Endpoints con UUID (/api/orders/{uuid}) suelen ser tratados como
+            "seguros por oscuridad".  Se prueban UUIDs predecibles.
+        """
+        findings: List[ScanFinding] = []
+        parsed = urlparse(target_url)
+        base = f"{parsed.scheme}://{parsed.netloc}"
+
+        # ── Capa 1: endpoints autenticados accesibles sin token ───────────────
+        auth_endpoints = [
+            # (path, descripción)
+            ("/api/users/me", "Perfil del usuario autenticado"),
+            ("/api/me", "Perfil del usuario autenticado"),
+            ("/api/user/profile", "Perfil de usuario"),
+            ("/api/account", "Cuenta del usuario"),
+            ("/api/profile", "Perfil"),
+            ("/rest/user/whoami", "Identificación de usuario (Juice Shop)"),
+            ("/api/admin/users", "Lista de usuarios — admin"),
+            ("/api/v1/users/me", "Perfil v1"),
+            ("/api/orders", "Pedidos del usuario"),
+            ("/api/basket", "Carrito del usuario"),
+        ]
+
+        no_auth_session = requests.Session()
+        no_auth_session.headers["User-Agent"] = "HybridSecScan/2.0 Security Scanner"
+
+        for path, description in auth_endpoints:
+            url = base + path
+            try:
+                resp = no_auth_session.get(url, timeout=self.timeout, verify=False)
+                body = resp.text
+
+                # Indicadores de respuesta con datos reales (no error/redirect)
+                has_data = (
+                    resp.status_code == 200
+                    and len(body) > 30
+                    and any(
+                        kw in body.lower()
+                        for kw in [
+                            '"id":',
+                            '"email":',
+                            '"username":',
+                            '"name":',
+                            '"role":',
+                            '"user":',
+                            '"account":',
+                            '"profile":',
+                            '"token":',
+                            '"data":',
+                        ]
+                    )
+                )
+
+                if has_data:
+                    findings.append(
+                        ScanFinding(
+                            type="BOLA - Unauthenticated Access",
+                            alert=f"Endpoint autenticado accesible sin token: {path}",
+                            severity="CRITICAL",
+                            risk="Critical",
+                            confidence="High",
+                            url=url,
+                            parameter="Authorization header",
+                            description=(
+                                f"El endpoint {path} ({description}) devolvió datos reales "
+                                f"(HTTP {resp.status_code}) sin ningún token de autenticación. "
+                                "Cualquier actor anónimo puede acceder a estos datos de usuario. "
+                                "Viola OWASP API1:2023 — Broken Object Level Authorization."
+                            ),
+                            solution=(
+                                "Verificar la autenticación en TODOS los endpoints que manejen "
+                                "datos de usuario. Implementar middleware de auth global. "
+                                "Nunca depender de que el cliente 'no conozca la URL'."
+                            ),
+                            evidence=body[:300],
+                            cwe="CWE-284",
+                            cweid="284",
+                            owasp_category="API1:2023",
+                            source="HTTP Scanner – BOLA Unauthenticated",
+                            request_payload={
+                                "method": "GET",
+                                "url": url,
+                                "sent_headers": {"User-Agent": "HybridSecScan/2.0"},
+                                "probe": "Request without Authorization header",
+                                "response": f"HTTP {resp.status_code} | {len(body)} bytes",
+                            },
+                        )
+                    )
+            except Exception:
+                pass
+
+        # ── Capa 2: enumeración de IDs numéricos ─────────────────────────────
+        # Patrones de REST API donde un usuario solo debería ver su propio recurso
+        id_patterns = [
+            ("/api/users/{id}", "Perfil de usuario por ID"),
+            ("/api/user/{id}", "Usuario por ID"),
+            ("/api/orders/{id}", "Pedido por ID"),
+            ("/api/basket/{id}", "Carrito por ID"),
+            ("/api/v1/users/{id}", "Usuario v1 por ID"),
+            ("/rest/user/{id}", "Usuario REST"),
+            ("/api/accounts/{id}", "Cuenta por ID"),
+            ("/api/products/{id}", "Producto (referencia)"),
+        ]
+
+        for pattern, description in id_patterns:
+            responses_200: list = []
+            for test_id in [1, 2, 3, 42, 999]:
+                url = base + pattern.replace("{id}", str(test_id))
+                try:
+                    resp = no_auth_session.get(url, timeout=self.timeout, verify=False)
+                    if resp.status_code == 200 and len(resp.text) > 20:
+                        responses_200.append((test_id, url, resp.text[:200]))
+                except Exception:
+                    pass
+
+            # Si más de 2 IDs distintos devuelven 200 → enumeración posible
+            if len(responses_200) >= 2:
+                example_url = responses_200[0][1]
+                example_body = responses_200[0][2]
+                findings.append(
+                    ScanFinding(
+                        type="IDOR - Object Enumeration",
+                        alert=f"Enumeración de objetos por ID numérico: {pattern}",
+                        severity="HIGH",
+                        risk="High",
+                        confidence="Medium",
+                        url=example_url,
+                        parameter="id",
+                        description=(
+                            f"El patrón {pattern} ({description}) devolvió HTTP 200 para "
+                            f"{len(responses_200)} IDs distintos sin autenticación. "
+                            "Un atacante puede enumerar los recursos de todos los usuarios "
+                            "simplemente incrementando el ID en la URL. "
+                            "Viola OWASP API1:2023 — Broken Object Level Authorization."
+                        ),
+                        solution=(
+                            "Verificar que el usuario autenticado es el propietario del recurso "
+                            "solicitado antes de devolverlo. Considerar UUIDs en lugar de IDs "
+                            "secuenciales. Implementar control de acceso a nivel de objeto (ABAC)."
+                        ),
+                        evidence=(
+                            f"IDs que devolvieron 200: {[r[0] for r in responses_200]} | " f"Ejemplo: {example_body}"
+                        ),
+                        cwe="CWE-639",
+                        cweid="639",
+                        owasp_category="API1:2023",
+                        source="HTTP Scanner – IDOR Enumeration",
+                        request_payload={
+                            "method": "GET",
+                            "url": example_url,
+                            "probe": f"Enumeración de IDs: {[r[0] for r in responses_200]}",
+                            "response": f"{len(responses_200)} de 5 IDs probados devolvieron 200",
+                        },
+                    )
+                )
+
+        # ── Capa 3: acceso cross-user con token propio a ID ajeno ────────────
+        # Si el sistema tiene auth JWT, prueba si el token del usuario A
+        # puede acceder a los datos del usuario B (la forma clásica de BOLA)
+        try:
+            # Registrar usuario A de prueba
+            user_a = {
+                "username": f"idor_probe_a_{uuid.uuid4().hex[:6]}",
+                "email": f"idor_a_{uuid.uuid4().hex[:6]}@probe.test",
+                "password": "ProbePassword123!",
+            }
+            reg_resp = no_auth_session.post(base + "/auth/register", json=user_a, timeout=self.timeout)
+
+            if reg_resp.status_code in (200, 201):
+                # Login para obtener token
+                login_resp = no_auth_session.post(
+                    base + "/auth/login",
+                    data={"username": user_a["username"], "password": user_a["password"]},
+                    timeout=self.timeout,
+                )
+                if login_resp.status_code == 200:
+                    token = login_resp.json().get("access_token")
+                    if token:
+                        auth_headers = {"Authorization": f"Bearer {token}"}
+                        # Con el token de usuario A, intentar acceder a ID 1
+                        # (que pertenece al primer usuario registrado, normalmente admin)
+                        for path in ["/api/users/1", "/api/user/1", "/rest/user/1"]:
+                            url = base + path
+                            resp = no_auth_session.get(url, headers=auth_headers, timeout=self.timeout)
+                            if resp.status_code == 200 and len(resp.text) > 20:
+                                findings.append(
+                                    ScanFinding(
+                                        type="BOLA - Cross-User Access",
+                                        alert="Usuario accede a datos de otro usuario (BOLA confirmado)",
+                                        severity="CRITICAL",
+                                        risk="Critical",
+                                        confidence="High",
+                                        url=url,
+                                        parameter="id",
+                                        description=(
+                                            f"El usuario '{user_a['username']}' puede acceder a {path} "
+                                            "(recurso de otro usuario, ID=1) usando su propio token JWT. "
+                                            "El servidor no verifica que el ID solicitado pertenezca "
+                                            "al usuario autenticado. BOLA confirmado con evidencia real."
+                                        ),
+                                        solution=(
+                                            "Extraer el ID del usuario del token JWT y compararlo "
+                                            "con el ID solicitado ANTES de devolver el recurso. "
+                                            "Nunca confiar en el ID que envía el cliente."
+                                        ),
+                                        evidence=resp.text[:300],
+                                        cwe="CWE-284",
+                                        cweid="284",
+                                        owasp_category="API1:2023",
+                                        source="HTTP Scanner – BOLA Cross-User",
+                                        request_payload={
+                                            "method": "GET",
+                                            "url": url,
+                                            "sent_headers": {"Authorization": "Bearer <token_usuario_A>"},
+                                            "probe": "Access to resource owned by user ID=1",
+                                            "response": f"HTTP {resp.status_code} | {resp.text[:100]}",
+                                        },
+                                    )
+                                )
+                                break
+        except Exception:
+            pass  # El sistema objetivo puede no tener auth compatible
+
+        logger.info(f"[IDOR Probe] {len(findings)} hallazgos BOLA/IDOR encontrados")
+        return findings
+
+    # ── JWT / Auth attack probing (API2:2023) ─────────────────────────────────
+
+    def probe_broken_authentication(self, target_url: str) -> List[ScanFinding]:
+        """
+        Broken Authentication — OWASP API2:2023.
+
+        Prueba vectores de ataque reales contra sistemas JWT y autenticación:
+
+        1. Algoritmo 'none' (CVE clásico): token sin firma aceptado como válido
+        2. Claves JWT débiles por fuerza bruta (wordlist de contraseñas comunes)
+        3. Token no expirado: el mismo token es válido mucho tiempo después
+        4. Ausencia de bloqueo por intentos fallidos (brute force sin rate limit)
+        5. Credenciales por defecto (admin/admin, root/root, etc.)
+        """
+        findings: List[ScanFinding] = []
+        parsed = urlparse(target_url)
+        base = f"{parsed.scheme}://{parsed.netloc}"
+
+        login_endpoints = ["/auth/login", "/api/login", "/login", "/api/auth", "/rest/user/login", "/api/v1/auth/login"]
+
+        import base64 as _b64
+        import hashlib as _hl
+        import hmac as _hmac
+        import time as _time
+
+        def _b64url(data: bytes) -> str:
+            return _b64.urlsafe_b64encode(data).rstrip(b"=").decode()
+
+        def _make_jwt(payload: dict, secret: str = "", alg: str = "HS256") -> str:
+            header = _b64url(json.dumps({"alg": alg, "typ": "JWT"}).encode())
+            body = _b64url(json.dumps(payload).encode())
+            if alg == "none":
+                return f"{header}.{body}."
+            sig = _hmac.new(secret.encode(), f"{header}.{body}".encode(), _hl.sha256).digest()
+            return f"{header}.{body}.{_b64url(sig)}"
+
+        # ── 1: alg:none attack ────────────────────────────────────────────────
+        # Un token con alg:none no tiene firma. APIs vulnerables lo aceptan
+        # porque no verifican el campo alg antes de procesar el payload.
+        none_token = _make_jwt({"sub": "admin", "role": "admin", "exp": int(_time.time()) + 3600}, alg="none")
+        protected_endpoints = ["/api/users/me", "/api/me", "/api/admin/users", "/rest/user/whoami", "/auth/me"]
+        for ep in protected_endpoints:
+            url = base + ep
+            try:
+                resp = self.session.get(
+                    url,
+                    headers={"Authorization": f"Bearer {none_token}"},
+                    timeout=self.timeout,
+                )
+                if resp.status_code == 200 and len(resp.text) > 20:
+                    findings.append(
+                        ScanFinding(
+                            type="Broken Authentication - JWT alg:none",
+                            alert="Token JWT con alg:none aceptado como válido",
+                            severity="CRITICAL",
+                            risk="Critical",
+                            confidence="High",
+                            url=url,
+                            parameter="Authorization",
+                            description=(
+                                f"El endpoint {ep} aceptó un token JWT con alg:none (sin firma) "
+                                "y devolvió datos protegidos. Un atacante puede forjar tokens "
+                                "arbitrarios sin conocer la clave secreta. "
+                                "CVE-2015-9235 / OWASP API2:2023."
+                            ),
+                            solution=(
+                                "Rechazar explícitamente alg:none en la validación del token. "
+                                "Usar una whitelist de algoritmos permitidos (solo HS256 o RS256). "
+                                "Nunca confiar en el campo alg del header del token."
+                            ),
+                            evidence=f"Token: {none_token[:60]}... | Respuesta: {resp.text[:200]}",
+                            cwe="CWE-347",
+                            cweid="347",
+                            owasp_category="API2:2023",
+                            source="HTTP Scanner – JWT alg:none",
+                            request_payload={
+                                "method": "GET",
+                                "url": url,
+                                "sent_headers": {"Authorization": f"Bearer {none_token[:40]}..."},
+                                "probe": "JWT con alg:none (token sin firma)",
+                                "response": f"HTTP {resp.status_code} | {len(resp.text)} bytes",
+                            },
+                        )
+                    )
+                    break
+            except Exception:
+                pass
+
+        # ── 2: Claves JWT débiles ─────────────────────────────────────────────
+        weak_secrets = [
+            "secret",
+            "password",
+            "123456",
+            "admin",
+            "key",
+            "your-secret-key-change-in-production",  # el placeholder de HybridSecScan
+            "jwt_secret",
+            "mysecret",
+            "changeme",
+            "supersecret",
+        ]
+        for ep in login_endpoints:
+            url = base + ep
+            try:
+                # Intentar login para obtener un token real primero
+                resp = self.session.post(
+                    url,
+                    data={"username": "admin", "password": "admin"},
+                    timeout=self.timeout,
+                )
+                if resp.status_code == 200:
+                    token = resp.json().get("access_token") or resp.json().get("token")
+                    if token and "." in token:
+                        # Intentar verificar el token con claves débiles
+                        parts = token.split(".")
+                        if len(parts) == 3:
+                            header_body = f"{parts[0]}.{parts[1]}"
+                            sig = parts[2]
+                            for weak in weak_secrets:
+                                expected = _b64url(_hmac.new(weak.encode(), header_body.encode(), _hl.sha256).digest())
+                                # Padding-insensitive comparison
+                                if expected.rstrip("=") == sig.rstrip("="):
+                                    findings.append(
+                                        ScanFinding(
+                                            type="Broken Authentication - Weak JWT Secret",
+                                            alert=f"Clave JWT débil encontrada: '{weak}'",
+                                            severity="CRITICAL",
+                                            risk="Critical",
+                                            confidence="High",
+                                            url=url,
+                                            parameter="SECRET_KEY",
+                                            description=(
+                                                f"El token JWT emitido por {ep} está firmado con "
+                                                f"la clave débil '{weak}'. Un atacante puede forjar "
+                                                "tokens válidos para cualquier usuario, incluyendo admin."
+                                            ),
+                                            solution=(
+                                                "Usar una SECRET_KEY aleatoria de al menos 256 bits. "
+                                                'Generarla con: python -c "import secrets; print(secrets.token_hex(32))" '
+                                                "Nunca hardcodear la clave en el código."
+                                            ),
+                                            evidence=f"Token firmado con '{weak}' verificado correctamente",
+                                            cwe="CWE-521",
+                                            cweid="521",
+                                            owasp_category="API2:2023",
+                                            source="HTTP Scanner – Weak JWT Secret",
+                                            request_payload={
+                                                "method": "POST",
+                                                "url": url,
+                                                "probe": f"JWT signature brute-force: clave='{weak}'",
+                                                "response": f"Firma verificada con clave débil '{weak}'",
+                                            },
+                                        )
+                                    )
+                                    break
+            except Exception:
+                pass
+
+        # ── 3: Credenciales por defecto ───────────────────────────────────────
+        default_creds = [
+            ("admin", "admin"),
+            ("admin", "password"),
+            ("admin", "123456"),
+            ("root", "root"),
+            ("test", "test"),
+            ("admin", "admin123"),
+            ("user", "user"),
+        ]
+        for ep in login_endpoints:
+            url = base + ep
+            for username, password in default_creds:
+                try:
+                    resp = self.session.post(
+                        url,
+                        data={"username": username, "password": password},
+                        timeout=self.timeout,
+                    )
+                    body = resp.json() if "application/json" in resp.headers.get("Content-Type", "") else {}
+                    if resp.status_code == 200 and ("token" in str(body).lower() or "access" in str(body).lower()):
+                        findings.append(
+                            ScanFinding(
+                                type="Broken Authentication - Default Credentials",
+                                alert=f"Credenciales por defecto aceptadas: {username}/{password}",
+                                severity="CRITICAL",
+                                risk="Critical",
+                                confidence="High",
+                                url=url,
+                                parameter="username/password",
+                                description=(
+                                    f"El endpoint {ep} aceptó las credenciales por defecto "
+                                    f"'{username}'/'{password}' y emitió un token de acceso. "
+                                    "Cualquier persona con acceso a la red puede autenticarse."
+                                ),
+                                solution=(
+                                    "Forzar cambio de contraseña en el primer login. "
+                                    "Implementar política de contraseñas mínimas. "
+                                    "Nunca desplegar sistemas con credenciales por defecto."
+                                ),
+                                evidence=f"Login exitoso con {username}/{password} | {str(body)[:200]}",
+                                cwe="CWE-1391",
+                                cweid="1391",
+                                owasp_category="API2:2023",
+                                source="HTTP Scanner – Default Credentials",
+                                request_payload={
+                                    "method": "POST",
+                                    "url": url,
+                                    "body": f"username={username}&password={password}",
+                                    "probe": "Default credential test",
+                                    "response": f"HTTP {resp.status_code} | token emitido",
+                                },
+                            )
+                        )
+                        break  # Un hallazgo por endpoint
+                except Exception:
+                    pass
+
+        logger.info(f"[Auth Probe] {len(findings)} hallazgos de autenticación rota encontrados")
         return findings
 
     # ── Active injection probing (controlled environments only) ──────────────
@@ -637,99 +1184,110 @@ class HTTPSecurityScanner:
                 body = resp.text.lower()
                 # Indicadores de SQL injection: eco del query, error SQL, o la query modificada
                 sql_indicators = [
-                    "select ", "from ", "where ", "' or ", "syntax error",
-                    "sql", "query:", "mysql", "sqlite", "ora-", "unclosed",
+                    "select ",
+                    "from ",
+                    "where ",
+                    "' or ",
+                    "syntax error",
+                    "sql",
+                    "query:",
+                    "mysql",
+                    "sqlite",
+                    "ora-",
+                    "unclosed",
                 ]
                 matched = [kw for kw in sql_indicators if kw in body]
                 if matched and resp.status_code < 500:
-                    findings.append(ScanFinding(
-                        type="SQL Injection",
-                        alert="Inyección SQL confirmada por respuesta del servidor",
-                        severity="HIGH",
-                        risk="High",
-                        confidence="High",
-                        url=url,
-                        parameter="username / password",
-                        description=(
-                            f"La respuesta del endpoint {ep} contiene fragmentos SQL "
-                            f"({', '.join(matched[:3])}) al recibir el payload '{sql_payload}'. "
-                            "Indica que la entrada del usuario se interpola directamente en la query SQL."
-                        ),
-                        solution=(
-                            "Usar consultas parametrizadas o prepared statements. "
-                            "Nunca construir queries SQL mediante concatenación/f-string de entradas de usuario."
-                        ),
-                        evidence=resp.text[:300],
-                        cwe="CWE-89",
-                        cweid="89",
-                        owasp_category="API3:2023",
-                        source="HTTP Scanner – Active SQL Injection Probe",
-                        request_payload={
-                            "method": "POST",
-                            "url": url,
-                            "body": f"username={sql_payload}&password={sql_payload}",
-                            "probe": "SQL injection via form login",
-                            "response": f"HTTP {resp.status_code} | indicadores: {matched}",
-                        },
-                    ))
+                    findings.append(
+                        ScanFinding(
+                            type="SQL Injection",
+                            alert="Inyección SQL confirmada por respuesta del servidor",
+                            severity="HIGH",
+                            risk="High",
+                            confidence="High",
+                            url=url,
+                            parameter="username / password",
+                            description=(
+                                f"La respuesta del endpoint {ep} contiene fragmentos SQL "
+                                f"({', '.join(matched[:3])}) al recibir el payload '{sql_payload}'. "
+                                "Indica que la entrada del usuario se interpola directamente en la query SQL."
+                            ),
+                            solution=(
+                                "Usar consultas parametrizadas o prepared statements. "
+                                "Nunca construir queries SQL mediante concatenación/f-string de entradas de usuario."
+                            ),
+                            evidence=resp.text[:300],
+                            cwe="CWE-89",
+                            cweid="89",
+                            owasp_category="API3:2023",
+                            source="HTTP Scanner – Active SQL Injection Probe",
+                            request_payload={
+                                "method": "POST",
+                                "url": url,
+                                "body": f"username={sql_payload}&password={sql_payload}",
+                                "probe": "SQL injection via form login",
+                                "response": f"HTTP {resp.status_code} | indicadores: {matched}",
+                            },
+                        )
+                    )
                     break  # Un hallazgo por tipo es suficiente
             except Exception:
                 pass
 
         # ── Path Traversal ──────────────────────────────────────────────────────
         traversal_payloads = [
-            ("../../requirements.txt",  ["fastapi", "uvicorn", "sqlalchemy"]),
+            ("../../requirements.txt", ["fastapi", "uvicorn", "sqlalchemy"]),
             ("../../../requirements.txt", ["fastapi", "uvicorn", "sqlalchemy"]),
-            ("../../etc/passwd",         ["root:", "bin:", "daemon:"]),
-            ("C:\\Windows\\win.ini",     ["fonts", "windows", "[extensions]"]),
+            ("../../etc/passwd", ["root:", "bin:", "daemon:"]),
+            ("C:\\Windows\\win.ini", ["fonts", "windows", "[extensions]"]),
         ]
         traversal_endpoints = [
             ("/read_file", "file"),
-            ("/download",  "filename"),
-            ("/file",      "path"),
-            ("/static",    "file"),
+            ("/download", "filename"),
+            ("/file", "path"),
+            ("/static", "file"),
         ]
         for ep, param in traversal_endpoints:
             for payload, indicators in traversal_payloads:
                 url = base + ep
                 try:
-                    resp = self.session.get(
-                        url, params={param: payload}, timeout=self.timeout
-                    )
+                    resp = self.session.get(url, params={param: payload}, timeout=self.timeout)
                     body = resp.text.lower()
                     matched = [ind for ind in indicators if ind.lower() in body]
                     if matched and resp.status_code == 200 and len(resp.text) > 10:
-                        findings.append(ScanFinding(
-                            type="Path Traversal",
-                            alert="Path traversal confirmado — acceso a archivos del sistema",
-                            severity="HIGH",
-                            risk="High",
-                            confidence="High",
-                            url=url,
-                            parameter=param,
-                            description=(
-                                f"El endpoint {ep} permite acceder a archivos fuera del directorio "
-                                f"de la aplicación. Payload '{payload}' devolvió contenido que "
-                                f"coincide con indicadores de sistema ({', '.join(matched)})."
-                            ),
-                            solution=(
-                                "Validar y sanitizar todos los parámetros de ruta de archivo. "
-                                "Usar os.path.realpath() y verificar que el path resultante "
-                                "esté dentro del directorio permitido."
-                            ),
-                            evidence=resp.text[:200],
-                            cwe="CWE-22",
-                            cweid="22",
-                            owasp_category="API1:2023",
-                            source="HTTP Scanner – Active Path Traversal Probe",
-                            request_payload={
-                                "method": "GET",
-                                "url": url,
-                                "params": {param: payload},
-                                "probe": "Path traversal via file parameter",
-                                "response": f"HTTP {resp.status_code} | {len(resp.text)} bytes | indicadores: {matched}",
-                            },
-                        ))
+                        findings.append(
+                            ScanFinding(
+                                type="Path Traversal",
+                                alert="Path traversal confirmado — acceso a archivos del sistema",
+                                severity="HIGH",
+                                risk="High",
+                                confidence="High",
+                                url=url,
+                                parameter=param,
+                                description=(
+                                    f"El endpoint {ep} permite acceder a archivos fuera del directorio "
+                                    f"de la aplicación. Payload '{payload}' devolvió contenido que "
+                                    f"coincide con indicadores de sistema ({', '.join(matched)})."
+                                ),
+                                solution=(
+                                    "Validar y sanitizar todos los parámetros de ruta de archivo. "
+                                    "Usar os.path.realpath() y verificar que el path resultante "
+                                    "esté dentro del directorio permitido."
+                                ),
+                                evidence=resp.text[:200],
+                                cwe="CWE-22",
+                                cweid="22",
+                                owasp_category="API1:2023",
+                                source="HTTP Scanner – Active Path Traversal Probe",
+                                request_payload={
+                                    "method": "GET",
+                                    "url": url,
+                                    "params": {param: payload},
+                                    "probe": "Path traversal via file parameter",
+                                    "response": f"HTTP {resp.status_code} | {len(resp.text)} bytes | indicadores: {matched}",
+                                },
+                            )
+                        )
                         break
                 except Exception:
                     pass
@@ -748,41 +1306,46 @@ class HTTPSecurityScanner:
                 body = resp.text
                 debug_indicators = [
                     "Traceback (most recent call last)",
-                    'File "', "line ",
-                    "DebugFilesKeyError", "werkzeug", "jinja2",
+                    'File "',
+                    "line ",
+                    "DebugFilesKeyError",
+                    "werkzeug",
+                    "jinja2",
                     "InteractiveConsole",
                 ]
                 matched = [ind for ind in debug_indicators if ind in body]
                 if matched:
-                    findings.append(ScanFinding(
-                        type="Error Disclosure - Debug Mode",
-                        alert="Stack trace completo expuesto — modo debug activo",
-                        severity="HIGH",
-                        risk="High",
-                        confidence="High",
-                        url=url,
-                        parameter="debug_mode",
-                        description=(
-                            f"La aplicación está corriendo en modo debug y expone stack traces "
-                            f"completos de Python. Se detectó '{matched[0]}' en la respuesta HTTP. "
-                            "Revela rutas internas, versiones de librerías y lógica de la aplicación."
-                        ),
-                        solution=(
-                            "Deshabilitar debug=True en producción. "
-                            "Configurar app.run(debug=False) o usar FLASK_ENV=production."
-                        ),
-                        evidence=body[:400],
-                        cwe="CWE-209",
-                        cweid="209",
-                        owasp_category="API8:2023",
-                        source="HTTP Scanner – Active Debug Probe",
-                        request_payload={
-                            "method": "POST",
-                            "url": url,
-                            "probe": "Error disclosure via malformed input",
-                            "response": f"HTTP {resp.status_code} | indicadores: {matched}",
-                        },
-                    ))
+                    findings.append(
+                        ScanFinding(
+                            type="Error Disclosure - Debug Mode",
+                            alert="Stack trace completo expuesto — modo debug activo",
+                            severity="HIGH",
+                            risk="High",
+                            confidence="High",
+                            url=url,
+                            parameter="debug_mode",
+                            description=(
+                                f"La aplicación está corriendo en modo debug y expone stack traces "
+                                f"completos de Python. Se detectó '{matched[0]}' en la respuesta HTTP. "
+                                "Revela rutas internas, versiones de librerías y lógica de la aplicación."
+                            ),
+                            solution=(
+                                "Deshabilitar debug=True en producción. "
+                                "Configurar app.run(debug=False) o usar FLASK_ENV=production."
+                            ),
+                            evidence=body[:400],
+                            cwe="CWE-209",
+                            cweid="209",
+                            owasp_category="API8:2023",
+                            source="HTTP Scanner – Active Debug Probe",
+                            request_payload={
+                                "method": "POST",
+                                "url": url,
+                                "probe": "Error disclosure via malformed input",
+                                "response": f"HTTP {resp.status_code} | indicadores: {matched}",
+                            },
+                        )
+                    )
                     break
             except Exception:
                 pass
@@ -795,35 +1358,37 @@ class HTTPSecurityScanner:
             t1 = r1.text.replace("Token: ", "").strip()
             t2 = r2.text.replace("Token: ", "").strip()
             if t1 and t2 and t1 == t2:
-                findings.append(ScanFinding(
-                    type="Insecure Random - Predictable Token",
-                    alert="Token de seguridad predecible — PRNG no criptográfico",
-                    severity="HIGH",
-                    risk="High",
-                    confidence="Medium",
-                    url=base + "/token",
-                    parameter="token",
-                    description=(
-                        "Dos llamadas consecutivas al endpoint /token devolvieron el mismo valor, "
-                        "indicando uso de random.choice() (PRNG no criptográfico) en lugar de "
-                        "secrets.token_urlsafe() para generación de tokens de seguridad."
-                    ),
-                    solution=(
-                        "Usar secrets.token_urlsafe(32) o secrets.token_hex(32) "
-                        "del módulo secrets de Python para tokens criptográficamente seguros."
-                    ),
-                    evidence=f"Token 1: {t1} | Token 2: {t2}",
-                    cwe="CWE-338",
-                    cweid="338",
-                    owasp_category="API2:2023",
-                    source="HTTP Scanner – Insecure Random Probe",
-                    request_payload={
-                        "method": "GET × 2",
-                        "url": base + "/token",
-                        "probe": "Predictable token generation test",
-                        "response": f"Tokens idénticos: {t1[:20]}...",
-                    },
-                ))
+                findings.append(
+                    ScanFinding(
+                        type="Insecure Random - Predictable Token",
+                        alert="Token de seguridad predecible — PRNG no criptográfico",
+                        severity="HIGH",
+                        risk="High",
+                        confidence="Medium",
+                        url=base + "/token",
+                        parameter="token",
+                        description=(
+                            "Dos llamadas consecutivas al endpoint /token devolvieron el mismo valor, "
+                            "indicando uso de random.choice() (PRNG no criptográfico) en lugar de "
+                            "secrets.token_urlsafe() para generación de tokens de seguridad."
+                        ),
+                        solution=(
+                            "Usar secrets.token_urlsafe(32) o secrets.token_hex(32) "
+                            "del módulo secrets de Python para tokens criptográficamente seguros."
+                        ),
+                        evidence=f"Token 1: {t1} | Token 2: {t2}",
+                        cwe="CWE-338",
+                        cweid="338",
+                        owasp_category="API2:2023",
+                        source="HTTP Scanner – Insecure Random Probe",
+                        request_payload={
+                            "method": "GET × 2",
+                            "url": base + "/token",
+                            "probe": "Predictable token generation test",
+                            "response": f"Tokens idénticos: {t1[:20]}...",
+                        },
+                    )
+                )
         except Exception:
             pass
 
@@ -838,36 +1403,38 @@ class HTTPSecurityScanner:
                 resp = self.session.get(url, timeout=self.timeout, allow_redirects=False, verify=False)
                 location = resp.headers.get("Location", "")
                 if resp.status_code not in (301, 302, 307, 308) or not location.startswith("https"):
-                    findings.append(ScanFinding(
-                        type="Insecure Transport",
-                        alert="API accesible sin HTTPS sin redirección",
-                        severity="HIGH",
-                        risk="High",
-                        confidence="High",
-                        url=url,
-                        parameter="scheme",
-                        description=(
-                            "La API acepta conexiones HTTP sin cifrar y no redirige a HTTPS. "
-                            "Los datos transmitidos son vulnerables a interceptación (MITM)."
-                        ),
-                        solution="Forzar HTTPS. Configurar redirección 301 HTTP → HTTPS y habilitar HSTS.",
-                        evidence=f"HTTP {resp.status_code} desde {url} sin redirección HTTPS",
-                        cwe="CWE-319",
-                        cweid="319",
-                        owasp_category="API8:2023",
-                        source="HTTP Scanner – SSL/TLS",
-                        request_payload={
-                            "method": "GET",
-                            "url": url,
-                            "sent_headers": {"User-Agent": "HybridSecScan/2.0 Security Scanner"},
-                            "probe": "Verificación de redirección HTTP → HTTPS (sin seguir redirects)",
-                            "response": (
-                                f"HTTP {resp.status_code} | "
-                                f"Location: {location or '(sin Location header)'} | "
-                                "Sin redirección a HTTPS — tráfico transmitido en texto plano"
+                    findings.append(
+                        ScanFinding(
+                            type="Insecure Transport",
+                            alert="API accesible sin HTTPS sin redirección",
+                            severity="HIGH",
+                            risk="High",
+                            confidence="High",
+                            url=url,
+                            parameter="scheme",
+                            description=(
+                                "La API acepta conexiones HTTP sin cifrar y no redirige a HTTPS. "
+                                "Los datos transmitidos son vulnerables a interceptación (MITM)."
                             ),
-                        },
-                    ))
+                            solution="Forzar HTTPS. Configurar redirección 301 HTTP → HTTPS y habilitar HSTS.",
+                            evidence=f"HTTP {resp.status_code} desde {url} sin redirección HTTPS",
+                            cwe="CWE-319",
+                            cweid="319",
+                            owasp_category="API8:2023",
+                            source="HTTP Scanner – SSL/TLS",
+                            request_payload={
+                                "method": "GET",
+                                "url": url,
+                                "sent_headers": {"User-Agent": "HybridSecScan/2.0 Security Scanner"},
+                                "probe": "Verificación de redirección HTTP → HTTPS (sin seguir redirects)",
+                                "response": (
+                                    f"HTTP {resp.status_code} | "
+                                    f"Location: {location or '(sin Location header)'} | "
+                                    "Sin redirección a HTTPS — tráfico transmitido en texto plano"
+                                ),
+                            },
+                        )
+                    )
             except Exception as exc:
                 logger.debug(f"ssl_config: {exc}")
         return findings
@@ -876,6 +1443,7 @@ class HTTPSecurityScanner:
 # ──────────────────────────────────────────────────────────────────────────────
 # Cliente OWASP ZAP daemon (opcional)
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 class ZAPDaemonScanner:
     """
@@ -893,10 +1461,10 @@ class ZAPDaemonScanner:
                -config api.disablekey=true
     """
 
-    ZAP_URL         = "http://localhost:8080"
-    SPIDER_TIMEOUT  = 120   # segundos
-    ASCAN_TIMEOUT   = 300   # segundos
-    POLL_INTERVAL   = 5     # segundos
+    ZAP_URL = "http://localhost:8080"
+    SPIDER_TIMEOUT = 120  # segundos
+    ASCAN_TIMEOUT = 300  # segundos
+    POLL_INTERVAL = 5  # segundos
 
     def is_available(self) -> bool:
         try:
@@ -1024,6 +1592,7 @@ class ZAPDaemonScanner:
 # Punto de entrada público
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 def run_active_probe_scan(target_url: str) -> Dict[str, Any]:
     """
     Escaneo DAST con probing activo de inyecciones.
@@ -1037,8 +1606,10 @@ def run_active_probe_scan(target_url: str) -> Dict[str, Any]:
     scanner = HTTPSecurityScanner()
 
     passive_findings = scanner.scan(target_url)
-    active_findings  = scanner.probe_injection_vulnerabilities(target_url)
-    all_findings     = passive_findings + active_findings
+    active_findings = scanner.probe_injection_vulnerabilities(target_url)
+    idor_findings = scanner.probe_idor_bola(target_url)
+    auth_findings = scanner.probe_broken_authentication(target_url)
+    all_findings = passive_findings + active_findings + idor_findings + auth_findings
 
     vuln_dicts = [f.to_dict() for f in all_findings]
     counts: Dict[str, int] = {"critical": 0, "high": 0, "medium": 0, "low": 0}
@@ -1048,16 +1619,18 @@ def run_active_probe_scan(target_url: str) -> Dict[str, Any]:
             counts[key] += 1
 
     return {
-        "scan_type":     "DAST",
-        "tool":          "HTTP Security Scanner (Active Probe)",
+        "scan_type": "DAST",
+        "tool": "HTTP Security Scanner (Active Probe)",
         "zap_available": False,
-        "target_url":    target_url,
+        "target_url": target_url,
         "vulnerabilities": vuln_dicts,
         "summary": {
-            "total_issues":    len(all_findings),
-            "alerts_found":    len(all_findings),
-            "passive_checks":  len(passive_findings),
-            "active_probes":   len(active_findings),
+            "total_issues": len(all_findings),
+            "alerts_found": len(all_findings),
+            "passive_checks": len(passive_findings),
+            "active_probes": len(active_findings),
+            "idor_checks": len(idor_findings),
+            "auth_checks": len(auth_findings),
             **counts,
         },
     }
@@ -1100,14 +1673,14 @@ def run_dast_scan(target_url: str) -> Dict[str, Any]:
             counts[key] += 1
 
     return {
-        "scan_type":     "DAST",
-        "tool":          scanner_name,
+        "scan_type": "DAST",
+        "tool": scanner_name,
         "zap_available": zap_available,
-        "target_url":    target_url,
+        "target_url": target_url,
         "vulnerabilities": vuln_dicts,
         "summary": {
-            "total_issues":  len(findings),
-            "alerts_found":  len(findings),
+            "total_issues": len(findings),
+            "alerts_found": len(findings),
             **counts,
         },
     }

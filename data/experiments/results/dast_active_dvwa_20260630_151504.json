@@ -1,0 +1,285 @@
+{
+  "scan_type": "DAST",
+  "tool": "HTTP Security Scanner (Active Probe)",
+  "target_url": "http://localhost:8080",
+  "app": "DVWA",
+  "timestamp": "2026-06-30T20:15:04.321317+00:00",
+  "zap_available": false,
+  "vulnerabilities": [
+    {
+      "id": "f8bb032d-ed8b-4cf5-ae26-504db82f3c4c",
+      "type": "Missing Security Header",
+      "alert": "Header ausente: Content-Security-Policy",
+      "severity": "HIGH",
+      "risk": "High",
+      "confidence": "High",
+      "url": "http://localhost:8080",
+      "parameter": "Content-Security-Policy",
+      "description": "El header HTTP \"Content-Security-Policy\" no est\u00e1 presente en la respuesta. Previene XSS e inyecci\u00f3n de contenido.",
+      "solution": "Agregar el header \"Content-Security-Policy\" en la configuraci\u00f3n del servidor.",
+      "evidence": "Header no encontrado. Headers presentes: ['Cache-Control', 'Connection', 'Content-Encoding', 'Content-Length', 'Content-Type', 'Date', 'Expires', 'Keep-Alive', 'Pragma', 'Server', 'Vary']",
+      "cwe": "CWE-693",
+      "cweid": "693",
+      "owasp_category": "API7:2023",
+      "source": "HTTP Scanner \u2013 Security Headers",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:8080",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Inspecci\u00f3n de cabeceras de seguridad HTTP",
+        "response": "HTTP 200 \u2014 11 headers recibidos",
+        "missing_header": "Content-Security-Policy"
+      }
+    },
+    {
+      "id": "28892c9c-0239-46f3-bdc5-eca767d10532",
+      "type": "Missing Security Header",
+      "alert": "Header ausente: X-Frame-Options",
+      "severity": "MEDIUM",
+      "risk": "Medium",
+      "confidence": "High",
+      "url": "http://localhost:8080",
+      "parameter": "X-Frame-Options",
+      "description": "El header HTTP \"X-Frame-Options\" no est\u00e1 presente en la respuesta. Previene ataques de clickjacking.",
+      "solution": "Agregar el header \"X-Frame-Options\" en la configuraci\u00f3n del servidor.",
+      "evidence": "Header no encontrado. Headers presentes: ['Cache-Control', 'Connection', 'Content-Encoding', 'Content-Length', 'Content-Type', 'Date', 'Expires', 'Keep-Alive', 'Pragma', 'Server', 'Vary']",
+      "cwe": "CWE-1021",
+      "cweid": "1021",
+      "owasp_category": "API7:2023",
+      "source": "HTTP Scanner \u2013 Security Headers",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:8080",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Inspecci\u00f3n de cabeceras de seguridad HTTP",
+        "response": "HTTP 200 \u2014 11 headers recibidos",
+        "missing_header": "X-Frame-Options"
+      }
+    },
+    {
+      "id": "48f5a8b8-23c2-4d0a-b113-c6111a15259d",
+      "type": "Missing Security Header",
+      "alert": "Header ausente: X-Content-Type-Options",
+      "severity": "LOW",
+      "risk": "Low",
+      "confidence": "High",
+      "url": "http://localhost:8080",
+      "parameter": "X-Content-Type-Options",
+      "description": "El header HTTP \"X-Content-Type-Options\" no est\u00e1 presente en la respuesta. Previene MIME-type sniffing.",
+      "solution": "Agregar el header \"X-Content-Type-Options\" en la configuraci\u00f3n del servidor.",
+      "evidence": "Header no encontrado. Headers presentes: ['Cache-Control', 'Connection', 'Content-Encoding', 'Content-Length', 'Content-Type', 'Date', 'Expires', 'Keep-Alive', 'Pragma', 'Server', 'Vary']",
+      "cwe": "CWE-693",
+      "cweid": "693",
+      "owasp_category": "API7:2023",
+      "source": "HTTP Scanner \u2013 Security Headers",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:8080",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Inspecci\u00f3n de cabeceras de seguridad HTTP",
+        "response": "HTTP 200 \u2014 11 headers recibidos",
+        "missing_header": "X-Content-Type-Options"
+      }
+    },
+    {
+      "id": "10294c4f-b7bd-4550-8cca-65036bf37fb2",
+      "type": "Missing Security Header",
+      "alert": "Header ausente: Strict-Transport-Security",
+      "severity": "HIGH",
+      "risk": "High",
+      "confidence": "High",
+      "url": "http://localhost:8080",
+      "parameter": "Strict-Transport-Security",
+      "description": "El header HTTP \"Strict-Transport-Security\" no est\u00e1 presente en la respuesta. Fuerza conexiones HTTPS.",
+      "solution": "Agregar el header \"Strict-Transport-Security\" en la configuraci\u00f3n del servidor.",
+      "evidence": "Header no encontrado. Headers presentes: ['Cache-Control', 'Connection', 'Content-Encoding', 'Content-Length', 'Content-Type', 'Date', 'Expires', 'Keep-Alive', 'Pragma', 'Server', 'Vary']",
+      "cwe": "CWE-319",
+      "cweid": "319",
+      "owasp_category": "API7:2023",
+      "source": "HTTP Scanner \u2013 Security Headers",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:8080",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Inspecci\u00f3n de cabeceras de seguridad HTTP",
+        "response": "HTTP 200 \u2014 11 headers recibidos",
+        "missing_header": "Strict-Transport-Security"
+      }
+    },
+    {
+      "id": "099ff340-dcb6-4517-9357-2ed1ce0104cc",
+      "type": "Missing Security Header",
+      "alert": "Header ausente: Referrer-Policy",
+      "severity": "LOW",
+      "risk": "Low",
+      "confidence": "High",
+      "url": "http://localhost:8080",
+      "parameter": "Referrer-Policy",
+      "description": "El header HTTP \"Referrer-Policy\" no est\u00e1 presente en la respuesta. Controla informaci\u00f3n del referrer.",
+      "solution": "Agregar el header \"Referrer-Policy\" en la configuraci\u00f3n del servidor.",
+      "evidence": "Header no encontrado. Headers presentes: ['Cache-Control', 'Connection', 'Content-Encoding', 'Content-Length', 'Content-Type', 'Date', 'Expires', 'Keep-Alive', 'Pragma', 'Server', 'Vary']",
+      "cwe": "CWE-200",
+      "cweid": "200",
+      "owasp_category": "API7:2023",
+      "source": "HTTP Scanner \u2013 Security Headers",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:8080",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Inspecci\u00f3n de cabeceras de seguridad HTTP",
+        "response": "HTTP 200 \u2014 11 headers recibidos",
+        "missing_header": "Referrer-Policy"
+      }
+    },
+    {
+      "id": "f9a917f0-0bc8-4510-9ab5-6a9704639d39",
+      "type": "Missing Security Header",
+      "alert": "Header ausente: Permissions-Policy",
+      "severity": "LOW",
+      "risk": "Low",
+      "confidence": "High",
+      "url": "http://localhost:8080",
+      "parameter": "Permissions-Policy",
+      "description": "El header HTTP \"Permissions-Policy\" no est\u00e1 presente en la respuesta. Controla permisos del navegador.",
+      "solution": "Agregar el header \"Permissions-Policy\" en la configuraci\u00f3n del servidor.",
+      "evidence": "Header no encontrado. Headers presentes: ['Cache-Control', 'Connection', 'Content-Encoding', 'Content-Length', 'Content-Type', 'Date', 'Expires', 'Keep-Alive', 'Pragma', 'Server', 'Vary']",
+      "cwe": "CWE-693",
+      "cweid": "693",
+      "owasp_category": "API7:2023",
+      "source": "HTTP Scanner \u2013 Security Headers",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:8080",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Inspecci\u00f3n de cabeceras de seguridad HTTP",
+        "response": "HTTP 200 \u2014 11 headers recibidos",
+        "missing_header": "Permissions-Policy"
+      }
+    },
+    {
+      "id": "59a8a6b2-1ecd-4cf2-85a9-eba502763278",
+      "type": "Missing Rate Limiting",
+      "alert": "Sin control de tasa (rate limiting) detectable",
+      "severity": "MEDIUM",
+      "risk": "Medium",
+      "confidence": "Medium",
+      "url": "http://localhost:8080",
+      "parameter": "HTTP responses",
+      "description": "Se enviaron 15 peticiones r\u00e1pidas sin obtener respuesta 429 ni headers de rate limiting. La API puede ser vulnerable a abuso de recursos o ataques de fuerza bruta.",
+      "solution": "Implementar rate limiting por IP y por usuario. Devolver HTTP 429 con header Retry-After al superar el l\u00edmite.",
+      "evidence": "15 requests. C\u00f3digos: [200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200]",
+      "cwe": "CWE-770",
+      "cweid": "770",
+      "owasp_category": "API4:2023",
+      "source": "HTTP Scanner \u2013 Rate Limiting",
+      "request_payload": {
+        "method": "GET (x15)",
+        "url": "http://localhost:8080",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Flood de peticiones: 15 GETs a ~20 req/s (delay=50ms)",
+        "response": "Todos respondieron sin HTTP 429. C\u00f3digos obtenidos: [200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200]. Headers de rate limit ausentes (X-RateLimit-*, Retry-After)."
+      }
+    },
+    {
+      "id": "d122da7b-22f8-46c8-99b3-bd6e60505156",
+      "type": "Server Information Disclosure",
+      "alert": "Header Server expone informaci\u00f3n del servidor",
+      "severity": "LOW",
+      "risk": "Low",
+      "confidence": "High",
+      "url": "http://localhost:8080",
+      "parameter": "Server",
+      "description": "El header \"Server\" revela versi\u00f3n del servidor web (\"Apache/2.4.25 (Debian)\"). Facilita ataques dirigidos a versiones espec\u00edficas.",
+      "solution": "Eliminar o suprimir el header \"Server\" en la configuraci\u00f3n del servidor.",
+      "evidence": "Server: Apache/2.4.25 (Debian)",
+      "cwe": "CWE-200",
+      "cweid": "200",
+      "owasp_category": "API8:2023",
+      "source": "HTTP Scanner \u2013 Information Disclosure",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:8080",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Inspecci\u00f3n de headers de respuesta que revelan informaci\u00f3n del servidor",
+        "response": "HTTP 200 | Header filtrado \u2192 Server: Apache/2.4.25 (Debian)"
+      }
+    },
+    {
+      "id": "8318fae2-274a-4792-a840-4c0a11a5485e",
+      "type": "Insecure Transport",
+      "alert": "API accesible sin HTTPS sin redirecci\u00f3n",
+      "severity": "HIGH",
+      "risk": "High",
+      "confidence": "High",
+      "url": "http://localhost:8080",
+      "parameter": "scheme",
+      "description": "La API acepta conexiones HTTP sin cifrar y no redirige a HTTPS. Los datos transmitidos son vulnerables a interceptaci\u00f3n (MITM).",
+      "solution": "Forzar HTTPS. Configurar redirecci\u00f3n 301 HTTP \u2192 HTTPS y habilitar HSTS.",
+      "evidence": "HTTP 302 desde http://localhost:8080 sin redirecci\u00f3n HTTPS",
+      "cwe": "CWE-319",
+      "cweid": "319",
+      "owasp_category": "API8:2023",
+      "source": "HTTP Scanner \u2013 SSL/TLS",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://localhost:8080",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Verificaci\u00f3n de redirecci\u00f3n HTTP \u2192 HTTPS (sin seguir redirects)",
+        "response": "HTTP 302 | Location: login.php | Sin redirecci\u00f3n a HTTPS \u2014 tr\u00e1fico transmitido en texto plano"
+      }
+    },
+    {
+      "id": "9af5f184-eafa-48b7-9268-23d84863f903",
+      "type": "Insecure Random - Predictable Token",
+      "alert": "Token de seguridad predecible \u2014 PRNG no criptogr\u00e1fico",
+      "severity": "HIGH",
+      "risk": "High",
+      "confidence": "Medium",
+      "url": "http://localhost:8080/token",
+      "parameter": "token",
+      "description": "Dos llamadas consecutivas al endpoint /token devolvieron el mismo valor, indicando uso de random.choice() (PRNG no criptogr\u00e1fico) en lugar de secrets.token_urlsafe() para generaci\u00f3n de tokens de seguridad.",
+      "solution": "Usar secrets.token_urlsafe(32) o secrets.token_hex(32) del m\u00f3dulo secrets de Python para tokens criptogr\u00e1ficamente seguros.",
+      "evidence": "Token 1: <!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n<html><head>\n<title>404 Not Found</title>\n</head><body>\n<h1>Not Found</h1>\n<p>The requested URL /token was not found on this server.</p>\n<hr>\n<address>Apache/2.4.25 (Debian) Server at localhost Port 8080</address>\n</body></html> | Token 2: <!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n<html><head>\n<title>404 Not Found</title>\n</head><body>\n<h1>Not Found</h1>\n<p>The requested URL /token was not found on this server.</p>\n<hr>\n<address>Apache/2.4.25 (Debian) Server at localhost Port 8080</address>\n</body></html>",
+      "cwe": "CWE-338",
+      "cweid": "338",
+      "owasp_category": "API2:2023",
+      "source": "HTTP Scanner \u2013 Insecure Random Probe",
+      "request_payload": {
+        "method": "GET \u00d7 2",
+        "url": "http://localhost:8080/token",
+        "probe": "Predictable token generation test",
+        "response": "Tokens id\u00e9nticos: <!DOCTYPE HTML PUBLI..."
+      }
+    }
+  ],
+  "summary": {
+    "total_issues": 10,
+    "alerts_found": 10,
+    "passive_checks": 9,
+    "active_probes": 1,
+    "idor_checks": 0,
+    "auth_checks": 0,
+    "critical": 0,
+    "high": 4,
+    "medium": 2,
+    "low": 4
+  }
+}

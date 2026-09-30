@@ -22,8 +22,9 @@ Salida:
 
 import random
 from pathlib import Path
-import pandas as pd
+
 import numpy as np
+import pandas as pd
 
 random.seed(42)
 np.random.seed(42)
@@ -33,47 +34,51 @@ np.random.seed(42)
 # ─────────────────────────────────────────────────────────────────────────────
 
 CWE_MAP = {
-    "SQL_INJECTION":            "CWE-89",
-    "XSS":                      "CWE-79",
-    "COMMAND_INJECTION":        "CWE-78",
-    "PATH_TRAVERSAL":           "CWE-22",
-    "OPEN_REDIRECT":            "CWE-601",
+    "SQL_INJECTION": "CWE-89",
+    "XSS": "CWE-79",
+    "COMMAND_INJECTION": "CWE-78",
+    "PATH_TRAVERSAL": "CWE-22",
+    "OPEN_REDIRECT": "CWE-601",
     "INSECURE_DESERIALIZATION": "CWE-502",
-    "HARDCODED_CREDENTIALS":    "CWE-798",
-    "WEAK_CRYPTO":              "CWE-327",
-    "SENSITIVE_DATA_EXPOSURE":  "CWE-200",
-    "INFO_DISCLOSURE":          "CWE-200",
+    "HARDCODED_CREDENTIALS": "CWE-798",
+    "WEAK_CRYPTO": "CWE-327",
+    "SENSITIVE_DATA_EXPOSURE": "CWE-200",
+    "INFO_DISCLOSURE": "CWE-200",
     "MISSING_SECURITY_HEADERS": "CWE-693",
-    "CORS_MISCONFIGURATION":    "CWE-942",
-    "RATE_LIMITING":            "CWE-770",
-    "BROKEN_AUTH":              "CWE-287",
-    "INSECURE_TRANSPORT":       "CWE-319",
-    "SECURITY_MISCONFIG":       "CWE-693",
+    "CORS_MISCONFIGURATION": "CWE-942",
+    "RATE_LIMITING": "CWE-770",
+    "BROKEN_AUTH": "CWE-287",
+    "INSECURE_TRANSPORT": "CWE-319",
+    "SECURITY_MISCONFIG": "CWE-693",
 }
 
 SEVERITY_MAP = {
-    "SQL_INJECTION":            ["HIGH", "CRITICAL"],
-    "XSS":                      ["MEDIUM", "HIGH"],
-    "COMMAND_INJECTION":        ["HIGH", "CRITICAL"],
-    "PATH_TRAVERSAL":           ["HIGH"],
-    "OPEN_REDIRECT":            ["MEDIUM"],
+    "SQL_INJECTION": ["HIGH", "CRITICAL"],
+    "XSS": ["MEDIUM", "HIGH"],
+    "COMMAND_INJECTION": ["HIGH", "CRITICAL"],
+    "PATH_TRAVERSAL": ["HIGH"],
+    "OPEN_REDIRECT": ["MEDIUM"],
     "INSECURE_DESERIALIZATION": ["HIGH", "CRITICAL"],
-    "HARDCODED_CREDENTIALS":    ["HIGH"],
-    "WEAK_CRYPTO":              ["MEDIUM"],
-    "SENSITIVE_DATA_EXPOSURE":  ["LOW", "MEDIUM"],
-    "INFO_DISCLOSURE":          ["LOW", "MEDIUM"],
+    "HARDCODED_CREDENTIALS": ["HIGH"],
+    "WEAK_CRYPTO": ["MEDIUM"],
+    "SENSITIVE_DATA_EXPOSURE": ["LOW", "MEDIUM"],
+    "INFO_DISCLOSURE": ["LOW", "MEDIUM"],
     "MISSING_SECURITY_HEADERS": ["LOW", "MEDIUM"],
-    "CORS_MISCONFIGURATION":    ["MEDIUM", "HIGH"],
-    "RATE_LIMITING":            ["MEDIUM"],
-    "BROKEN_AUTH":              ["HIGH"],
-    "INSECURE_TRANSPORT":       ["HIGH"],
-    "SECURITY_MISCONFIG":       ["MEDIUM"],
+    "CORS_MISCONFIGURATION": ["MEDIUM", "HIGH"],
+    "RATE_LIMITING": ["MEDIUM"],
+    "BROKEN_AUTH": ["HIGH"],
+    "INSECURE_TRANSPORT": ["HIGH"],
+    "SECURITY_MISCONFIG": ["MEDIUM"],
 }
 
 # Vulnerabilidades que AMBAS herramientas pueden detectar
 BOTH_DETECTABLE = [
-    "SQL_INJECTION", "XSS", "COMMAND_INJECTION",
-    "OPEN_REDIRECT", "INFO_DISCLOSURE", "SENSITIVE_DATA_EXPOSURE",
+    "SQL_INJECTION",
+    "XSS",
+    "COMMAND_INJECTION",
+    "OPEN_REDIRECT",
+    "INFO_DISCLOSURE",
+    "SENSITIVE_DATA_EXPOSURE",
 ]
 SAST_ONLY = ["HARDCODED_CREDENTIALS", "WEAK_CRYPTO", "INSECURE_DESERIALIZATION", "PATH_TRAVERSAL"]
 DAST_ONLY = ["MISSING_SECURITY_HEADERS", "CORS_MISCONFIGURATION", "RATE_LIMITING", "BROKEN_AUTH", "INSECURE_TRANSPORT"]
@@ -82,15 +87,15 @@ DAST_ONLY = ["MISSING_SECURITY_HEADERS", "CORS_MISCONFIGURATION", "RATE_LIMITING
 # is_correlated=1 pero type_match=0 → rompe la separabilidad trivial.
 CROSS_TYPE_POSITIVE = [
     # SQL injection en SAST → DAST ve el error SQL como info_disclosure
-    ("SQL_INJECTION",           "INFO_DISCLOSURE"),
+    ("SQL_INJECTION", "INFO_DISCLOSURE"),
     # Command injection en SAST → DAST detecta server error / misconfig
-    ("COMMAND_INJECTION",       "SECURITY_MISCONFIG"),
+    ("COMMAND_INJECTION", "SECURITY_MISCONFIG"),
     # SAST detecta manejo inseguro de datos → DAST ve sensitive data en tráfico
     ("SENSITIVE_DATA_EXPOSURE", "INFO_DISCLOSURE"),
     # Path traversal en SAST → DAST detecta error de archivo expuesto
-    ("PATH_TRAVERSAL",          "INFO_DISCLOSURE"),
+    ("PATH_TRAVERSAL", "INFO_DISCLOSURE"),
     # Crypto débil en SAST → DAST ve tráfico en claro / insecure transport
-    ("WEAK_CRYPTO",             "INSECURE_TRANSPORT"),
+    ("WEAK_CRYPTO", "INSECURE_TRANSPORT"),
 ]
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -221,20 +226,24 @@ DAST_TEMPLATES = {
 
 # Módulos y endpoints de APIs REST
 MODULES = [
-    "payments", "auth", "users", "orders", "search",
-    "admin", "products", "profile", "inventory", "billing",
+    "payments",
+    "auth",
+    "users",
+    "orders",
+    "search",
+    "admin",
+    "products",
+    "profile",
+    "inventory",
+    "billing",
 ]
 
-FILES = [
-    f"api/{layer}/{mod}.py"
-    for layer in ["controllers", "services", "models"]
-    for mod in MODULES
-]
+FILES = [f"api/{layer}/{mod}.py" for layer in ["controllers", "services", "models"] for mod in MODULES]
 
 ENDPOINTS = [f"/api/{ver}/{mod}" for ver in ["v1", "v2"] for mod in MODULES]
 
-PARAMS    = ["id", "query", "user_id", "token", "page", "filter", "callback", "next", "email", "name"]
-FUNCS     = ["authenticate", "get_user", "process_payment", "search", "update_profile", "handle_data"]
+PARAMS = ["id", "query", "user_id", "token", "page", "filter", "callback", "next", "email", "name"]
+FUNCS = ["authenticate", "get_user", "process_payment", "search", "update_profile", "handle_data"]
 CVE_POOLS = [f"CVE-{y}-{n:05d}" for y in [2021, 2022, 2023, 2024] for n in range(10000, 99999, 10)]
 SAST_TOOLS = ["bandit", "semgrep"]
 DAST_TOOLS = ["owasp-zap", "http-scanner"]
@@ -242,39 +251,41 @@ DAST_TOOLS = ["owasp-zap", "http-scanner"]
 
 def _render(t: str, **kw) -> str:
     mod = random.choice(MODULES)
-    return (t.replace("{line}",     str(random.randint(10, 500)))
-              .replace("{func}",    random.choice(FUNCS))
-              .replace("{param}",   random.choice(PARAMS))
-              .replace("{module}",  mod)
-              .replace("{endpoint}", f"/api/v1/{mod}"))
+    return (
+        t.replace("{line}", str(random.randint(10, 500)))
+        .replace("{func}", random.choice(FUNCS))
+        .replace("{param}", random.choice(PARAMS))
+        .replace("{module}", mod)
+        .replace("{endpoint}", f"/api/v1/{mod}")
+    )
 
 
 def _sast(vtype: str, idx: int, module: str | None = None) -> dict:
-    mod  = module or random.choice(MODULES)
+    mod = module or random.choice(MODULES)
     tmpl = random.choice(SAST_TEMPLATES.get(vtype, SAST_TEMPLATES["SECURITY_MISCONFIG"]))
     return {
-        "sast_id":          f"SAST-{idx:05d}",
-        "sast_type":        vtype,
-        "sast_severity":    random.choice(SEVERITY_MAP.get(vtype, ["MEDIUM"])),
-        "sast_file":        f"api/controllers/{mod}.py",
-        "sast_line":        random.randint(10, 500),
+        "sast_id": f"SAST-{idx:05d}",
+        "sast_type": vtype,
+        "sast_severity": random.choice(SEVERITY_MAP.get(vtype, ["MEDIUM"])),
+        "sast_file": f"api/controllers/{mod}.py",
+        "sast_line": random.randint(10, 500),
         "sast_description": _render(tmpl),
-        "sast_cwe":         CWE_MAP.get(vtype, "CWE-Other"),
-        "sast_tool":        random.choice(SAST_TOOLS),
+        "sast_cwe": CWE_MAP.get(vtype, "CWE-Other"),
+        "sast_tool": random.choice(SAST_TOOLS),
     }
 
 
 def _dast(vtype: str, idx: int, module: str | None = None) -> dict:
-    mod  = module or random.choice(MODULES)
+    mod = module or random.choice(MODULES)
     tmpl = random.choice(DAST_TEMPLATES.get(vtype, DAST_TEMPLATES["INFO_DISCLOSURE"]))
     return {
-        "dast_id":          f"DAST-{idx:05d}",
-        "dast_type":        vtype,
-        "dast_severity":    random.choice(SEVERITY_MAP.get(vtype, ["MEDIUM"])),
-        "dast_endpoint":    f"/api/v1/{mod}",
+        "dast_id": f"DAST-{idx:05d}",
+        "dast_type": vtype,
+        "dast_severity": random.choice(SEVERITY_MAP.get(vtype, ["MEDIUM"])),
+        "dast_endpoint": f"/api/v1/{mod}",
         "dast_description": _render(tmpl),
-        "dast_cwe":         CWE_MAP.get(vtype, "CWE-Other"),
-        "dast_tool":        random.choice(DAST_TOOLS),
+        "dast_cwe": CWE_MAP.get(vtype, "CWE-Other"),
+        "dast_tool": random.choice(DAST_TOOLS),
     }
 
 
@@ -290,13 +301,12 @@ def generate_dataset() -> pd.DataFrame:
     # (300 pares — type_match=1, cwe_match=1)
     for _ in range(300):
         vtype = random.choice(BOTH_DETECTABLE)
-        mod   = random.choice(MODULES)
+        mod = random.choice(MODULES)
         s = _sast(vtype, idx, mod)
         d = _dast(vtype, idx, mod)
-        rows.append({**s, **d,
-                     "is_correlated": 1,
-                     "confidence":    round(random.uniform(0.82, 0.99), 2),
-                     "cve_reference": _cve()})
+        rows.append(
+            {**s, **d, "is_correlated": 1, "confidence": round(random.uniform(0.82, 0.99), 2), "cve_reference": _cve()}
+        )
         idx += 1
 
     # ── B) POSITIVOS CRUZADOS: tipos diferentes, mismo componente ─────────────
@@ -307,24 +317,22 @@ def generate_dataset() -> pd.DataFrame:
         mod = random.choice(MODULES)
         s = _sast(stype, idx, mod)
         d = _dast(dtype, idx, mod)
-        rows.append({**s, **d,
-                     "is_correlated": 1,
-                     "confidence":    round(random.uniform(0.68, 0.87), 2),
-                     "cve_reference": _cve()})
+        rows.append(
+            {**s, **d, "is_correlated": 1, "confidence": round(random.uniform(0.68, 0.87), 2), "cve_reference": _cve()}
+        )
         idx += 1
 
     # ── C) POSITIVOS AMBIGUOS: mismo tipo, módulos distintos pero relacionados
     # (150 pares — boundary cases, correlación confirmada pero menor confianza)
     RELATED_MODULES = [("auth", "users"), ("payments", "billing"), ("orders", "inventory")]
     for _ in range(150):
-        vtype      = random.choice(BOTH_DETECTABLE[:3])
+        vtype = random.choice(BOTH_DETECTABLE[:3])
         mod_s, mod_d = random.choice(RELATED_MODULES)
         s = _sast(vtype, idx, mod_s)
         d = _dast(vtype, idx, mod_d)
-        rows.append({**s, **d,
-                     "is_correlated": 1,
-                     "confidence":    round(random.uniform(0.70, 0.83), 2),
-                     "cve_reference": _cve()})
+        rows.append(
+            {**s, **d, "is_correlated": 1, "confidence": round(random.uniform(0.70, 0.83), 2), "cve_reference": _cve()}
+        )
         idx += 1
 
     # ── D) NEGATIVOS DIFÍCILES: mismo tipo, módulos NO relacionados ───────────
@@ -336,15 +344,17 @@ def generate_dataset() -> pd.DataFrame:
         vtype = random.choice(BOTH_DETECTABLE)
         mod_s = random.choice(all_modules)
         # Elegir módulo para DAST que no sea el mismo ni relacionado
-        unrelated = [m for m in all_modules
-                     if m != mod_s and (mod_s, m) not in RELATED_MODULES and (m, mod_s) not in RELATED_MODULES]
+        unrelated = [
+            m
+            for m in all_modules
+            if m != mod_s and (mod_s, m) not in RELATED_MODULES and (m, mod_s) not in RELATED_MODULES
+        ]
         mod_d = random.choice(unrelated) if unrelated else random.choice(all_modules)
         s = _sast(vtype, idx, mod_s)
         d = _dast(vtype, idx, mod_d)
-        rows.append({**s, **d,
-                     "is_correlated": 0,
-                     "confidence":    round(random.uniform(0.28, 0.62), 2),
-                     "cve_reference": _cve()})
+        rows.append(
+            {**s, **d, "is_correlated": 0, "confidence": round(random.uniform(0.28, 0.62), 2), "cve_reference": _cve()}
+        )
         idx += 1
 
     # ── E) NEGATIVOS LIMPIOS: tipos completamente distintos ───────────────────
@@ -356,10 +366,9 @@ def generate_dataset() -> pd.DataFrame:
             dtype = random.choice(DAST_ONLY + BOTH_DETECTABLE)
         s = _sast(stype, idx)
         d = _dast(dtype, idx)
-        rows.append({**s, **d,
-                     "is_correlated": 0,
-                     "confidence":    round(random.uniform(0.08, 0.50), 2),
-                     "cve_reference": _cve()})
+        rows.append(
+            {**s, **d, "is_correlated": 0, "confidence": round(random.uniform(0.08, 0.50), 2), "cve_reference": _cve()}
+        )
         idx += 1
 
     # ── F) NEGATIVOS TOOL-ONLY: herramienta que solo cubre un lado ───────────
@@ -369,10 +378,9 @@ def generate_dataset() -> pd.DataFrame:
         dtype = random.choice(DAST_ONLY)
         s = _sast(stype, idx)
         d = _dast(dtype, idx)
-        rows.append({**s, **d,
-                     "is_correlated": 0,
-                     "confidence":    round(random.uniform(0.05, 0.40), 2),
-                     "cve_reference": _cve()})
+        rows.append(
+            {**s, **d, "is_correlated": 0, "confidence": round(random.uniform(0.05, 0.40), 2), "cve_reference": _cve()}
+        )
         idx += 1
 
     df = pd.DataFrame(rows).sample(frac=1, random_state=42).reset_index(drop=True)
@@ -381,14 +389,14 @@ def generate_dataset() -> pd.DataFrame:
 
 def split_and_save(df: pd.DataFrame, output_dir: Path) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
-    n         = len(df)
+    n = len(df)
     train_end = int(n * 0.80)
-    val_end   = train_end + int(n * 0.10)
+    val_end = train_end + int(n * 0.10)
 
     splits = {
-        "training_set":   df.iloc[:train_end],
+        "training_set": df.iloc[:train_end],
         "validation_set": df.iloc[train_end:val_end],
-        "test_set":       df.iloc[val_end:],
+        "test_set": df.iloc[val_end:],
     }
 
     for name, part in splits.items():
@@ -415,9 +423,11 @@ def main() -> None:
 
     df = generate_dataset()
     total = len(df)
-    pos   = df["is_correlated"].sum()
-    print(f"  Total: {total} pares — positivos: {pos} ({pos/total*100:.1f}%)"
-          f", negativos: {total-pos} ({(total-pos)/total*100:.1f}%)")
+    pos = df["is_correlated"].sum()
+    print(
+        f"  Total: {total} pares — positivos: {pos} ({pos/total*100:.1f}%)"
+        f", negativos: {total-pos} ({(total-pos)/total*100:.1f}%)"
+    )
     print()
 
     split_and_save(df, Path("data/processed"))

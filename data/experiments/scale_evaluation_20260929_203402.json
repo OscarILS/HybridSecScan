@@ -1,0 +1,188 @@
+{
+  "n_apps": 4,
+  "sast": {
+    "mean_f1": 0.2189,
+    "mean_precision": 0.171325,
+    "mean_recall": 0.5,
+    "f1_values": [
+      0.1818,
+      0.2105,
+      0.4,
+      0.0833
+    ]
+  },
+  "dast": {
+    "mean_f1": 0.02,
+    "mean_precision": 0.0125,
+    "mean_recall": 0.05,
+    "f1_values": [
+      0.08,
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "hybrid": {
+    "mean_f1": 0.20305,
+    "mean_precision": 0.158225,
+    "mean_recall": 0.5499999999999999,
+    "f1_values": [
+      0.1429,
+      0.186,
+      0.4,
+      0.0833
+    ]
+  },
+  "statistical_tests": {
+    "test": "paired t-test (scipy.stats.ttest_rel), H1: hybrid > baseline",
+    "df": 3,
+    "hybrid_vs_sast": {
+      "t": -1.6491,
+      "p_one_tailed": 0.9012,
+      "p_two_tailed": 0.1977,
+      "cohens_d": -0.11723619176446315,
+      "significant": false
+    },
+    "hybrid_vs_dast": {
+      "t": 2.372,
+      "p_one_tailed": 0.0492,
+      "p_two_tailed": 0.0983,
+      "cohens_d": 1.803089668387123,
+      "significant": true
+    },
+    "recall_hybrid_vs_sast": {
+      "t": 1.0,
+      "p_one_tailed": 0.1955,
+      "p_two_tailed": 0.391,
+      "significant": false
+    }
+  },
+  "delta_f1_hybrid_vs_sast": -0.0159,
+  "delta_recall_hybrid_vs_sast": 0.05,
+  "per_app": {
+    "OWASP Juice Shop": {
+      "ground_truth_n": 5,
+      "sast": {
+        "findings": 17,
+        "tp": 2,
+        "fp": 15,
+        "fn": 3,
+        "precision": 0.1176,
+        "recall": 0.4,
+        "f1": 0.1818
+      },
+      "dast": {
+        "findings": 20,
+        "tp": 1,
+        "fp": 19,
+        "fn": 4,
+        "precision": 0.05,
+        "recall": 0.2,
+        "f1": 0.08
+      },
+      "hybrid": {
+        "findings": 37,
+        "tp": 3,
+        "fp": 34,
+        "fn": 2,
+        "precision": 0.0811,
+        "recall": 0.6,
+        "f1": 0.1429
+      },
+      "correlatable_types": []
+    },
+    "DVWA": {
+      "ground_truth_n": 5,
+      "sast": {
+        "findings": 33,
+        "tp": 4,
+        "fp": 29,
+        "fn": 1,
+        "precision": 0.1212,
+        "recall": 0.8,
+        "f1": 0.2105
+      },
+      "dast": {
+        "findings": 5,
+        "tp": 0,
+        "fp": 5,
+        "fn": 5,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      },
+      "hybrid": {
+        "findings": 38,
+        "tp": 4,
+        "fp": 34,
+        "fn": 1,
+        "precision": 0.1053,
+        "recall": 0.8,
+        "f1": 0.186
+      },
+      "correlatable_types": []
+    },
+    "NodeGoat": {
+      "ground_truth_n": 5,
+      "sast": {
+        "findings": 5,
+        "tp": 2,
+        "fp": 3,
+        "fn": 3,
+        "precision": 0.4,
+        "recall": 0.4,
+        "f1": 0.4
+      },
+      "dast": {
+        "findings": 0,
+        "tp": 0,
+        "fp": 0,
+        "fn": 5,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      },
+      "hybrid": {
+        "findings": 5,
+        "tp": 2,
+        "fp": 3,
+        "fn": 3,
+        "precision": 0.4,
+        "recall": 0.4,
+        "f1": 0.4
+      },
+      "correlatable_types": []
+    },
+    "OWASP WebGoat": {
+      "ground_truth_n": 5,
+      "sast": {
+        "findings": 43,
+        "tp": 2,
+        "fp": 41,
+        "fn": 3,
+        "precision": 0.0465,
+        "recall": 0.4,
+        "f1": 0.0833
+      },
+      "dast": {
+        "findings": 0,
+        "tp": 0,
+        "fp": 0,
+        "fn": 5,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      },
+      "hybrid": {
+        "findings": 43,
+        "tp": 2,
+        "fp": 41,
+        "fn": 3,
+        "precision": 0.0465,
+        "recall": 0.4,
+        "f1": 0.0833
+      },
+      "correlatable_types": []
+    }
+  }
+}

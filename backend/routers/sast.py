@@ -9,14 +9,16 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
+
+limiter = Limiter(key_func=get_remote_address)
 
 try:
     from backend.dependencies import BASE_DIR, ScanResult, get_db
     from backend.utils import (
-        ALLOWED_EXTENSIONS,
-        MAX_FILE_SIZE,
         _calculate_severity_breakdown,
         _extract_owasp_categories,
         update_scan_result,
@@ -26,8 +28,6 @@ try:
 except ImportError:
     from dependencies import BASE_DIR, ScanResult, get_db  # type: ignore[no-redef]
     from utils import (  # type: ignore[no-redef]
-        ALLOWED_EXTENSIONS,
-        MAX_FILE_SIZE,
         _calculate_severity_breakdown,
         _extract_owasp_categories,
         update_scan_result,
@@ -40,7 +40,9 @@ logger = logging.getLogger(__name__)
 
 
 @router.post("/scan/sast")
+@limiter.limit("10/minute")  # SAST lanza subprocesos: máx 10/minuto por IP
 def run_sast_scan(
+    request: Request,
     target_path: str = Form(...),
     tool: str = Form(...),
     db: Session = Depends(get_db),
@@ -82,7 +84,17 @@ def run_sast_scan(
         else:  # semgrep
             report_path = report_dir / f"semgrep_report_{report_id}.json"
             cmds = [
-                [sys.executable, "-m", "semgrep", "--config", "auto", str(validated_path), "--json", "--output", str(report_path)],
+                [
+                    sys.executable,
+                    "-m",
+                    "semgrep",
+                    "--config",
+                    "auto",
+                    str(validated_path),
+                    "--json",
+                    "--output",
+                    str(report_path),
+                ],
                 ["semgrep", "--config", "auto", str(validated_path), "--json", "--output", str(report_path)],
             ]
             result = None
@@ -109,9 +121,18 @@ def run_sast_scan(
             try:
                 scan_results = json.loads(report_path.read_text())
             except json.JSONDecodeError:
-                scan_results = {"results": [], "message": "Reporte generado pero JSON inválido", "raw_output": result.stdout}
+                scan_results = {
+                    "results": [],
+                    "message": "Reporte generado pero JSON inválido",
+                    "raw_output": result.stdout,
+                }
         else:
-            scan_results = {"results": [], "message": "No se generó archivo de reporte", "raw_stdout": result.stdout, "raw_stderr": result.stderr}
+            scan_results = {
+                "results": [],
+                "message": "No se generó archivo de reporte",
+                "raw_stdout": result.stdout,
+                "raw_stderr": result.stderr,
+            }
 
         update_scan_result(scan_result, scan_results, "completed")
         scan_result.result_path = str(report_path)
@@ -126,7 +147,9 @@ def run_sast_scan(
 
         stored = scan_result.results if isinstance(scan_result.results, dict) else {}
         severity_breakdown = stored.get("severity_breakdown") or _calculate_severity_breakdown(stored or scan_results)
-        owasp_categories = (stored.get("metadata") or {}).get("owasp_categories_detected") or _extract_owasp_categories(stored or scan_results)
+        owasp_categories = (stored.get("metadata") or {}).get("owasp_categories_detected") or _extract_owasp_categories(
+            stored or scan_results
+        )
 
         return {
             "id": scan_result.id,
@@ -154,7 +177,8 @@ def run_sast_scan(
 
 
 @router.post("/upload/")
-async def upload_code(file: UploadFile = File(...), db: Session = Depends(get_db)):
+@limiter.limit("20/minute")  # Subida de archivos: máx 20/minuto por IP
+async def upload_code(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)):
     file_info = await validate_uploaded_file(file)
 
     scan_result = ScanResult(
