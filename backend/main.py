@@ -139,3 +139,19 @@ def get_model_metrics():
         "confusion_matrix": metadata.get("confusion_matrix", {}),
         "training_info": metadata.get("training_info", {}),
     }
+
+
+@app.get("/api/scale-evaluation")
+def get_scale_evaluation():
+    """
+    Returns the most recent scale evaluation (4 vulnerable apps vs ground truth).
+    Generate it with:  python scripts/run_scale_evaluation.py --save
+    """
+    files = sorted((Path(BASE_DIR) / "data" / "experiments").glob("scale_evaluation_*.json"))
+    if not files:
+        return {
+            "available": False,
+            "message": "Sin evaluación a escala. Ejecuta: python scripts/run_scale_evaluation.py --save",
+        }
+    data = json.loads(files[-1].read_text(encoding="utf-8"))
+    return {"available": True, "source": files[-1].name, **data}

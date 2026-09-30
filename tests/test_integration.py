@@ -94,6 +94,16 @@ class TestHealthAndRoot:
         assert response.status_code == 200
         assert isinstance(response.json(), list)
 
+    def test_scale_evaluation_endpoint(self):
+        response = client.get("/api/scale-evaluation")
+        assert response.status_code == 200
+        data = response.json()
+        if data["available"]:
+            assert data["source"].startswith("scale_evaluation_")
+            for method in ("sast", "dast", "hybrid"):
+                assert 0.0 <= data[method]["mean_f1"] <= 1.0
+            assert "hybrid_vs_sast" in data["statistical_tests"]
+
 
 # ── File upload tests ──────────────────────────────────────────────────────────
 
@@ -335,6 +345,97 @@ class TestHybridCorrelation:
         # Completely unrelated endpoints
         sim_none = vc._calculate_endpoint_similarity("backend/auth.py", "http://target/products")
         assert sim_none < 0.5
+
+    def test_endpoint_similarity_is_monotonic(self):
+        """Más evidencia de coincidencia nunca debe puntuar menos."""
+        from backend.correlation_engine import VulnerabilityCorrelator
+
+        vc = VulnerabilityCorrelator()
+        exact = vc._calculate_endpoint_similarity("/api/users", "/api/users")
+        suffix = vc._calculate_endpoint_similarity("backend/api/users.py", "http://h/api/users")
+        last_seg = vc._calculate_endpoint_similarity("backend/admin/users.py", "http://h/api/users")
+        assert exact > suffix >= last_seg == 0.70
+
+    def test_endpoint_suffix_respects_segment_boundaries(self):
+        """'xusers' no es la ruta 'users': el sufijo debe coincidir por segmentos."""
+        from backend.correlation_engine import VulnerabilityCorrelator
+
+        vc = VulnerabilityCorrelator()
+        assert vc._calculate_endpoint_similarity("api/xusers", "http://h/users") < 0.70
+
+    def test_ml_features_use_training_encoders(self):
+        """Las features categóricas se codifican con los LabelEncoder del entrenamiento (sin hash())."""
+        import pytest
+
+        from backend.correlation_engine import (
+            ConfidenceLevel,
+            Vulnerability,
+            VulnerabilityCorrelator,
+            VulnerabilityType,
+        )
+
+        vc = VulnerabilityCorrelator()
+        if vc.ml_classifier is None:
+            pytest.skip("modelo no entrenado")
+
+        common = dict(
+            type=VulnerabilityType.SQL_INJECTION,
+            severity=ConfidenceLevel.HIGH,
+            endpoint="/login",
+            cwe_id="CWE-89",
+            owasp_category="API8:2023",
+        )
+        s = Vulnerability(
+            id="S1",
+            file_path="backend/app.py",
+            line_number=25,
+            description="SQL injection via string formatting",
+            source_tool="bandit",
+            **common,
+        )
+        d = Vulnerability(
+            id="D1",
+            file_path="",
+            line_number=0,
+            description="SQL error on parameter",
+            source_tool="http_scanner",
+            **common,
+        )
+        fv = vc._engineer_features_for_prediction(s, d)
+        start = len(vc.tfidf_vectorizer.get_feature_names_out())
+        end = start + 8
+        cat = fv[start:end]
+        enc = vc.label_encoders
+        assert cat[0] == enc["sast_type"].transform(["SQL_INJECTION"])[0]
+        assert cat[4] == enc["sast_cwe"].transform(["CWE-89"])[0]
+        assert cat[7] == enc["dast_tool"].transform(["http-scanner"])[0]
+        assert len(fv) == vc.model_metrics["n_features"]
+
+    def test_model_metrics_come_from_metadata(self):
+        """model_metrics refleja metadata.json, no valores hardcodeados."""
+        import json
+        from pathlib import Path
+
+        import pytest
+
+        from backend.correlation_engine import VulnerabilityCorrelator
+
+        meta = Path(__file__).resolve().parent.parent / "data" / "models" / "metadata.json"
+        if not meta.exists():
+            pytest.skip("modelo no entrenado")
+        test_f1 = json.loads(meta.read_text())["test"]["f1_score"]
+        vc = VulnerabilityCorrelator()
+        assert vc.model_metrics["test_f1"] == test_f1
+        assert "cross_validation_f1" not in vc.model_metrics
+
+    def test_endpoint_windows_paths(self):
+        """Las rutas con '\\' (Windows) se comparan igual que con '/'."""
+        from backend.correlation_engine import VulnerabilityCorrelator
+
+        vc = VulnerabilityCorrelator()
+        win = vc._calculate_endpoint_similarity("backend\\api\\users.py", "http://h/api/users")
+        posix = vc._calculate_endpoint_similarity("backend/api/users.py", "http://h/api/users")
+        assert win == posix
 
 
 # ── Cache manager integration ──────────────────────────────────────────────────
