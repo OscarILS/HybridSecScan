@@ -20,6 +20,11 @@ from urllib.parse import urlparse
 import requests
 import urllib3
 
+try:
+    from backend.owasp_mapping import DEFAULT_CATEGORY, category_for_text
+except ImportError:
+    from owasp_mapping import DEFAULT_CATEGORY, category_for_text  # type: ignore[no-redef]
+
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 logger = logging.getLogger(__name__)
@@ -32,12 +37,12 @@ DEFAULT_TIMEOUT = 10
 
 # Header → (severidad, OWASP API Top 10, CWE, descripción)
 SECURITY_HEADERS: Dict[str, Tuple[str, str, str, str]] = {
-    "Content-Security-Policy": ("HIGH", "API7:2023", "CWE-693", "Previene XSS e inyección de contenido"),
-    "X-Frame-Options": ("MEDIUM", "API7:2023", "CWE-1021", "Previene ataques de clickjacking"),
-    "X-Content-Type-Options": ("LOW", "API7:2023", "CWE-693", "Previene MIME-type sniffing"),
-    "Strict-Transport-Security": ("HIGH", "API7:2023", "CWE-319", "Fuerza conexiones HTTPS"),
-    "Referrer-Policy": ("LOW", "API7:2023", "CWE-200", "Controla información del referrer"),
-    "Permissions-Policy": ("LOW", "API7:2023", "CWE-693", "Controla permisos del navegador"),
+    "Content-Security-Policy": ("HIGH", "API8:2023", "CWE-693", "Previene XSS e inyección de contenido"),
+    "X-Frame-Options": ("MEDIUM", "API8:2023", "CWE-1021", "Previene ataques de clickjacking"),
+    "X-Content-Type-Options": ("LOW", "API8:2023", "CWE-693", "Previene MIME-type sniffing"),
+    "Strict-Transport-Security": ("HIGH", "API8:2023", "CWE-319", "Fuerza conexiones HTTPS"),
+    "Referrer-Policy": ("LOW", "API8:2023", "CWE-200", "Controla información del referrer"),
+    "Permissions-Policy": ("LOW", "API8:2023", "CWE-693", "Controla permisos del navegador"),
 }
 
 # (path, severidad, descripción legible)
@@ -142,12 +147,13 @@ class HTTPSecurityScanner:
     """
     Scanner DAST que realiza peticiones HTTP reales al objetivo.
 
-    Cubre las siguientes categorías OWASP API Security Top 10 (2023):
+    Comprobaciones pasivas por categoría OWASP API Security Top 10 (2023):
       - API4:2023  Unrestricted Resource Consumption  → rate limiting
       - API5:2023  Broken Function Level Authorization → HTTP methods
-      - API7:2023  Security Misconfiguration          → security headers, SSL
-      - API8:2023  Security Misconfiguration (impl.)  → CORS, error disclosure, server info
+      - API8:2023  Security Misconfiguration          → security headers, SSL/TLS, CORS,
+                                                          error disclosure, server info
       - API9:2023  Improper Inventory Management      → sensitive endpoints
+    Los probes activos (probe_*) añaden API1, API2 e inyección/path traversal (API8).
     """
 
     def __init__(self, timeout: int = DEFAULT_TIMEOUT):
@@ -1219,7 +1225,7 @@ class HTTPSecurityScanner:
                             evidence=resp.text[:300],
                             cwe="CWE-89",
                             cweid="89",
-                            owasp_category="API3:2023",
+                            owasp_category="API8:2023",  # sin categoría de inyección en 2023 (owasp_mapping)
                             source="HTTP Scanner – Active SQL Injection Probe",
                             request_payload={
                                 "method": "POST",
@@ -1277,7 +1283,7 @@ class HTTPSecurityScanner:
                                 evidence=resp.text[:200],
                                 cwe="CWE-22",
                                 cweid="22",
-                                owasp_category="API1:2023",
+                                owasp_category="API8:2023",  # sin categoría propia en 2023 (owasp_mapping)
                                 source="HTTP Scanner – Active Path Traversal Probe",
                                 request_payload={
                                     "method": "GET",
@@ -1572,20 +1578,8 @@ class ZAPDaemonScanner:
 
     @staticmethod
     def _map_owasp(name: str) -> str:
-        n = name.lower()
-        if any(k in n for k in ["sql", "injection", "xss", "script"]):
-            return "API8:2023"
-        if any(k in n for k in ["auth", "session", "csrf", "token"]):
-            return "API2:2023"
-        if any(k in n for k in ["cors", "access-control", "origin"]):
-            return "API8:2023"
-        if any(k in n for k in ["disclosure", "information", "server", "stack"]):
-            return "API8:2023"
-        if "rate" in n or "limit" in n:
-            return "API4:2023"
-        if any(k in n for k in ["header", "csp", "hsts", "config"]):
-            return "API7:2023"
-        return "API8:2023"
+        """Categoría 2023 de una alerta de ZAP (mapeo único en owasp_mapping)."""
+        return category_for_text(name) or DEFAULT_CATEGORY
 
 
 # ──────────────────────────────────────────────────────────────────────────────

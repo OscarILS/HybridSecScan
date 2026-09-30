@@ -56,7 +56,7 @@ jobs:
 
   # ── SCA: análisis de dependencias con CVEs ────────────────────────────────
   sca:
-    name: SCA -- pip-audit (OWASP API10)
+    name: SCA -- pip-audit (dependencias vulnerables)
     runs-on: ubuntu-latest
 
     steps:

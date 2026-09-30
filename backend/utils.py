@@ -23,8 +23,10 @@ except ImportError:
 
 try:
     from backend.correlation_engine import ConfidenceLevel, Vulnerability, VulnerabilityType
+    from backend.owasp_mapping import categorize
 except ImportError:
     from correlation_engine import ConfidenceLevel, Vulnerability, VulnerabilityType  # type: ignore[no-redef]
+    from owasp_mapping import categorize  # type: ignore[no-redef]
 
 logger = logging.getLogger(__name__)
 
@@ -199,17 +201,10 @@ def _extract_owasp_categories(results: dict) -> list:
     if isinstance(vulnerabilities, list):
         for vuln in vulnerabilities:
             if isinstance(vuln, dict):
-                owasp = vuln.get("owasp", vuln.get("category", ""))
-                if owasp:
-                    categories.add(owasp)
-                cwe = str(vuln.get("cwe", ""))
-                if "89" in cwe:
-                    categories.add("API3:2023")
-                elif "79" in cwe:
-                    categories.add("API8:2023")
-                elif "22" in cwe:
-                    categories.add("API1:2023")
-    return list(categories)
+                category = categorize(vuln)
+                if category:
+                    categories.add(category)
+    return sorted(categories)
 
 
 def update_scan_result(scan_result, results: dict, status: str = "completed", error: str = None) -> None:

@@ -31,6 +31,11 @@ from reportlab.platypus import (
     TableStyle,
 )
 
+try:
+    from backend.owasp_mapping import OWASP_API_2023, categorize
+except ImportError:
+    from owasp_mapping import OWASP_API_2023, categorize  # type: ignore[no-redef]
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Paleta de colores
 # ─────────────────────────────────────────────────────────────────────────────
@@ -69,83 +74,8 @@ C = {
 # OWASP API Security Top 10 (2023)
 # ─────────────────────────────────────────────────────────────────────────────
 
-OWASP_CATEGORIES: Dict[str, str] = {
-    "API1:2023": "Broken Object Level Authorization",
-    "API2:2023": "Broken Authentication",
-    "API3:2023": "Broken Object Property Level Authorization",
-    "API4:2023": "Unrestricted Resource Consumption",
-    "API5:2023": "Broken Function Level Authorization",
-    "API6:2023": "Unrestricted Access to Sensitive Business Flows",
-    "API7:2023": "Server Side Request Forgery (SSRF)",
-    "API8:2023": "Security Misconfiguration",
-    "API9:2023": "Improper Inventory Management",
-    "API10:2023": "Unsafe Consumption of APIs",
-}
-
-# Mapeo tipo SAST → categoría OWASP
-SAST_TYPE_TO_OWASP: Dict[str, str] = {
-    "sql_injection": "API1:2023",
-    "hardcoded_password": "API2:2023",
-    "hardcoded_credentials": "API2:2023",
-    "weak_crypto": "API3:2023",
-    "weak_cryptographic_key": "API3:2023",
-    "b105": "API2:2023",
-    "b106": "API2:2023",
-    "b107": "API2:2023",
-    "b108": "API9:2023",
-    "b201": "API8:2023",
-    "b301": "API8:2023",
-    "b302": "API8:2023",
-    "b303": "API3:2023",
-    "b304": "API3:2023",
-    "b305": "API3:2023",
-    "b306": "API3:2023",
-    "b307": "API8:2023",
-    "b308": "API8:2023",
-    "b310": "API1:2023",
-    "b311": "API3:2023",
-    "b312": "API8:2023",
-    "b314": "API8:2023",
-    "b320": "API8:2023",
-    "b321": "API8:2023",
-    "b322": "API8:2023",
-    "b323": "API3:2023",
-    "b324": "API3:2023",
-    "b325": "API3:2023",
-    "b401": "API8:2023",
-    "b402": "API8:2023",
-    "b411": "API8:2023",
-    "b412": "API5:2023",
-    "b413": "API3:2023",
-    "b501": "API8:2023",
-    "b502": "API8:2023",
-    "b503": "API8:2023",
-    "b504": "API8:2023",
-    "b505": "API3:2023",
-    "b506": "API8:2023",
-    "b507": "API8:2023",
-    "b601": "API8:2023",
-    "b602": "API8:2023",
-    "b603": "API8:2023",
-    "b604": "API8:2023",
-    "b605": "API8:2023",
-    "b606": "API8:2023",
-    "b607": "API8:2023",
-    "b608": "API1:2023",
-    "b609": "API8:2023",
-    "b610": "API1:2023",
-    "b611": "API1:2023",
-    "b701": "API8:2023",
-    "b702": "API8:2023",
-    "b703": "API8:2023",
-    "path_traversal": "API1:2023",
-    "command_injection": "API8:2023",
-    "xss": "API8:2023",
-    "open_redirect": "API8:2023",
-    "insecure_deserialization": "API8:2023",
-    "broken_auth": "API2:2023",
-    "sensitive_data_exposure": "API3:2023",
-}
+# Mapeo único a la edición 2023 (ver backend/owasp_mapping.py)
+OWASP_CATEGORIES: Dict[str, str] = OWASP_API_2023
 
 # Pasos del análisis DAST
 DAST_STEPS = [
@@ -258,37 +188,8 @@ def _health_label(score: int) -> tuple[str, Color]:
 
 
 def _owasp_for_vuln(v: Dict) -> str:
-    """Obtiene la categoría OWASP API Top 10 de un hallazgo."""
-    cat = v.get("owasp_category", "")
-    if cat:
-        return cat
-    vtype = str(v.get("type") or v.get("test_id") or "").lower().replace(" ", "_")
-    for key, owasp in SAST_TYPE_TO_OWASP.items():
-        if key in vtype:
-            return owasp
-    cwe = str(v.get("cwe") or "")
-    cwe_map = {
-        "89": "API1:2023",
-        "22": "API1:2023",
-        "284": "API1:2023",
-        "287": "API2:2023",
-        "798": "API2:2023",
-        "200": "API3:2023",
-        "327": "API3:2023",
-        "770": "API4:2023",
-        "285": "API5:2023",
-        "918": "API7:2023",
-        "16": "API8:2023",
-        "693": "API8:2023",
-        "79": "API8:2023",
-        "78": "API8:2023",
-        "319": "API8:2023",
-        "942": "API8:2023",
-    }
-    for cid, owasp in cwe_map.items():
-        if cid in cwe:
-            return owasp
-    return ""
+    """Obtiene la categoría OWASP API Top 10 (2023) de un hallazgo."""
+    return categorize(v)
 
 
 def _build_owasp_table(vulnerabilities: List[Dict]) -> Dict[str, Dict[str, int]]:
@@ -711,9 +612,10 @@ def _executive_summary(story, scan_data: Dict, styles, owasp_counts: Dict):
     def sev_row(label, key, color):
         count = sev_counts.get(key, 0)
         pct = f"{count / total * 100:.1f}%" if total else "0%"
-        bar_w = max(0.1, count / max(total, 1)) * (usable - 8 * cm)
         bar_d = Drawing(usable - 8 * cm, 10)
-        bar_d.add(Rect(0, 2, bar_w, 8, fillColor=color, strokeColor=None))
+        if count > 0:  # sin barra para 0; mínimo visible para conteos pequeños
+            bar_w = max(0.02, count / max(total, 1)) * (usable - 8 * cm)
+            bar_d.add(Rect(0, 2, bar_w, 8, fillColor=color, strokeColor=None))
         return [Paragraph(f"<b>{label}</b>", styles["body"]), str(count), pct, bar_d]
 
     dist_data = [

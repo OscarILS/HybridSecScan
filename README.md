@@ -135,22 +135,27 @@ En el desarrollo del sistema, se han incorporado múltiples capas de seguridad:
 
 ## Cobertura del OWASP API Security Top 10
 
-Mi investigación se ha enfocado específicamente en proporcionar cobertura completa de las vulnerabilidades más críticas en APIs REST:
+El escáner DAST propio (`backend/dast_scanner.py`) implementa comprobaciones orientadas a las siguientes
+categorías de la edición 2023. La tabla indica **qué se comprueba**, no una tasa de detección: la cobertura
+por categoría **no se ha validado experimentalmente** (la evaluación usa 5 vulnerabilidades por aplicación y
+no está desglosada por categoría).
 
-| Vulnerabilidad | SAST | DAST | Herramienta Principal |
-|----------------|------|------|----------------------|
-| API1: Broken Object Level Authorization | ✓ | ✓ | Semgrep, OWASP ZAP |
-| API2: Broken Authentication | ✓ | ✓ | Bandit, Semgrep, ZAP |
-| API3: Broken Object Property Level Authorization | ✓ | ✓ | Semgrep, OWASP ZAP |
-| API4: Unrestricted Resource Consumption | ✓ | ✓ | Semgrep, OWASP ZAP |
-| API5: Broken Function Level Authorization | ✓ | ✓ | Semgrep, OWASP ZAP |
-| API6: Unrestricted Access to Sensitive Business Flows | Parcial | ✓ | OWASP ZAP |
-| API7: Server Side Request Forgery | ✓ | ✓ | Bandit, Semgrep, ZAP |
-| API8: Security Misconfiguration | ✓ | ✓ | Bandit, Semgrep, ZAP |
-| API9: Improper Inventory Management | Parcial | ✓ | OWASP ZAP |
-| API10: Unsafe Consumption of APIs | ✓ | ✓ | Semgrep, OWASP ZAP |
+| Categoría (2023) | Comprobaciones DAST implementadas | Modo |
+|---|---|---|
+| API1: Broken Object Level Authorization | Acceso sin autenticación a objetos, enumeración de IDs (IDOR), acceso cruzado entre usuarios | Activo |
+| API2: Broken Authentication | JWT con `alg: none`, secreto JWT débil, credenciales por defecto, tokens predecibles | Activo |
+| API4: Unrestricted Resource Consumption | Ausencia de rate limiting, límite declarado pero no aplicado | Pasivo |
+| API5: Broken Function Level Authorization | Métodos HTTP peligrosos habilitados | Pasivo |
+| API8: Security Misconfiguration | Cabeceras de seguridad, CORS, divulgación de errores, información del servidor, transporte sin TLS (pasivo); modo debug (activo) | Pasivo y activo |
+| API9: Improper Inventory Management | Endpoints sensibles expuestos (documentación, métricas, administración) | Pasivo |
 
-**Nota**: ✓ indica detección completa, "Parcial" indica detección limitada
+- **Pasivo:** lo ejecuta el endpoint `POST /scan/dast` de la aplicación (`run_dast_scan`).
+- **Activo:** solo lo ejecutan los scripts de experimentos (`run_active_probe_scan`), pensados para entornos
+  controlados; envía cargas de ataque, así que no se expone en la aplicación.
+
+No hay comprobaciones específicas para API3, API6, API7 ni API10. Las sondas activas de inyección SQL y *path
+traversal* detectan vulnerabilidades que la edición 2023 no trata como categoría propia. El SAST (Bandit y
+Semgrep) aplica las reglas de cada herramienta, que no están organizadas por categorías del OWASP API Top 10.
 
 ## Estructura del Proyecto
 
@@ -248,6 +253,16 @@ En esta evaluación, "Híbrido" es la **unión** de los hallazgos SAST y DAST co
 **Experimentos de correlación** (sí aplican el motor de correlación):
 
 - App vulnerable (Flask, SAST con Bandit): 1 correlación confirmada, SQL injection en `/login`, confianza 0.884 (`data/experiments/results/hybrid_vulnerable_20260930_095950.json`).
+  Contra su ground truth de 9 vulnerabilidades (`data/experiments/correlation_evaluation_20260930_131217.json`, caso de estudio):
+
+  | Método | Precisión | Recall |
+  |---|---|---|
+  | SAST (Bandit) | 0.750 | 0.889 (8 de 9) |
+  | DAST (escáner activo) | 0.250 | 0.333 (3 de 9) |
+  | Unión SAST+DAST | 0.500 | 1.000 (9 de 9) |
+  | Correlación (pares confirmados) | 1.000 (1 de 1) | 0.111 (1 de 9) |
+
+  La correlación confirmada es correcta, pero solo confirma 1 de las 2 vulnerabilidades que ambas técnicas detectaron. La otra, el modo debug (falla global de la aplicación), queda en 0.523 porque el correlador compara endpoints y esa falla no pertenece a ninguno.
 - OWASP Juice Shop (SAST con Semgrep): 0 correlaciones. Es una ejecución distinta de la evaluación a escala (9 hallazgos SAST y 23 DAST; ver `data/experiments/EXPERIMENTAL_RESULTS_SUMMARY.md`). El modelo no correlaciona por *domain shift*: el vocabulario TF-IDF aprendido de descripciones sintéticas no coincide con el de Semgrep y el escáner HTTP. Reentrenar con salidas reales de las herramientas queda como trabajo futuro.
 
 ## Limitaciones y Trabajo Futuro

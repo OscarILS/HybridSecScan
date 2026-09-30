@@ -9,7 +9,9 @@ Uso:
     py -3.11 scripts/run_sca.py
     py -3.11 scripts/run_sca.py --json   # salida JSON
 
-Cubre OWASP API10:2023 — Unsafe Consumption of APIs (dependencias inseguras).
+Las dependencias vulnerables no tienen categoría propia en el OWASP API Security Top 10 (2023);
+se clasifican en API8:2023 por la convención de backend/owasp_mapping.py
+(referencia complementaria: OWASP Top 10:2021 A06 Vulnerable and Outdated Components).
 """
 
 import argparse
@@ -89,7 +91,7 @@ def run_sca(as_json: bool = False) -> dict:
 
     print(f"  Dependencias analizadas: {len(deps)}")
     print(f"  Con CVEs conocidos:      {vuln_count}")
-    print("  Cobertura OWASP:         API10:2023 (Unsafe Consumption of APIs)")
+    print("  Categoría OWASP:         API8:2023 (convención; ref. OWASP Top 10:2021 A06)")
 
     # ── Guardar resultado ─────────────────────────────────────────────────────
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -99,7 +101,7 @@ def run_sca(as_json: bool = False) -> dict:
         "tool": "pip-audit",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "target": str(REQ_FILE),
-        "owasp": "API10:2023",
+        "owasp": "API8:2023",
         "dependencies_total": len(deps),
         "vulnerabilities_found": vuln_count,
         "vulnerabilities": vulns,

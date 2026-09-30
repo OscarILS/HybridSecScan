@@ -1,0 +1,88 @@
+{
+  "application": "ProgramasPruebas/vulnerable_app.py",
+  "ground_truth_file": "vulnerable_app_ground_truth.json",
+  "ground_truth_n": 9,
+  "sast_file": "sast_bandit_vulnerable_20260930_095345.json",
+  "dast_file": "dast_active_vulnerable_20260930_095345.json",
+  "threshold": 0.7,
+  "methods": {
+    "sast": {
+      "findings": 12,
+      "correct_findings": 9,
+      "incorrect_findings": 3,
+      "vulnerabilities_found": [
+        "VA_001",
+        "VA_002",
+        "VA_003",
+        "VA_004",
+        "VA_006",
+        "VA_007",
+        "VA_008",
+        "VA_009"
+      ],
+      "precision": 0.75,
+      "recall": 0.8889,
+      "f1": 0.8136
+    },
+    "dast": {
+      "findings": 12,
+      "correct_findings": 3,
+      "incorrect_findings": 9,
+      "vulnerabilities_found": [
+        "VA_002",
+        "VA_005",
+        "VA_009"
+      ],
+      "precision": 0.25,
+      "recall": 0.3333,
+      "f1": 0.2857
+    },
+    "union": {
+      "findings": 24,
+      "correct_findings": 12,
+      "incorrect_findings": 12,
+      "vulnerabilities_found": [
+        "VA_001",
+        "VA_002",
+        "VA_003",
+        "VA_004",
+        "VA_005",
+        "VA_006",
+        "VA_007",
+        "VA_008",
+        "VA_009"
+      ],
+      "precision": 0.5,
+      "recall": 1.0,
+      "f1": 0.6667
+    },
+    "correlation": {
+      "findings": 1,
+      "correct_findings": 1,
+      "incorrect_findings": 0,
+      "vulnerabilities_found": [
+        "VA_002"
+      ],
+      "precision": 1.0,
+      "recall": 0.1111,
+      "f1": 0.2
+    }
+  },
+  "detected_by_both": [
+    "VA_002",
+    "VA_009"
+  ],
+  "confirmed_by_correlation": [
+    "VA_002"
+  ],
+  "correlations": [
+    {
+      "confidence": 0.8844,
+      "sast": "B608 línea 25",
+      "dast": "SQL Injection @ /login",
+      "ground_truth": [
+        "VA_002"
+      ]
+    }
+  ]
+}

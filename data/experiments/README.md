@@ -82,6 +82,19 @@ python scripts/run_dast_docker_apps.py            # DAST activo contra las apps 
 
 Guardan en `results/` los hallazgos SAST y DAST y el reporte de correlación (`hybrid_*.json`).
 
+## Evaluación del motor de correlación (caso de estudio)
+
+```bash
+python scripts/run_correlation_evaluation.py --save
+```
+
+La evaluación a escala mide la unión SAST+DAST; esta mide el propio correlador. Compara contra
+`ground_truth/vulnerable_app_ground_truth.json` (9 vulnerabilidades, tomadas de los comentarios
+`# VULNERABILIDAD N` de `ProgramasPruebas/vulnerable_app.py`) los hallazgos de SAST, DAST, su unión y los
+pares que el correlador confirma. Los criterios de acierto están en `matching_rules` del ground truth.
+Guarda `correlation_evaluation_*.json` y `figures/tabla_evaluacion_correlacion.md`.
+Es un caso de estudio con una sola aplicación: ilustra el comportamiento del correlador, no generaliza.
+
 ## Referencias
 
 - **OWASP Juice Shop**: https://owasp.org/www-project-juice-shop/

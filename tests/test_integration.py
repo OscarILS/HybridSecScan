@@ -243,7 +243,7 @@ class TestHybridCorrelation:
                 endpoint="/api/users",
                 description="SQL Injection via string formatting in user query",
                 cwe_id="CWE-89",
-                owasp_category="API3:2023",
+                owasp_category="API8:2023",
                 source_tool="bandit",
             )
         ]
@@ -257,7 +257,7 @@ class TestHybridCorrelation:
                 endpoint="http://localhost:8000/api/users",
                 description="SQL Injection detected via error response on parameter manipulation",
                 cwe_id="CWE-89",
-                owasp_category="API3:2023",
+                owasp_category="API8:2023",
                 source_tool="zap",
             )
         ]

@@ -1,10 +1,14 @@
 # Script para ejecutar OWASP ZAP (DAST)
 import json
 import subprocess
+import sys
 import uuid
 from pathlib import Path
 from typing import Any, Dict, List
 from urllib.parse import urlparse
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from backend.owasp_mapping import category_for_text  # noqa: E402
 
 
 def run_zap(target_url: str) -> Dict[str, Any]:
@@ -180,27 +184,8 @@ def _map_zap_alert_to_type(alert_name: str) -> str:
 
 
 def _map_to_owasp_api_top10(alert_name: str) -> str:
-    """Mapea alerta a categoría OWASP API Security Top 10."""
-    alert_lower = alert_name.lower()
-
-    mapping = {
-        "API1:2023": ["auth", "broken object", "bola", "idor"],
-        "API2:2023": ["broken authentication", "session", "token"],
-        "API3:2023": ["broken object property", "mass assignment"],
-        "API4:2023": ["resource consumption", "rate limit", "dos"],
-        "API5:2023": ["broken function", "authorization"],
-        "API6:2023": ["server side request forgery", "ssrf"],
-        "API7:2023": ["security misconfiguration", "config"],
-        "API8:2023": ["injection", "sql", "xss", "command"],
-        "API9:2023": ["asset management", "inventory"],
-        "API10:2023": ["unsafe api", "consumption"],
-    }
-
-    for category, keywords in mapping.items():
-        if any(keyword in alert_lower for keyword in keywords):
-            return category
-
-    return "UNKNOWN"
+    """Mapea una alerta de ZAP a la edición 2023 (mapeo único en backend/owasp_mapping.py)."""
+    return category_for_text(alert_name) or "UNKNOWN"
 
 
 def _calculate_severity_summary(vulnerabilities: List[Dict[str, Any]]) -> Dict[str, int]:

@@ -1,0 +1,131 @@
+{
+  "application": "HybridSecScan vulnerable_app.py (Flask)",
+  "version": "ProgramasPruebas/vulnerable_app.py",
+  "source": "Comentarios '# VULNERABILIDAD N' del propio código fuente, escritos antes de ejecutar las herramientas",
+  "last_updated": "2026-09-30",
+  "matching_rules": {
+    "sast": "El hallazgo es correcto si su línea está en 'lines' y su CWE está en 'accepted_cwes'.",
+    "dast": "El hallazgo es correcto si su endpoint coincide con 'endpoint' (o 'endpoint' es '*', falla global) y su CWE está en 'accepted_cwes'.",
+    "correlation": "La correlación es correcta si su lado SAST y su lado DAST son correctos para la misma vulnerabilidad.",
+    "multiplicity": "Varios hallazgos pueden apuntar a la misma vulnerabilidad: la precisión cuenta hallazgos correctos; el recall cuenta vulnerabilidades encontradas al menos una vez."
+  },
+  "vulnerabilities": [
+    {
+      "id": "VA_001",
+      "type": "hardcoded_credentials",
+      "cwe_id": "CWE-798",
+      "accepted_cwes": [798, 259],
+      "owasp_category": null,
+      "file_path": "ProgramasPruebas/vulnerable_app.py",
+      "line_number": 15,
+      "lines": [15, 16],
+      "endpoint": null,
+      "description": "VULNERABILIDAD 1: secretos escritos en el código (SECRET_KEY, DATABASE_PASSWORD)",
+      "source": "source_code_comment"
+    },
+    {
+      "id": "VA_002",
+      "type": "sql_injection",
+      "cwe_id": "CWE-89",
+      "accepted_cwes": [89],
+      "owasp_category": null,
+      "file_path": "ProgramasPruebas/vulnerable_app.py",
+      "line_number": 25,
+      "lines": [25, 25],
+      "endpoint": "/login",
+      "description": "VULNERABILIDAD 2: consulta SQL construida con f-string a partir de parámetros del formulario",
+      "source": "source_code_comment"
+    },
+    {
+      "id": "VA_003",
+      "type": "command_injection",
+      "cwe_id": "CWE-78",
+      "accepted_cwes": [78],
+      "owasp_category": null,
+      "file_path": "ProgramasPruebas/vulnerable_app.py",
+      "line_number": 34,
+      "lines": [34, 34],
+      "endpoint": "/execute",
+      "description": "VULNERABILIDAD 3: os.system() con un comando recibido del usuario",
+      "source": "source_code_comment"
+    },
+    {
+      "id": "VA_004",
+      "type": "insecure_deserialization",
+      "cwe_id": "CWE-502",
+      "accepted_cwes": [502],
+      "owasp_category": null,
+      "file_path": "ProgramasPruebas/vulnerable_app.py",
+      "line_number": 42,
+      "lines": [42, 42],
+      "endpoint": "/deserialize",
+      "description": "VULNERABILIDAD 4: pickle.load() sobre un archivo subido por el usuario",
+      "source": "source_code_comment"
+    },
+    {
+      "id": "VA_005",
+      "type": "path_traversal",
+      "cwe_id": "CWE-22",
+      "accepted_cwes": [22, 23, 73],
+      "owasp_category": null,
+      "file_path": "ProgramasPruebas/vulnerable_app.py",
+      "line_number": 50,
+      "lines": [50, 50],
+      "endpoint": "/read_file",
+      "description": "VULNERABILIDAD 5: open() con una ruta recibida del usuario",
+      "source": "source_code_comment"
+    },
+    {
+      "id": "VA_006",
+      "type": "insecure_temp_file",
+      "cwe_id": "CWE-377",
+      "accepted_cwes": [377],
+      "owasp_category": null,
+      "file_path": "ProgramasPruebas/vulnerable_app.py",
+      "line_number": 57,
+      "lines": [57, 57],
+      "endpoint": "/process",
+      "description": "VULNERABILIDAD 6: tempfile.mktemp() (condición de carrera en archivo temporal)",
+      "source": "source_code_comment"
+    },
+    {
+      "id": "VA_007",
+      "type": "assert_validation",
+      "cwe_id": "CWE-703",
+      "accepted_cwes": [703, 617],
+      "owasp_category": null,
+      "file_path": "ProgramasPruebas/vulnerable_app.py",
+      "line_number": 67,
+      "lines": [67, 67],
+      "endpoint": "/validate",
+      "description": "VULNERABILIDAD 7: validación con assert (se elimina con python -O)",
+      "source": "source_code_comment"
+    },
+    {
+      "id": "VA_008",
+      "type": "insecure_random",
+      "cwe_id": "CWE-330",
+      "accepted_cwes": [330, 338],
+      "owasp_category": null,
+      "file_path": "ProgramasPruebas/vulnerable_app.py",
+      "line_number": 76,
+      "lines": [76, 76],
+      "endpoint": "/token",
+      "description": "VULNERABILIDAD 8: token de seguridad generado con random (no criptográfico)",
+      "source": "source_code_comment"
+    },
+    {
+      "id": "VA_009",
+      "type": "debug_mode",
+      "cwe_id": "CWE-489",
+      "accepted_cwes": [489, 94, 209, 215],
+      "owasp_category": null,
+      "file_path": "ProgramasPruebas/vulnerable_app.py",
+      "line_number": 81,
+      "lines": [81, 81],
+      "endpoint": "*",
+      "description": "VULNERABILIDAD 9: app.run(debug=True) expone el depurador de Werkzeug en toda la aplicación",
+      "source": "source_code_comment"
+    }
+  ]
+}
