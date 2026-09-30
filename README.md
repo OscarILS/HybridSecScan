@@ -213,20 +213,35 @@ Mi contribución principal radica en el desarrollo de un algoritmo de correlaci�
 
 ### Metodología de Evaluación
 
-La validación del sistema se ha realizado utilizando un enfoque experimental básico:
+La validación se realizó en dos niveles:
 
-- **Dataset**: 50 APIs REST de código abierto
-- **Métricas**: Precisión, Recall, F1-Score, y tiempo de procesamiento
-- **Comparación**: Análisis comparativo con herramientas individuales
-- **Validación**: Análisis de mejoras obtenidas
+- **Modelo ML**: dataset sintético de 1,300 pares SAST–DAST (6 categorías, split 80/10/10), 517 features
+- **Sistema completo**: 4 aplicaciones intencionalmente vulnerables (OWASP Juice Shop, DVWA, NodeGoat, OWASP WebGoat) contrastadas contra ground truth
+- **Métricas**: Precision, Recall, F1-Score, ROC-AUC; prueba t pareada y d de Cohen para comparar métodos
 
 ### Resultados Obtenidos
 
-Los resultados demuestran una mejora en la detección de vulnerabilidades:
+**Modelo Random Forest** (fuente: `data/models/metadata.json`):
 
-- **Reducción de Falsos Positivos**: 25% en comparación con herramientas individuales
-- **Mejora en Precisión**: 12% superior al promedio de herramientas SAST/DAST independientes
-- **Cobertura de Vulnerabilidades**: 87% del OWASP API Top 10
+| Conjunto | Accuracy | Precision | Recall | F1 | ROC-AUC |
+|---|---|---|---|---|---|
+| Validación | 80.8% | 69.4% | 94.3% | 0.800 | 0.851 |
+| Test | 76.9% | 66.3% | 96.5% | 0.786 | 0.785 |
+
+El alto recall es intencional: en seguridad es peor omitir una vulnerabilidad real que generar una falsa alarma.
+
+**Evaluación a escala en 4 aplicaciones** (fuente: `data/experiments/scale_evaluation_20260929_203402.json`):
+
+| Método | Precision media | Recall medio | F1 medio |
+|---|---|---|---|
+| SAST | 0.171 | 0.500 | 0.219 |
+| DAST | 0.013 | 0.050 | 0.020 |
+| Híbrido | 0.158 | 0.550 | 0.203 |
+
+- El enfoque híbrido supera a DAST solo en F1 (t pareada, gl = 3, t = 2.37, p = 0.049 unilateral; p = 0.098 bilateral).
+- Frente a SAST solo, el híbrido aumenta el recall medio (+0.05) pero no mejora el F1 (−0.016); ninguna de las dos diferencias es estadísticamente significativa (F1: p = 0.20 bilateral; recall: p = 0.20 unilateral). Con n = 4 aplicaciones, la potencia estadística es baja.
+- En OWASP Juice Shop, SAST+DAST cubre capas complementarias: 9 hallazgos SAST y 23 DAST, 32 en total (ver `data/experiments/EXPERIMENTAL_RESULTS_SUMMARY.md`).
+- El modelo ML no produjo correlaciones sobre datos reales por *domain shift*: el vocabulario TF-IDF aprendido de descripciones sintéticas no coincide con el de Semgrep y el escáner HTTP. Reentrenar con salidas reales de las herramientas queda como trabajo futuro.
 
 ## Limitaciones y Trabajo Futuro
 
