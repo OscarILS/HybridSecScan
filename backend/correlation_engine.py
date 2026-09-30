@@ -629,7 +629,8 @@ class VulnerabilityCorrelator:
         # Es más evidencia que coincidir solo el último segmento, así que
         # puntúa en [0.70, 0.85]: nunca por debajo del caso de último segmento.
         shorter, longer = sorted((segs1, segs2), key=len)
-        if longer[-len(shorter) :] == shorter:
+        offset = len(longer) - len(shorter)
+        if longer[offset:] == shorter:
             return 0.70 + 0.15 * (len(shorter) / len(longer))
 
         # Last-segment match (e.g. both end with 'users')
