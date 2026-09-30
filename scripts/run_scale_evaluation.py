@@ -9,7 +9,7 @@ Metodología:
   2. Lee resultados DAST ya generados (HTTP Scanner sobre apps en ejecución)
   3. Compara contra ground truth (data/experiments/ground_truth/*.json)
   4. Calcula TP/FP/FN por método y por app
-  5. Ejecuta pruebas estadísticas: Wilcoxon, t-Student, Cohen's d, IC 95%
+  5. Ejecuta pruebas estadísticas: t-Student emparejada (scipy), Cohen's d, IC 95%
   6. Genera tabla comparativa lista para la tesis
 
 Uso:
@@ -22,7 +22,9 @@ import json
 import math
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
+
+from scipy import stats as scipy_stats
 
 REPO = Path(__file__).resolve().parent.parent
 GT_DIR = REPO / "data" / "experiments" / "ground_truth"
@@ -133,12 +135,12 @@ VULN_TYPE_MAP = {
 
 # Agrupaciones semánticas para matching flexible
 RELATED_TYPES = {
-    "sql_injection":         {"sql_injection", "nosql_injection"},
-    "nosql_injection":       {"sql_injection", "nosql_injection"},
+    "sql_injection": {"sql_injection", "nosql_injection"},
+    "nosql_injection": {"sql_injection", "nosql_injection"},
     "broken_authentication": {"broken_authentication", "sensitive_data_exposure"},
-    "path_traversal":        {"path_traversal", "security_misconfiguration"},
+    "path_traversal": {"path_traversal", "security_misconfiguration"},
     "broken_access_control": {"broken_access_control", "sensitive_data_exposure"},
-    "xss":                   {"xss", "security_misconfiguration"},
+    "xss": {"xss", "security_misconfiguration"},
 }
 
 
@@ -176,6 +178,7 @@ def path_similarity(p1: str, p2: str) -> float:
 
 # ── Parsers de resultados de herramientas ─────────────────────────────────────
 
+
 def parse_semgrep(path: Path) -> List[dict]:
     """Extrae hallazgos normalizados de un resultado Semgrep JSON."""
     try:
@@ -208,20 +211,26 @@ def parse_semgrep(path: Path) -> List[dict]:
         # Endpoint desde el path relativo (últimos 3 segmentos del archivo)
         try:
             rel_parts = Path(file_path.replace("\\", "/")).parts
-            endpoint = "/" + "/".join(rel_parts[-3:]) if len(rel_parts) >= 3 else "/" + file_path
+            endpoint = (
+                "/" + "/".join(rel_parts[-3:])
+                if len(rel_parts) >= 3
+                else "/" + file_path
+            )
         except Exception:
             endpoint = "/" + file_path
 
-        findings.append({
-            "type": vuln_type,
-            "file_path": file_path,
-            "endpoint": endpoint,
-            "severity": r.get("extra", {}).get("severity", "WARNING").upper(),
-            "cwe": raw_cwe,
-            "tool": "semgrep",
-            "description": r.get("extra", {}).get("message", ""),
-            "check_id": check_id,
-        })
+        findings.append(
+            {
+                "type": vuln_type,
+                "file_path": file_path,
+                "endpoint": endpoint,
+                "severity": r.get("extra", {}).get("severity", "WARNING").upper(),
+                "cwe": raw_cwe,
+                "tool": "semgrep",
+                "description": r.get("extra", {}).get("message", ""),
+                "check_id": check_id,
+            }
+        )
     return findings
 
 
@@ -235,16 +244,20 @@ def parse_bandit(path: Path) -> List[dict]:
     for r in d.get("results", []):
         cwe_info = r.get("issue_cwe", {})
         cwe_id = f"cwe-{cwe_info.get('id', 0)}" if isinstance(cwe_info, dict) else ""
-        vuln_type = normalize_type(cwe_id) if cwe_id else normalize_type(r.get("test_id", ""))
-        findings.append({
-            "type": vuln_type,
-            "file_path": r.get("filename", ""),
-            "endpoint": "/" + Path(r.get("filename", "")).stem,
-            "severity": r.get("issue_severity", "LOW").upper(),
-            "cwe": cwe_id,
-            "tool": "bandit",
-            "description": r.get("issue_text", ""),
-        })
+        vuln_type = (
+            normalize_type(cwe_id) if cwe_id else normalize_type(r.get("test_id", ""))
+        )
+        findings.append(
+            {
+                "type": vuln_type,
+                "file_path": r.get("filename", ""),
+                "endpoint": "/" + Path(r.get("filename", "")).stem,
+                "severity": r.get("issue_severity", "LOW").upper(),
+                "cwe": cwe_id,
+                "tool": "bandit",
+                "description": r.get("issue_text", ""),
+            }
+        )
     return findings
 
 
@@ -257,22 +270,26 @@ def parse_dast_http(path: Path) -> List[dict]:
     findings = []
     for v in d.get("vulnerabilities", []):
         from urllib.parse import urlparse
+
         url = v.get("url", "/")
         endpoint = urlparse(url).path or "/"
         vuln_type = normalize_type(v.get("type", v.get("alert", "")))
-        findings.append({
-            "type": vuln_type,
-            "file_path": "",
-            "endpoint": endpoint,
-            "severity": v.get("severity", "LOW").upper(),
-            "cwe": v.get("cwe", v.get("cweid", "")),
-            "tool": v.get("source", "http_scanner"),
-            "description": v.get("description", ""),
-        })
+        findings.append(
+            {
+                "type": vuln_type,
+                "file_path": "",
+                "endpoint": endpoint,
+                "severity": v.get("severity", "LOW").upper(),
+                "cwe": v.get("cwe", v.get("cweid", "")),
+                "tool": v.get("source", "http_scanner"),
+                "description": v.get("description", ""),
+            }
+        )
     return findings
 
 
 # ── Ground Truth Matcher ──────────────────────────────────────────────────────
+
 
 def match_finding_to_gt(finding: dict, gt_entry: dict) -> float:
     """
@@ -309,7 +326,7 @@ def match_finding_to_gt(finding: dict, gt_entry: dict) -> float:
     return score
 
 
-MATCH_THRESHOLD = 0.40   # score >= 0.40 → TP
+MATCH_THRESHOLD = 0.40  # score >= 0.40 → TP
 
 
 def classify_findings(
@@ -336,7 +353,9 @@ def classify_findings(
                 best_gt_idx = i
 
         if best_score >= MATCH_THRESHOLD:
-            tp.append({**f, "_gt_match": ground_truth[best_gt_idx], "_score": best_score})
+            tp.append(
+                {**f, "_gt_match": ground_truth[best_gt_idx], "_score": best_score}
+            )
             gt_matched[best_gt_idx] = True
         else:
             fp.append(f)
@@ -351,17 +370,24 @@ def compute_metrics(tp, fp, fn) -> dict:
     n_fp = len(fp)
     n_fn = len(fn)
     precision = n_tp / (n_tp + n_fp) if (n_tp + n_fp) > 0 else 0.0
-    recall    = n_tp / (n_tp + n_fn) if (n_tp + n_fn) > 0 else 0.0
-    f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
+    recall = n_tp / (n_tp + n_fn) if (n_tp + n_fn) > 0 else 0.0
+    f1 = (
+        2 * precision * recall / (precision + recall)
+        if (precision + recall) > 0
+        else 0.0
+    )
     return {
-        "tp": n_tp, "fp": n_fp, "fn": n_fn,
+        "tp": n_tp,
+        "fp": n_fp,
+        "fn": n_fn,
         "precision": round(precision, 4),
-        "recall":    round(recall, 4),
-        "f1":        round(f1, 4),
+        "recall": round(recall, 4),
+        "f1": round(f1, 4),
     }
 
 
 # ── Carga de resultados por app ───────────────────────────────────────────────
+
 
 def best_result_file(app_key: str, tool_prefix: str) -> Optional[Path]:
     """Devuelve el resultado más reciente para un app + herramienta."""
@@ -380,32 +406,32 @@ def best_result_file(app_key: str, tool_prefix: str) -> Optional[Path]:
 # Mapas de nombre de app → clave en archivos de resultado
 APP_CONFIGS = {
     "OWASP Juice Shop": {
-        "gt_file":   GT_DIR / "juiceshop_ground_truth.json",
-        "sast_key":  "juice",     # semgrep_juice_shop_*.json
-        "dast_key":  "juiceshop", # dast_http_juiceshop_*.json
+        "gt_file": GT_DIR / "juiceshop_ground_truth.json",
+        "sast_key": "juice",  # semgrep_juice_shop_*.json
+        "dast_key": "juiceshop",  # dast_http_juiceshop_*.json
         "sast_tool": "semgrep",
-        "docker":    "docker run -p 3000:3000 bkimminich/juice-shop",
+        "docker": "docker run -p 3000:3000 bkimminich/juice-shop",
     },
     "DVWA": {
-        "gt_file":  GT_DIR / "dvwa_ground_truth.json",
+        "gt_file": GT_DIR / "dvwa_ground_truth.json",
         "sast_key": "dvwa",
         "dast_key": "dvwa",
         "sast_tool": "semgrep",
-        "docker":   "docker run -p 8080:80 vulnerables/web-dvwa",
+        "docker": "docker run -p 8080:80 vulnerables/web-dvwa",
     },
     "NodeGoat": {
-        "gt_file":  GT_DIR / "nodegoat_ground_truth.json",
+        "gt_file": GT_DIR / "nodegoat_ground_truth.json",
         "sast_key": "nodegoat",
         "dast_key": "nodegoat",
         "sast_tool": "semgrep",
-        "docker":   "docker run -p 4000:4000 owasp/nodegoat",
+        "docker": "docker run -p 4000:4000 owasp/nodegoat",
     },
     "OWASP WebGoat": {
-        "gt_file":  GT_DIR / "webgoat_ground_truth.json",
+        "gt_file": GT_DIR / "webgoat_ground_truth.json",
         "sast_key": "webgoat",
         "dast_key": "webgoat",
         "sast_tool": "bandit",
-        "docker":   "docker run -p 8888:8080 webgoat/goat-and-wolf",
+        "docker": "docker run -p 8888:8080 webgoat/goat-and-wolf",
     },
 }
 
@@ -416,12 +442,16 @@ def load_app_results(app_name: str, cfg: dict) -> dict:
 
     # SAST
     sast_findings = []
-    sast_file = best_result_file(cfg["sast_key"], "semgrep") or best_result_file(cfg["sast_key"], "sast_semgrep")
+    sast_file = best_result_file(cfg["sast_key"], "semgrep") or best_result_file(
+        cfg["sast_key"], "sast_semgrep"
+    )
     if sast_file:
         sast_findings = parse_semgrep(sast_file)
     else:
         # Intentar con bandit
-        sast_file = best_result_file(cfg["sast_key"], "sast_bandit") or best_result_file(cfg["sast_key"], "bandit")
+        sast_file = best_result_file(
+            cfg["sast_key"], "sast_bandit"
+        ) or best_result_file(cfg["sast_key"], "bandit")
         if sast_file:
             sast_findings = parse_bandit(sast_file)
 
@@ -454,9 +484,14 @@ def load_app_results(app_name: str, cfg: dict) -> dict:
 
 # ── Pruebas estadísticas ──────────────────────────────────────────────────────
 
-def mean(xs): return sum(xs) / len(xs) if xs else 0.0
+
+def mean(xs):
+    return sum(xs) / len(xs) if xs else 0.0
+
+
 def stdev(xs):
-    if len(xs) < 2: return 0.0
+    if len(xs) < 2:
+        return 0.0
     m = mean(xs)
     return math.sqrt(sum((x - m) ** 2 for x in xs) / (len(xs) - 1))
 
@@ -469,53 +504,42 @@ def cohens_d(group_a: List[float], group_b: List[float]) -> float:
     return (mean(group_a) - mean(group_b)) / pooled_std if pooled_std > 0 else 0.0
 
 
-def paired_t_test(before: List[float], after: List[float]) -> Tuple[float, float]:
+def paired_t_test(
+    before: List[float], after: List[float]
+) -> Tuple[float, float, float]:
     """
-    Prueba t de Student emparejada (one-tailed: after > before).
+    Prueba t de Student emparejada (H1 unilateral: after > before).
 
     Returns:
-        (t_statistic, p_value)  — p_value aproximado via distribución t
+        (t_statistic, p_one_tailed, p_two_tailed) — valores p exactos de la distribución t
     """
     if len(before) != len(after) or len(before) < 2:
-        return 0.0, 1.0
-    diffs = [a - b for a, b in zip(after, before)]
-    n = len(diffs)
-    d_mean = mean(diffs)
-    d_std = stdev(diffs)
-    if d_std == 0:
-        return 0.0, 1.0
-    t = d_mean / (d_std / math.sqrt(n))
-    # Aproximación p-value one-tailed para distribución t con n-1 grados
-    # Usamos la aproximación de Abramowitz & Stegun para la CDF normal
-    df = n - 1
-    # Convertir t a p aproximado via normal para df >= 3
-    # Para df pequeño, usamos tabla conservadora
-    if abs(t) >= 3.0 and df >= 3:
-        p_approx = 0.01
-    elif abs(t) >= 2.0 and df >= 3:
-        p_approx = 0.05
-    elif abs(t) >= 1.5:
-        p_approx = 0.10
-    else:
-        p_approx = 0.20
-    return round(t, 4), p_approx
+        return 0.0, 1.0, 1.0
+    if stdev([a - b for a, b in zip(after, before)]) == 0:
+        return 0.0, 1.0, 1.0
+    one = scipy_stats.ttest_rel(after, before, alternative="greater")
+    two = scipy_stats.ttest_rel(after, before)
+    return (
+        round(float(one.statistic), 4),
+        round(float(one.pvalue), 4),
+        round(float(two.pvalue), 4),
+    )
 
 
 def confidence_interval_95(values: List[float]) -> Tuple[float, float]:
     """IC 95% via t-distribution (dos colas) para muestras pequeñas."""
-    if not values:
+    if len(values) < 2:
         return 0.0, 0.0
     n = len(values)
     m = mean(values)
     s = stdev(values)
-    # t crítico para n-1 grados (conservador para n pequeño)
-    t_crits = {1: 12.71, 2: 4.30, 3: 3.18, 4: 2.78, 5: 2.57}
-    t_crit = t_crits.get(n - 1, 2.0)
+    t_crit = scipy_stats.t.ppf(0.975, n - 1)
     margin = t_crit * s / math.sqrt(n)
     return round(m - margin, 4), round(m + margin, 4)
 
 
 # ── Evaluación principal ──────────────────────────────────────────────────────
+
 
 def run_evaluation() -> dict:
     """Ejecuta la evaluación completa y devuelve resultados estructurados."""
@@ -534,40 +558,56 @@ def run_evaluation() -> dict:
         print(f"  App: {app_name}")
 
         data = load_app_results(app_name, cfg)
-        gt   = data["ground_truth"]
+        gt = data["ground_truth"]
 
         print(f"  Ground truth: {len(gt)} vulnerabilidades conocidas")
-        print(f"  SAST file:   {Path(data['sast_file']).name if data['sast_file'] else 'NO ENCONTRADO'}")
-        print(f"  DAST file:   {Path(data['dast_file']).name if data['dast_file'] else 'NO ENCONTRADO'}")
+        print(
+            f"  SAST file:   {Path(data['sast_file']).name if data['sast_file'] else 'NO ENCONTRADO'}"
+        )
+        print(
+            f"  DAST file:   {Path(data['dast_file']).name if data['dast_file'] else 'NO ENCONTRADO'}"
+        )
         print(f"  SAST hallazgos totales: {len(data['sast_findings'])}")
-        if len(data['sast_findings']) == 0 and data['sast_file']:
-            print(f"  NOTA: 0 hallazgos SAST — probable incompatibilidad de lenguaje")
-            print(f"        (Bandit/Semgrep-Python no analizan Java/PHP correctamente)")
+        if len(data["sast_findings"]) == 0 and data["sast_file"]:
+            print("  NOTA: 0 hallazgos SAST — probable incompatibilidad de lenguaje")
+            print("        (Bandit/Semgrep-Python no analizan Java/PHP correctamente)")
         print(f"  DAST hallazgos totales: {len(data['dast_findings'])}")
 
         # ── SAST ──
         sast_tp, sast_fp, sast_fn = classify_findings(data["sast_findings"], gt)
         sast_m = compute_metrics(sast_tp, sast_fp, sast_fn)
-        print(f"\n  SAST  → P={sast_m['precision']:.3f}  R={sast_m['recall']:.3f}  F1={sast_m['f1']:.3f}"
-              f"  (TP={sast_m['tp']} FP={sast_m['fp']} FN={sast_m['fn']})")
+        print(
+            f"\n  SAST  → P={sast_m['precision']:.3f}  R={sast_m['recall']:.3f}  F1={sast_m['f1']:.3f}"
+            f"  (TP={sast_m['tp']} FP={sast_m['fp']} FN={sast_m['fn']})"
+        )
 
         # ── DAST ──
         dast_tp, dast_fp, dast_fn = classify_findings(data["dast_findings"], gt)
         dast_m = compute_metrics(dast_tp, dast_fp, dast_fn)
-        print(f"  DAST  → P={dast_m['precision']:.3f}  R={dast_m['recall']:.3f}  F1={dast_m['f1']:.3f}"
-              f"  (TP={dast_m['tp']} FP={dast_m['fp']} FN={dast_m['fn']})")
+        print(
+            f"  DAST  → P={dast_m['precision']:.3f}  R={dast_m['recall']:.3f}  F1={dast_m['f1']:.3f}"
+            f"  (TP={dast_m['tp']} FP={dast_m['fp']} FN={dast_m['fn']})"
+        )
 
         # ── Hybrid (unión de hallazgos SAST + DAST) ──
         hybrid_findings = data["sast_findings"] + data["dast_findings"]
         hyb_tp, hyb_fp, hyb_fn = classify_findings(hybrid_findings, gt)
         hyb_m = compute_metrics(hyb_tp, hyb_fp, hyb_fn)
-        print(f"  HYB   → P={hyb_m['precision']:.3f}  R={hyb_m['recall']:.3f}  F1={hyb_m['f1']:.3f}"
-              f"  (TP={hyb_m['tp']} FP={hyb_m['fp']} FN={hyb_m['fn']})")
+        print(
+            f"  HYB   → P={hyb_m['precision']:.3f}  R={hyb_m['recall']:.3f}  F1={hyb_m['f1']:.3f}"
+            f"  (TP={hyb_m['tp']} FP={hyb_m['fp']} FN={hyb_m['fn']})"
+        )
 
         # Guardar para análisis estadístico
-        f1_sast.append(sast_m["f1"]);  prec_sast.append(sast_m["precision"]);  rec_sast.append(sast_m["recall"])
-        f1_dast.append(dast_m["f1"]);  prec_dast.append(dast_m["precision"]);  rec_dast.append(dast_m["recall"])
-        f1_hybrid.append(hyb_m["f1"]); prec_hybrid.append(hyb_m["precision"]); rec_hybrid.append(hyb_m["recall"])
+        f1_sast.append(sast_m["f1"])
+        prec_sast.append(sast_m["precision"])
+        rec_sast.append(sast_m["recall"])
+        f1_dast.append(dast_m["f1"])
+        prec_dast.append(dast_m["precision"])
+        rec_dast.append(dast_m["recall"])
+        f1_hybrid.append(hyb_m["f1"])
+        prec_hybrid.append(hyb_m["precision"])
+        rec_hybrid.append(hyb_m["recall"])
 
         # TP detectados por SAST que DAST también confirmó (correlaciones potenciales)
         sast_tp_types = {normalize_type(f["type"]) for f in sast_tp}
@@ -595,35 +635,50 @@ def run_evaluation() -> dict:
         return f"  {label:<{label_w}} media={m:.3f}  σ={s:.3f}  IC95%=[{lo:.3f},{hi:.3f}]  vals={[round(v,3) for v in vals]}"
 
     print("\n  F1-Score por método:")
-    print(row("SAST",   f1_sast))
-    print(row("DAST",   f1_dast))
+    print(row("SAST", f1_sast))
+    print(row("DAST", f1_dast))
     print(row("Hybrid", f1_hybrid))
 
     print("\n  Precision por método:")
-    print(row("SAST",   prec_sast))
-    print(row("DAST",   prec_dast))
+    print(row("SAST", prec_sast))
+    print(row("DAST", prec_dast))
     print(row("Hybrid", prec_hybrid))
 
     print("\n  Recall por método:")
-    print(row("SAST",   rec_sast))
-    print(row("DAST",   rec_dast))
+    print(row("SAST", rec_sast))
+    print(row("DAST", rec_dast))
     print(row("Hybrid", rec_hybrid))
 
     # ── Prueba t emparejada: Hybrid vs SAST ─────────────────────────────────
-    t_hyb_sast, p_hyb_sast = paired_t_test(f1_sast, f1_hybrid)
+    t_hyb_sast, p_hyb_sast, p2_hyb_sast = paired_t_test(f1_sast, f1_hybrid)
     d_hyb_sast = cohens_d(f1_hybrid, f1_sast)
 
-    t_hyb_dast, p_hyb_dast = paired_t_test(f1_dast, f1_hybrid)
+    t_hyb_dast, p_hyb_dast, p2_hyb_dast = paired_t_test(f1_dast, f1_hybrid)
     d_hyb_dast = cohens_d(f1_hybrid, f1_dast)
 
-    d_interpretation = lambda d: "pequeño" if abs(d) < 0.5 else ("mediano" if abs(d) < 0.8 else "grande")
+    t_rec_sast, p_rec_sast, p2_rec_sast = paired_t_test(rec_sast, rec_hybrid)
 
-    print("\n  Prueba t emparejada (one-tailed: Hybrid > método individual):")
-    print(f"  Hybrid vs SAST  → t={t_hyb_sast:+.3f}  p≈{p_hyb_sast:.2f}  Cohen's d={d_hyb_sast:+.3f} ({d_interpretation(d_hyb_sast)})")
-    print(f"  Hybrid vs DAST  → t={t_hyb_dast:+.3f}  p≈{p_hyb_dast:.2f}  Cohen's d={d_hyb_dast:+.3f} ({d_interpretation(d_hyb_dast)})")
+    def d_interpretation(d):
+        return "pequeño" if abs(d) < 0.5 else ("mediano" if abs(d) < 0.8 else "grande")
 
-    sig_sast = "SÍ (p < 0.05)" if p_hyb_sast <= 0.05 else "NO (p > 0.05)"
-    sig_dast = "SÍ (p < 0.05)" if p_hyb_dast <= 0.05 else "NO (p > 0.05)"
+    df = len(f1_sast) - 1
+    print(
+        f"\n  Prueba t emparejada (gl={df}; H₁ unilateral: Hybrid > método individual):"
+    )
+    print(
+        f"  F1     Hybrid vs SAST  → t={t_hyb_sast:+.3f}  p(unilat)={p_hyb_sast:.4f}  p(bilat)={p2_hyb_sast:.4f}"
+        f"  Cohen's d={d_hyb_sast:+.3f} ({d_interpretation(d_hyb_sast)})"
+    )
+    print(
+        f"  F1     Hybrid vs DAST  → t={t_hyb_dast:+.3f}  p(unilat)={p_hyb_dast:.4f}  p(bilat)={p2_hyb_dast:.4f}"
+        f"  Cohen's d={d_hyb_dast:+.3f} ({d_interpretation(d_hyb_dast)})"
+    )
+    print(
+        f"  Recall Hybrid vs SAST  → t={t_rec_sast:+.3f}  p(unilat)={p_rec_sast:.4f}  p(bilat)={p2_rec_sast:.4f}"
+    )
+
+    sig_sast = "SÍ (p < 0.05)" if p_hyb_sast < 0.05 else "NO (p ≥ 0.05)"
+    sig_dast = "SÍ (p < 0.05)" if p_hyb_dast < 0.05 else "NO (p ≥ 0.05)"
     print(f"\n  H₁ (Hybrid > SAST) estadísticamente significativa: {sig_sast}")
     print(f"  H₁ (Hybrid > DAST) estadísticamente significativa: {sig_dast}")
 
@@ -631,16 +686,20 @@ def run_evaluation() -> dict:
     print("\n" + "=" * 70)
     print("  TABLA RESUMEN — Lista para Capítulo 5")
     print("=" * 70)
-    print(f"\n  {'Método':<12}  {'Precision':>10}  {'Recall':>8}  {'F1-Score':>9}  {'IC95% F1':>18}")
+    print(
+        f"\n  {'Método':<12}  {'Precision':>10}  {'Recall':>8}  {'F1-Score':>9}  {'IC95% F1':>18}"
+    )
     print(f"  {'─'*12}  {'─'*10}  {'─'*8}  {'─'*9}  {'─'*18}")
 
     for label, precs, recs, f1s in [
-        ("SAST",   prec_sast,   rec_sast,   f1_sast),
-        ("DAST",   prec_dast,   rec_dast,   f1_dast),
+        ("SAST", prec_sast, rec_sast, f1_sast),
+        ("DAST", prec_dast, rec_dast, f1_dast),
         ("Hybrid", prec_hybrid, rec_hybrid, f1_hybrid),
     ]:
         lo, hi = confidence_interval_95(f1s)
-        print(f"  {label:<12}  {mean(precs):>10.3f}  {mean(recs):>8.3f}  {mean(f1s):>9.3f}  [{lo:.3f}, {hi:.3f}]")
+        print(
+            f"  {label:<12}  {mean(precs):>10.3f}  {mean(recs):>8.3f}  {mean(f1s):>9.3f}  [{lo:.3f}, {hi:.3f}]"
+        )
 
     delta_f1 = mean(f1_hybrid) - mean(f1_sast)
     delta_rec = mean(rec_hybrid) - mean(rec_sast)
@@ -649,14 +708,49 @@ def run_evaluation() -> dict:
 
     stats = {
         "n_apps": len(f1_sast),
-        "sast":   {"mean_f1": mean(f1_sast),   "mean_precision": mean(prec_sast),   "mean_recall": mean(rec_sast),   "f1_values": f1_sast},
-        "dast":   {"mean_f1": mean(f1_dast),   "mean_precision": mean(prec_dast),   "mean_recall": mean(rec_dast),   "f1_values": f1_dast},
-        "hybrid": {"mean_f1": mean(f1_hybrid), "mean_precision": mean(prec_hybrid), "mean_recall": mean(rec_hybrid), "f1_values": f1_hybrid},
-        "statistical_tests": {
-            "hybrid_vs_sast": {"t": t_hyb_sast, "p": p_hyb_sast, "cohens_d": d_hyb_sast, "significant": p_hyb_sast <= 0.05},
-            "hybrid_vs_dast": {"t": t_hyb_dast, "p": p_hyb_dast, "cohens_d": d_hyb_dast, "significant": p_hyb_dast <= 0.05},
+        "sast": {
+            "mean_f1": mean(f1_sast),
+            "mean_precision": mean(prec_sast),
+            "mean_recall": mean(rec_sast),
+            "f1_values": f1_sast,
         },
-        "delta_f1_hybrid_vs_sast":    round(delta_f1, 4),
+        "dast": {
+            "mean_f1": mean(f1_dast),
+            "mean_precision": mean(prec_dast),
+            "mean_recall": mean(rec_dast),
+            "f1_values": f1_dast,
+        },
+        "hybrid": {
+            "mean_f1": mean(f1_hybrid),
+            "mean_precision": mean(prec_hybrid),
+            "mean_recall": mean(rec_hybrid),
+            "f1_values": f1_hybrid,
+        },
+        "statistical_tests": {
+            "test": "paired t-test (scipy.stats.ttest_rel), H1: hybrid > baseline",
+            "df": df,
+            "hybrid_vs_sast": {
+                "t": t_hyb_sast,
+                "p_one_tailed": p_hyb_sast,
+                "p_two_tailed": p2_hyb_sast,
+                "cohens_d": d_hyb_sast,
+                "significant": p_hyb_sast < 0.05,
+            },
+            "hybrid_vs_dast": {
+                "t": t_hyb_dast,
+                "p_one_tailed": p_hyb_dast,
+                "p_two_tailed": p2_hyb_dast,
+                "cohens_d": d_hyb_dast,
+                "significant": p_hyb_dast < 0.05,
+            },
+            "recall_hybrid_vs_sast": {
+                "t": t_rec_sast,
+                "p_one_tailed": p_rec_sast,
+                "p_two_tailed": p2_rec_sast,
+                "significant": p_rec_sast < 0.05,
+            },
+        },
+        "delta_f1_hybrid_vs_sast": round(delta_f1, 4),
         "delta_recall_hybrid_vs_sast": round(delta_rec, 4),
         "per_app": results,
     }
@@ -664,6 +758,7 @@ def run_evaluation() -> dict:
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────
+
 
 def main():
     parser = argparse.ArgumentParser(description="HybridSecScan scale evaluation")
@@ -673,8 +768,12 @@ def main():
     stats = run_evaluation()
 
     if args.save:
-        from datetime import datetime, timezone
-        out = OUTPUT_DIR / f"scale_evaluation_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        from datetime import datetime
+
+        out = (
+            OUTPUT_DIR
+            / f"scale_evaluation_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        )
         out.write_text(json.dumps(stats, indent=2))
         print(f"\n  Resultados guardados: {out}")
 
