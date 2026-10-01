@@ -5,7 +5,7 @@
   "target_url": "http://127.0.0.1:5000",
   "vulnerabilities": [
     {
-      "id": "89c6ca31-e860-45d2-925a-968dd5cae02c",
+      "id": "db290fa8-8c6e-4a3f-bb1d-b3258fb3c0d7",
       "type": "Missing Security Header",
       "alert": "Header ausente: Content-Security-Policy",
       "severity": "HIGH",
@@ -32,7 +32,7 @@
       }
     },
     {
-      "id": "32735e07-2032-4665-9e5c-6d96d1ded746",
+      "id": "adc66d83-425b-4ccf-b4b8-af7d3624fe1c",
       "type": "Missing Security Header",
       "alert": "Header ausente: X-Frame-Options",
       "severity": "MEDIUM",
@@ -59,7 +59,7 @@
       }
     },
     {
-      "id": "1490c928-c550-42ef-8738-6c33bb7f4dca",
+      "id": "1812234a-47bd-4482-a705-14c75e38821b",
       "type": "Missing Security Header",
       "alert": "Header ausente: X-Content-Type-Options",
       "severity": "LOW",
@@ -86,7 +86,7 @@
       }
     },
     {
-      "id": "94c80263-d50a-4e27-b4a9-747e8cc01f4c",
+      "id": "a3a06773-93a6-432b-ab53-9cadddcd401e",
       "type": "Missing Security Header",
       "alert": "Header ausente: Strict-Transport-Security",
       "severity": "HIGH",
@@ -113,7 +113,7 @@
       }
     },
     {
-      "id": "c535327f-154c-4ebb-80d4-4e86aac4bed0",
+      "id": "e3ce81bc-c99d-4eb8-9e0f-bf1292266064",
       "type": "Missing Security Header",
       "alert": "Header ausente: Referrer-Policy",
       "severity": "LOW",
@@ -140,7 +140,7 @@
       }
     },
     {
-      "id": "19819728-e976-45d2-930c-a9a9e182af1b",
+      "id": "bddb6ad5-027d-4726-a569-bc461cc6ad79",
       "type": "Missing Security Header",
       "alert": "Header ausente: Permissions-Policy",
       "severity": "LOW",
@@ -167,7 +167,7 @@
       }
     },
     {
-      "id": "f86f58f3-e422-4d0f-9f6b-761377a935ee",
+      "id": "bb7a92b8-4ba8-4c7f-ad7c-4bd8b274677d",
       "type": "Sensitive Endpoint Exposed",
       "alert": "Endpoint sensible accesible: /openapi.json",
       "severity": "MEDIUM",
@@ -193,7 +193,7 @@
       }
     },
     {
-      "id": "ad578c76-7007-4f6d-aa98-c7304d1127d6",
+      "id": "3b495a91-017c-4ba3-8466-6af7be134231",
       "type": "Missing Rate Limiting",
       "alert": "Sin control de tasa (rate limiting) detectable",
       "severity": "MEDIUM",
@@ -219,7 +219,7 @@
       }
     },
     {
-      "id": "7b12872d-be48-41f2-821e-01b274d34648",
+      "id": "3ea443c5-0cf9-41c1-8b88-84cb7de2be86",
       "type": "Server Information Disclosure",
       "alert": "Header Server expone información del servidor",
       "severity": "LOW",
@@ -245,7 +245,7 @@
       }
     },
     {
-      "id": "e4487483-0fd4-4f35-b6ab-e7c3456e4203",
+      "id": "9a0d07fd-26b6-45dd-a406-e8a56487e841",
       "type": "Insecure Transport",
       "alert": "API accesible sin HTTPS sin redirección",
       "severity": "HIGH",
@@ -269,18 +269,41 @@
         "probe": "Verificación de redirección HTTP → HTTPS (sin seguir redirects)",
         "response": "HTTP 200 | Location: (sin Location header) | Sin redirección a HTTPS — tráfico transmitido en texto plano"
       }
+    },
+    {
+      "id": "eb2c1a17-51b7-4a52-8d5d-fcccf9260f43",
+      "type": "Excessive Data Exposure",
+      "alert": "Respuesta con campos sensibles en /users/v1/_debug",
+      "severity": "MEDIUM",
+      "risk": "Medium",
+      "confidence": "High",
+      "url": "http://127.0.0.1:5000/users/v1/_debug",
+      "parameter": "admin, password",
+      "description": "El endpoint GET /users/v1/_debug devuelve campos sensibles en la respuesta JSON (admin, password). Una API no debería exponer estos datos al cliente; el filtrado de propiedades debe hacerse en el servidor.",
+      "solution": "Devolver solo las propiedades necesarias para cada consumidor. No confiar en que el cliente filtre; aplicar una lista de campos permitidos en el servidor.",
+      "evidence": "Campos sensibles detectados: admin, password. Fragmento: {\n  \"users\": [\n    {\n      \"admin\": false,\n      \"email\": \"mail1@mail.com\",\n      \"password\": \"pass1\",\n      \"username\": \"name1\"\n    },\n    {\n      \"admin\": false,\n      \"email\": \"mail2@mail.com\",\n   ",
+      "cwe": "CWE-213",
+      "cweid": "213",
+      "owasp_category": "API3:2023",
+      "source": "OpenAPI Probe – Excessive Data Exposure",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://127.0.0.1:5000/users/v1/_debug",
+        "probe": "Lectura de respuesta JSON"
+      }
     }
   ],
   "summary": {
-    "total_issues": 10,
-    "alerts_found": 10,
+    "total_issues": 11,
+    "alerts_found": 11,
     "passive_checks": 10,
     "active_probes": 0,
     "idor_checks": 0,
     "auth_checks": 0,
+    "openapi_checks": 1,
     "critical": 0,
     "high": 3,
-    "medium": 3,
+    "medium": 4,
     "low": 4
   }
 }

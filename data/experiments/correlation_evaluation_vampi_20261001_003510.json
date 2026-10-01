@@ -42,7 +42,7 @@
     }
   },
   "sast_file": "sast_bandit_vampi_20260930_230153.json",
-  "dast_file": "dast_active_vampi_20260930_230338.json",
+  "dast_file": "dast_active_vampi_20261001_003241.json",
   "threshold": 0.7,
   "methods": {
     "sast": {
@@ -58,28 +58,30 @@
       "f1": 0.25
     },
     "dast": {
-      "findings": 10,
-      "correct_findings": 1,
+      "findings": 11,
+      "correct_findings": 2,
       "incorrect_findings": 9,
       "vulnerabilities_found": [
+        "VAMPI_005",
         "VAMPI_008"
       ],
-      "precision": 0.1,
-      "recall": 0.1111,
-      "f1": 0.1053
+      "precision": 0.1818,
+      "recall": 0.2222,
+      "f1": 0.2
     },
     "union": {
-      "findings": 17,
-      "correct_findings": 3,
+      "findings": 18,
+      "correct_findings": 4,
       "incorrect_findings": 14,
       "vulnerabilities_found": [
         "VAMPI_001",
+        "VAMPI_005",
         "VAMPI_008",
         "VAMPI_009"
       ],
-      "precision": 0.1765,
-      "recall": 0.3333,
-      "f1": 0.2308
+      "precision": 0.2222,
+      "recall": 0.4444,
+      "f1": 0.2963
     },
     "correlation": {
       "findings": 0,
@@ -121,8 +123,8 @@
     "API3:2023": {
       "total": 2,
       "sast": 0,
-      "dast": 0,
-      "union": 0,
+      "dast": 1,
+      "union": 1,
       "correlation": 0,
       "ids": [
         "VAMPI_004",

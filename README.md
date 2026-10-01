@@ -131,6 +131,7 @@ no está desglosada por categoría).
 |---|---|---|
 | API1: Broken Object Level Authorization | Acceso sin autenticación a objetos, enumeración de IDs (IDOR), acceso cruzado entre usuarios | Activo |
 | API2: Broken Authentication | JWT con `alg: none`, secreto JWT débil, credenciales por defecto, tokens predecibles | Activo |
+| API3: Broken Object Property Level Authorization | Exposición excesiva de datos: recorre los endpoints GET de la especificación OpenAPI y marca respuestas con campos sensibles | Guiado por OpenAPI |
 | API4: Unrestricted Resource Consumption | Ausencia de rate limiting, límite declarado pero no aplicado | Pasivo |
 | API5: Broken Function Level Authorization | Métodos HTTP peligrosos habilitados | Pasivo |
 | API8: Security Misconfiguration | Cabeceras de seguridad, CORS, divulgación de errores, información del servidor, transporte sin TLS (pasivo); modo debug (activo) | Pasivo y activo |
@@ -139,10 +140,15 @@ no está desglosada por categoría).
 - **Pasivo:** lo ejecuta el endpoint `POST /scan/dast` de la aplicación (`run_dast_scan`).
 - **Activo:** solo lo ejecutan los scripts de experimentos (`run_active_probe_scan`), pensados para entornos
   controlados; envía cargas de ataque, así que no se expone en la aplicación.
+- **Guiado por OpenAPI:** `run_active_probe_scan(target, openapi_spec=...)` lee la especificación OpenAPI de la
+  API, recorre sus endpoints reales y añade comprobaciones de observación (`backend/openapi_probe.py`).
 
-No hay comprobaciones específicas para API3, API6, API7 ni API10. Las sondas activas de inyección SQL y *path
-traversal* detectan vulnerabilidades que la edición 2023 no trata como categoría propia. El SAST (Bandit y
-Semgrep) aplica las reglas de cada herramienta, que no están organizadas por categorías del OWASP API Top 10.
+No hay comprobaciones específicas para API6, API7 ni API10. La detección de API6 (flujos de negocio) y API7
+(SSRF) requiere lógica específica del negocio o sondas activas delicadas, más propias de una herramienta madura
+como OWASP ZAP; API10 (consumo de APIs de terceros) es un riesgo de código/dependencias, no observable por HTTP.
+Las sondas activas de inyección SQL y *path traversal* detectan vulnerabilidades que la edición 2023 no trata
+como categoría propia. El SAST (Bandit y Semgrep) aplica las reglas de cada herramienta, que no están
+organizadas por categorías del OWASP API Top 10.
 
 ## Estructura del Proyecto
 

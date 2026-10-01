@@ -44,13 +44,13 @@ Aporte = peso × valor. Similitud semántica calculada con embeddings.
 
 ## VAmPI (API REST vulnerable)
 
-Ground truth: 9 vulnerabilidades (`vampi_ground_truth.json`). Hallazgos: `sast_bandit_vampi_20260930_230153.json`, `dast_active_vampi_20260930_230338.json`. Umbral de correlación: 0.7.
+Ground truth: 9 vulnerabilidades (`vampi_ground_truth.json`). Hallazgos: `sast_bandit_vampi_20260930_230153.json`, `dast_active_vampi_20261001_003241.json`. Umbral de correlación: 0.7.
 
 | Método | Hallazgos | Correctos | Incorrectos | Vulnerabilidades encontradas | Precisión | Recall | F1 |
 |---|---|---|---|---|---|---|---|
 | SAST (Bandit) | 7 | 2 | 5 | 2 de 9 | 0.286 | 0.222 | 0.250 |
-| DAST (escáner activo) | 10 | 1 | 9 | 1 de 9 | 0.100 | 0.111 | 0.105 |
-| Unión SAST+DAST | 17 | 3 | 14 | 3 de 9 | 0.176 | 0.333 | 0.231 |
+| DAST (escáner activo) | 11 | 2 | 9 | 2 de 9 | 0.182 | 0.222 | 0.200 |
+| Unión SAST+DAST | 18 | 4 | 14 | 4 de 9 | 0.222 | 0.444 | 0.296 |
 | Correlación (pares confirmados) | 0 | 0 | 0 | 0 de 9 | 0.000 | 0.000 | 0.000 |
 
 ### Detección por categoría OWASP API Top 10 (2023)
@@ -59,7 +59,7 @@ Ground truth: 9 vulnerabilidades (`vampi_ground_truth.json`). Hallazgos: `sast_b
 |---|---|---|---|---|---|
 | API1:2023 | 2 (VAMPI_002, VAMPI_003) | 0 | 0 | 0 | 0 |
 | API2:2023 | 2 (VAMPI_006, VAMPI_009) | 1 | 0 | 1 | 0 |
-| API3:2023 | 2 (VAMPI_004, VAMPI_005) | 0 | 0 | 0 | 0 |
+| API3:2023 | 2 (VAMPI_004, VAMPI_005) | 0 | 1 | 1 | 0 |
 | API4:2023 | 2 (VAMPI_007, VAMPI_008) | 0 | 1 | 1 | 0 |
 | API8:2023 | 1 (VAMPI_001) | 1 | 0 | 1 | 0 |
 

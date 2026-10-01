@@ -60,7 +60,8 @@ chmod +x run_hybridscan.sh && ./run_hybridscan.sh
 - **`ssrf_validator.py`** — `validate_dast_target(url)`: resolves the hostname via DNS and rejects any URL that maps to RFC1918, loopback, link-local, or other reserved ranges.
 - **`correlation_engine.py`** — Core ML component. `VulnerabilityCorrelator` takes SAST and DAST `Vulnerability` objects, correlates them using weighted rules and a Random Forest model, and generates a correlation report with false-positive reduction metrics.
 - **`auth.py`** — JWT token creation/validation, password hashing with bcrypt, `get_current_active_user` dependency. Loads `.env` via `python-dotenv`; prints a warning to stderr if `SECRET_KEY` is missing or using the placeholder.
-- **`dast_scanner.py`** — Real HTTP probing engine. Public API: `run_dast_scan(target_url: str) -> Dict`. Falls back from ZAP daemon → `HTTPSecurityScanner` automatically.
+- **`dast_scanner.py`** — Real HTTP probing engine. Public API: `run_dast_scan(target_url: str) -> Dict`. Falls back from ZAP daemon → `HTTPSecurityScanner` automatically. `run_active_probe_scan(target, openapi_spec=...)` adds active probes and, when an OpenAPI spec is given, OpenAPI-guided checks.
+- **`openapi_probe.py`** — OpenAPI-guided DAST coverage. `scan_openapi(target_url, spec_source)` loads an OpenAPI spec (URL or local file, JSON/YAML), enumerates real endpoints, and runs read-only observational checks — currently excessive data exposure (API3:2023): GET endpoints whose JSON responses include sensitive fields. Reuses `ScanFinding`.
 - **`pdf_generator.py`** — Generates PDF and JSON summary reports from scan data.
 - **`ml_model_manager.py`** / **`train_ml_model.py`** — ML model persistence and training utilities.
 - **`cache_manager.py`** — Caching layer for scan results.

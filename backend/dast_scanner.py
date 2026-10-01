@@ -14,7 +14,7 @@ import logging
 import time
 import uuid
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
 import requests
@@ -1588,12 +1588,16 @@ class ZAPDaemonScanner:
 # ──────────────────────────────────────────────────────────────────────────────
 
 
-def run_active_probe_scan(target_url: str) -> Dict[str, Any]:
+def run_active_probe_scan(target_url: str, openapi_spec: Optional[str] = None) -> Dict[str, Any]:
     """
     Escaneo DAST con probing activo de inyecciones.
 
     Combina los checks pasivos del HTTPSecurityScanner con probing activo
     (SQL injection, path traversal, debug mode, insecure random).
+
+    Si se pasa `openapi_spec` (URL o ruta local a una especificación OpenAPI), añade
+    comprobaciones de observación guiadas por la especificación: recorre los endpoints
+    reales de la API y marca exposición excesiva de datos (API3:2023).
 
     USO EXCLUSIVO en entornos controlados: labs, apps vulnerables de prueba,
     pentesting autorizado.  NO usar contra sistemas en producción.
@@ -1604,7 +1608,19 @@ def run_active_probe_scan(target_url: str) -> Dict[str, Any]:
     active_findings = scanner.probe_injection_vulnerabilities(target_url)
     idor_findings = scanner.probe_idor_bola(target_url)
     auth_findings = scanner.probe_broken_authentication(target_url)
-    all_findings = passive_findings + active_findings + idor_findings + auth_findings
+
+    openapi_findings: List[ScanFinding] = []
+    if openapi_spec:
+        try:
+            try:
+                from backend.openapi_probe import scan_openapi
+            except ImportError:
+                from openapi_probe import scan_openapi  # type: ignore[no-redef]
+            openapi_findings = scan_openapi(target_url, openapi_spec, session=scanner.session, timeout=scanner.timeout)
+        except Exception as exc:
+            logger.warning(f"[DAST] comprobación OpenAPI falló: {exc}")
+
+    all_findings = passive_findings + active_findings + idor_findings + auth_findings + openapi_findings
 
     vuln_dicts = [f.to_dict() for f in all_findings]
     counts: Dict[str, int] = {"critical": 0, "high": 0, "medium": 0, "low": 0}
@@ -1626,6 +1642,7 @@ def run_active_probe_scan(target_url: str) -> Dict[str, Any]:
             "active_probes": len(active_findings),
             "idor_checks": len(idor_findings),
             "auth_checks": len(auth_findings),
+            "openapi_checks": len(openapi_findings),
             **counts,
         },
     }
