@@ -225,10 +225,14 @@ La validación se realizó en dos niveles:
 
 | Conjunto | Accuracy | Precision | Recall | F1 | ROC-AUC |
 |---|---|---|---|---|---|
-| Validación | 80.8% | 69.4% | 94.3% | 0.800 | 0.851 |
-| Test | 76.9% | 66.3% | 96.5% | 0.786 | 0.785 |
+| Validación | 91.5% | 86.2% | 94.3% | 0.901 | 0.954 |
+| Test | 90.8% | 85.7% | 94.7% | 0.900 | 0.955 |
 
-El modelo resulta con recall alto y precisión menor. Es un resultado observado, no un ajuste: se usa el umbral de decisión por defecto (0.5) con `class_weight='balanced'`.
+Matriz de confusión (test, n = 130): TN = 64, FP = 9, FN = 3, TP = 54. La feature más
+importante (Gini ≈ 0.22) es `module_match` (¿el archivo SAST y el endpoint DAST son del
+mismo componente?); es la que separa los positivos limpios de los negativos difíciles del
+dataset. **Estas métricas son sobre el dataset sintético y no se trasladan a herramientas
+reales**: por el *domain shift*, el correlador confirma 0 pares en VAmPI y en Juice Shop.
 
 **Evaluación a escala en 4 aplicaciones** (fuente: `data/experiments/scale_evaluation_20260929_203402.json`).
 En esta evaluación, "Híbrido" es la **unión** de los hallazgos SAST y DAST comparada contra el ground truth; **no aplica el motor de correlación**, así que mide la cobertura combinada de ambas técnicas, no el correlador:
@@ -245,8 +249,8 @@ En esta evaluación, "Híbrido" es la **unión** de los hallazgos SAST y DAST co
 
 **Experimentos de correlación** (sí aplican el motor de correlación):
 
-- App vulnerable (Flask, SAST con Bandit): 1 correlación confirmada, SQL injection en `/login`, confianza 0.884 (`data/experiments/results/hybrid_vulnerable_20260930_095950.json`).
-  Contra su ground truth de 9 vulnerabilidades (`data/experiments/correlation_evaluation_vulnerable_app_20260930_230706.json`, caso de estudio):
+- App vulnerable (Flask, SAST con Bandit): 1 correlación confirmada, SQL injection en `/login`, confianza 0.867.
+  Contra su ground truth de 9 vulnerabilidades (`data/experiments/correlation_evaluation_vulnerable_app_*.json`, caso de estudio):
 
   | Método | Precisión | Recall |
   |---|---|---|
@@ -255,10 +259,10 @@ En esta evaluación, "Híbrido" es la **unión** de los hallazgos SAST y DAST co
   | Unión SAST+DAST | 0.500 | 1.000 (9 de 9) |
   | Correlación (pares confirmados) | 1.000 (1 de 1) | 0.111 (1 de 9) |
 
-  La correlación confirmada es correcta, pero solo confirma 1 de las 2 vulnerabilidades que ambas técnicas detectaron. La otra, el modo debug (falla global de la aplicación), queda en 0.523 porque el correlador compara endpoints y esa falla no pertenece a ninguno. El desglose de ambas confianzas (valor, peso y aporte de cada factor) está en `data/experiments/figures/tabla_evaluacion_correlacion.md`.
+  La correlación confirmada es correcta, pero solo confirma 1 de las 2 vulnerabilidades que ambas técnicas detectaron. La otra, el modo debug (falla global de la aplicación), queda en 0.507 porque el correlador compara endpoints y esa falla no pertenece a ninguno. El desglose de ambas confianzas (valor, peso y aporte de cada factor) está en `data/experiments/figures/tabla_evaluacion_correlacion.md`.
 
   Pesos de la confianza (`CONFIDENCE_WEIGHTS` en `backend/correlation_engine.py`, decisión de diseño): endpoint 0.40, tipo 0.35, similitud semántica 0.10, Random Forest 0.10, severidad 0.05.
-- **VAmPI** (API REST vulnerable, Flask/OpenAPI; SAST con Bandit, DAST activo): ground truth de 9 vulnerabilidades tomadas de su documentación oficial, 8 de ellas de categorías propias de APIs (`data/experiments/correlation_evaluation_vampi_20260930_230706.json`):
+- **VAmPI** (API REST vulnerable, Flask/OpenAPI; SAST con Bandit, DAST activo): ground truth de 9 vulnerabilidades tomadas de su documentación oficial, 8 de ellas de categorías propias de APIs (`data/experiments/correlation_evaluation_vampi_*.json`):
 
   | Método | Precisión | Recall |
   |---|---|---|

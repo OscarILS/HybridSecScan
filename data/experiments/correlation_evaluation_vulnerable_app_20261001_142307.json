@@ -116,7 +116,7 @@
   ],
   "correlations": [
     {
-      "confidence": 0.8844,
+      "confidence": 0.8674,
       "sast": "B608 vulnerable_app.py:25",
       "dast": "SQL Injection @ /login",
       "ground_truth": [
@@ -129,7 +129,7 @@
       "vulnerability": "VA_002",
       "sast": "B608 vulnerable_app.py:25 → /login",
       "dast": "SQL Injection @ /login",
-      "confidence": 0.8844,
+      "confidence": 0.8674,
       "confirmed": true,
       "factors": {
         "endpoint": {
@@ -150,8 +150,8 @@
         },
         "ml": {
           "weight": 0.1,
-          "value": 0.6431,
-          "contribution": 0.0643,
+          "value": 0.4725,
+          "contribution": 0.0473,
           "source": "random_forest"
         },
         "severity": {
@@ -165,7 +165,7 @@
       "vulnerability": "VA_009",
       "sast": "B201 vulnerable_app.py:81 → /token",
       "dast": "Error Disclosure - Debug Mode @ /deserialize",
-      "confidence": 0.5228,
+      "confidence": 0.5067,
       "confirmed": false,
       "factors": {
         "endpoint": {
@@ -186,8 +186,8 @@
         },
         "ml": {
           "weight": 0.1,
-          "value": 0.4135,
-          "contribution": 0.0414,
+          "value": 0.2522,
+          "contribution": 0.0252,
           "source": "random_forest"
         },
         "severity": {

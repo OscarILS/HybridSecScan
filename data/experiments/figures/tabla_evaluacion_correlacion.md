@@ -24,7 +24,7 @@ Vulnerabilidades detectadas por ambas técnicas (las únicas que el correlador p
 
 | Confianza | SAST | DAST | Vulnerabilidad del ground truth |
 |---|---|---|---|
-| 0.884 | B608 vulnerable_app.py:25 | SQL Injection @ /login | VA_002 |
+| 0.867 | B608 vulnerable_app.py:25 | SQL Injection @ /login | VA_002 |
 
 ### Desglose de la confianza (vulnerabilidades detectadas por ambas técnicas)
 
@@ -36,9 +36,9 @@ Vulnerabilidades detectadas por ambas técnicas (las únicas que el correlador p
 | Similitud de endpoint | 0.40 | 1.000 → 0.400 | 0.091 → 0.036 |
 | Tipo de vulnerabilidad | 0.35 | 1.000 → 0.350 | 1.000 → 0.350 |
 | Similitud semántica | 0.10 | 0.368 → 0.037 | 0.451 → 0.045 |
-| Probabilidad del Random Forest | 0.10 | 0.643 → 0.064 | 0.413 → 0.041 |
+| Probabilidad del Random Forest | 0.10 | 0.472 → 0.047 | 0.252 → 0.025 |
 | Similitud de severidad | 0.05 | 0.667 → 0.033 | 1.000 → 0.050 |
-| **Confianza total** | 1.00 | **0.884** | **0.523** |
+| **Confianza total** | 1.00 | **0.867** | **0.507** |
 
 Aporte = peso × valor. Similitud semántica calculada con embeddings.
 

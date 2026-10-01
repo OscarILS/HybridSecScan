@@ -8,8 +8,10 @@ Diseño del dataset (académicamente defensible):
   - Pares NEGATIVOS: misma vulnerabilidad en módulos distintos sin relación,
     tipos distintos, o hallazgos de herramientas sin contrapartida real.
 
-Esto fuerza al modelo a usar TODAS las features (TF-IDF, CWE, endpoint, tool),
-no solo type_match, produciendo métricas realistas (~0.82–0.91 F1).
+Esto fuerza al modelo a usar varias features (TF-IDF, CWE, coincidencia de módulo),
+no solo type_match. Las categorías A (positivos limpios) y D (negativos difíciles)
+solo se distinguen por el módulo, así que el modelo necesita la feature module_match
+(archivo SAST vs endpoint DAST) para separarlas.
 
 Uso:
     python scripts/generate_training_dataset.py
@@ -249,8 +251,10 @@ SAST_TOOLS = ["bandit", "semgrep"]
 DAST_TOOLS = ["owasp-zap", "http-scanner"]
 
 
-def _render(t: str, **kw) -> str:
-    mod = random.choice(MODULES)
+def _render(t: str, module: str | None = None, **kw) -> str:
+    # El módulo de la descripción debe ser el del par (no uno al azar), para que el
+    # texto sea coherente con sast_file / dast_endpoint.
+    mod = module or random.choice(MODULES)
     return (
         t.replace("{line}", str(random.randint(10, 500)))
         .replace("{func}", random.choice(FUNCS))
@@ -269,7 +273,7 @@ def _sast(vtype: str, idx: int, module: str | None = None) -> dict:
         "sast_severity": random.choice(SEVERITY_MAP.get(vtype, ["MEDIUM"])),
         "sast_file": f"api/controllers/{mod}.py",
         "sast_line": random.randint(10, 500),
-        "sast_description": _render(tmpl),
+        "sast_description": _render(tmpl, module=mod),
         "sast_cwe": CWE_MAP.get(vtype, "CWE-Other"),
         "sast_tool": random.choice(SAST_TOOLS),
     }
@@ -283,7 +287,7 @@ def _dast(vtype: str, idx: int, module: str | None = None) -> dict:
         "dast_type": vtype,
         "dast_severity": random.choice(SEVERITY_MAP.get(vtype, ["MEDIUM"])),
         "dast_endpoint": f"/api/v1/{mod}",
-        "dast_description": _render(tmpl),
+        "dast_description": _render(tmpl, module=mod),
         "dast_cwe": CWE_MAP.get(vtype, "CWE-Other"),
         "dast_tool": random.choice(DAST_TOOLS),
     }

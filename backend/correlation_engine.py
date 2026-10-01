@@ -11,6 +11,11 @@ from typing import Dict, List, Tuple
 
 import numpy as np
 
+try:
+    from backend.feature_utils import module_match
+except ImportError:
+    from feature_utils import module_match  # type: ignore[no-redef]
+
 logger = logging.getLogger(__name__)
 
 # ── Semantic similarity (sentence-transformers) ───────────────────────────────
@@ -316,9 +321,9 @@ class VulnerabilityCorrelator:
         severity_match = 1 if sast_vuln.severity == dast_vuln.severity else 0
         numeric_features.append(severity_match)
 
-        # Misma definición que en el entrenamiento: sast_tool == 'bandit' y dast_tool == 'zap'
-        same_tool_vendor = int(sast_tool == "bandit" and dast_tool == "zap")
-        numeric_features.append(same_tool_vendor)
+        # Coincidencia de módulo (misma definición que en el entrenamiento):
+        # ¿el archivo SAST y el endpoint DAST apuntan al mismo componente?
+        numeric_features.append(module_match(sast_vuln.file_path, dast_vuln.endpoint))
 
         # Longitud de descripciones
         sast_desc_len = len(sast_vuln.description)

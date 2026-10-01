@@ -71,7 +71,7 @@
 |---|---|
 | Hallazgos combinados (SAST + DAST) | **32 hallazgos** (sin verificar contra ground truth) |
 | Correlaciones ML (threshold 0.70) | 0 |
-| Modelo ML utilizado | Random Forest, F1=0.786, Recall=96.5% (sobre el test sintético) |
+| Modelo ML utilizado | Random Forest, F1=0.900, Recall=94.7% (sobre el test sintético) |
 
 Los hallazgos no son vulnerabilidades verificadas: cuántos son verdaderos positivos solo se sabe comparando
 contra el ground truth, que es lo que hace la evaluación a escala (en su ejecución de Juice Shop, 3 de 37
@@ -116,17 +116,21 @@ Entrenado con `scripts/setup.py` → `backend/train_ml_model.py`:
 
 | Conjunto | Accuracy | Precision | Recall | F1 | ROC-AUC |
 |---|---|---|---|---|---|
-| Validación | 80.8% | 69.4% | 94.3% | 0.800 | 0.851 |
-| **Test** | **76.9%** | **66.3%** | **96.5%** | **0.786** | **0.785** |
+| Validación | 91.5% | 86.2% | 94.3% | 0.901 | 0.954 |
+| **Test** | **90.8%** | **85.7%** | **94.7%** | **0.900** | **0.955** |
 
 Matriz de confusión (Test Set, n=130):
 
 |  | Pred. No | Pred. Sí |
 |---|---|---|
-| **Real No** | TN=45 | FP=28 |
-| **Real Sí** | FN=2  | TP=55 |
+| **Real No** | TN=64 | FP=9 |
+| **Real Sí** | FN=3  | TP=54 |
 
-**Recall alto, precisión menor:** es un resultado observado del modelo, no un ajuste configurado (umbral de decisión por defecto de 0.5, `class_weight='balanced'`).
+La feature más importante del modelo es `module_match` (¿el archivo SAST y el endpoint
+DAST son del mismo componente?): es la que separa los positivos limpios de los negativos
+difíciles. Umbral de decisión por defecto (0.5) y `class_weight='balanced'`. **Estas
+métricas son sobre el test sintético; no se trasladan a herramientas reales** (ver *Domain
+Shift*): el correlador confirma 0 pares en VAmPI y en Juice Shop.
 
 ---
 

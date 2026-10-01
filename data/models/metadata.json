@@ -1,30 +1,30 @@
 {
   "validation": {
-    "accuracy": 0.8076923076923077,
-    "precision": 0.6944444444444444,
+    "accuracy": 0.9153846153846154,
+    "precision": 0.8620689655172413,
     "recall": 0.9433962264150944,
-    "f1_score": 0.8,
-    "roc_auc": 0.8513844645920118
+    "f1_score": 0.9009009009009009,
+    "roc_auc": 0.9544229355550111
   },
   "test": {
-    "accuracy": 0.7692307692307693,
-    "precision": 0.6626506024096386,
-    "recall": 0.9649122807017544,
-    "f1_score": 0.7857142857142857,
-    "roc_auc": 0.7853881278538812
+    "accuracy": 0.9076923076923077,
+    "precision": 0.8571428571428571,
+    "recall": 0.9473684210526315,
+    "f1_score": 0.9,
+    "roc_auc": 0.9552992069214131
   },
   "confusion_matrix": {
-    "TN": 45,
-    "FP": 28,
-    "FN": 2,
-    "TP": 55
+    "TN": 64,
+    "FP": 9,
+    "FN": 3,
+    "TP": 54
   },
   "training_info": {
     "n_train_samples": 1040,
     "n_val_samples": 130,
     "n_test_samples": 130,
     "n_features": 517,
-    "trained_at": "2026-09-30T18:27:37.269807"
+    "trained_at": "2026-10-01T14:20:36.853591"
   },
   "features": {
     "tfidf": 500,
@@ -42,7 +42,7 @@
       "type_match",
       "cwe_match",
       "severity_match",
-      "same_tool_vendor",
+      "module_match",
       "sast_desc_len",
       "dast_desc_len",
       "sast_line",
@@ -51,104 +51,104 @@
     ],
     "top20_importance": [
       {
+        "index": 511,
+        "name": "module_match",
+        "importance": 0.2157
+      },
+      {
         "index": 509,
         "name": "cwe_match",
-        "importance": 0.0783
+        "importance": 0.0512
+      },
+      {
+        "index": 22,
+        "name": "tfidf:api v1",
+        "importance": 0.0284
       },
       {
         "index": 508,
         "name": "type_match",
-        "importance": 0.0488
-      },
-      {
-        "index": 473,
-        "name": "tfidf:v1",
-        "importance": 0.0332
+        "importance": 0.0283
       },
       {
         "index": 505,
         "name": "dast_cwe",
-        "importance": 0.0299
-      },
-      {
-        "index": 24,
-        "name": "tfidf:api v1",
-        "importance": 0.029
-      },
-      {
-        "index": 21,
-        "name": "tfidf:api",
-        "importance": 0.0244
+        "importance": 0.0264
       },
       {
         "index": 501,
         "name": "dast_type",
-        "importance": 0.0239
+        "importance": 0.0246
       },
       {
-        "index": 232,
-        "name": "tfidf:line",
-        "importance": 0.0145
+        "index": 470,
+        "name": "tfidf:v1",
+        "importance": 0.0201
       },
       {
-        "index": 258,
-        "name": "tfidf:origin",
-        "importance": 0.0131
-      },
-      {
-        "index": 504,
-        "name": "sast_cwe",
-        "importance": 0.0126
-      },
-      {
-        "index": 514,
-        "name": "sast_line",
-        "importance": 0.0121
-      },
-      {
-        "index": 464,
-        "name": "tfidf:user",
-        "importance": 0.0112
-      },
-      {
-        "index": 137,
-        "name": "tfidf:error",
-        "importance": 0.0111
+        "index": 19,
+        "name": "tfidf:api",
+        "importance": 0.0172
       },
       {
         "index": 500,
         "name": "sast_type",
-        "importance": 0.0106
+        "importance": 0.0129
       },
       {
-        "index": 317,
-        "name": "tfidf:rate",
-        "importance": 0.0102
+        "index": 225,
+        "name": "tfidf:line",
+        "importance": 0.0119
+      },
+      {
+        "index": 504,
+        "name": "sast_cwe",
+        "importance": 0.0113
+      },
+      {
+        "index": 347,
+        "name": "tfidf:response",
+        "importance": 0.0097
       },
       {
         "index": 512,
         "name": "sast_desc_len",
-        "importance": 0.0097
-      },
-      {
-        "index": 8,
-        "name": "tfidf:500",
-        "importance": 0.0085
+        "importance": 0.0086
       },
       {
         "index": 513,
         "name": "dast_desc_len",
-        "importance": 0.0083
+        "importance": 0.0085
       },
       {
-        "index": 383,
-        "name": "tfidf:security",
-        "importance": 0.0073
+        "index": 194,
+        "name": "tfidf:injection",
+        "importance": 0.0084
       },
       {
-        "index": 16,
-        "name": "tfidf:admin",
-        "importance": 0.0071
+        "index": 293,
+        "name": "tfidf:possible",
+        "importance": 0.0075
+      },
+      {
+        "index": 318,
+        "name": "tfidf:rate",
+        "importance": 0.0069
+      },
+      {
+        "index": 252,
+        "name": "tfidf:origin",
+        "importance": 0.0069
+      },
+      {
+        "index": 134,
+        "name": "tfidf:error",
+        "importance": 0.0068
+      },
+      {
+        "index": 206,
+        "name": "tfidf:internal",
+        "importance": 0.0066
       }
     ]
   }

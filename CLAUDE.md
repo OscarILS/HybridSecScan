@@ -139,11 +139,11 @@ Real metrics from `data/models/metadata.json` (1,300 samples, 517 features):
 
 | Set        | Accuracy | Precision | Recall | F1    | ROC-AUC |
 |------------|----------|-----------|--------|-------|---------|
-| Validation | 80.8%    | 69.4%     | 94.3%  | 0.800 | 0.851   |
-| Test       | 76.9%    | 66.3%     | 96.5%  | 0.786 | 0.785   |
-| Confusion  | TN=45    | FP=28     | FN=2   | TP=55 |         |
+| Validation | 91.5%    | 86.2%     | 94.3%  | 0.901 | 0.954   |
+| Test       | 90.8%    | 85.7%     | 94.7%  | 0.900 | 0.955   |
+| Confusion  | TN=64    | FP=9      | FN=3   | TP=54 |         |
 
-The model ends up with high recall (96.5%) and lower precision (66.3%). This is an observed result, not a configured choice: training uses the default 0.5 decision threshold and `class_weight='balanced'`, with no threshold tuning. **Never hardcode these values** — `correlation_engine.py` always reads them from `metadata.json` at load time.
+The 9 numeric features include `module_match` (SAST file module vs DAST endpoint module), the top feature by Gini importance (~0.22). It is the signal that separates clean positives (category A) from hard negatives (category D); without it the two are indistinguishable and the model produced many false positives. Training uses the default 0.5 decision threshold and `class_weight='balanced'`, with no threshold tuning. **Never hardcode these values** — `correlation_engine.py` always reads them from `metadata.json` at load time. These synthetic-data metrics do not transfer to real tools (domain shift): on VAmPI/Juice Shop the correlator confirms 0 pairs.
 
 ## DAST Scanner
 

@@ -36,6 +36,11 @@ from sklearn.metrics import (
 )
 from sklearn.preprocessing import LabelEncoder
 
+try:
+    from backend.feature_utils import module_match
+except ImportError:
+    from feature_utils import module_match  # type: ignore[no-redef]
+
 warnings.filterwarnings("ignore")
 
 # Configurar estilo visual profesional
@@ -371,7 +376,7 @@ NUMERIC_FEATURES = [
     "type_match",
     "cwe_match",
     "severity_match",
-    "same_tool_vendor",
+    "module_match",
     "sast_desc_len",
     "dast_desc_len",
     "sast_line",
@@ -503,11 +508,15 @@ class CorrelationMLTrainer:
         severity_match = (df["sast_severity"] == df["dast_severity"]).astype(int).values.reshape(-1, 1)
         numeric_features.append(severity_match)
 
-        # Similitud de herramienta (SAST vs DAST)
-        same_tool_vendor = (
-            ((df["sast_tool"] == "bandit") & (df["dast_tool"] == "zap")).astype(int).values.reshape(-1, 1)
+        # Coincidencia de módulo: ¿el archivo SAST y el endpoint DAST apuntan al mismo
+        # componente? Es la señal que separa un positivo limpio de un negativo difícil
+        # (misma vulnerabilidad en módulos distintos).
+        module_match_col = (
+            df.apply(lambda r: module_match(r.get("sast_file", ""), r.get("dast_endpoint", "")), axis=1)
+            .astype(int)
+            .values.reshape(-1, 1)
         )
-        numeric_features.append(same_tool_vendor)
+        numeric_features.append(module_match_col)
 
         # Longitud de descripciones
         sast_desc_len = df["sast_description"].fillna("").str.len().values.reshape(-1, 1)
