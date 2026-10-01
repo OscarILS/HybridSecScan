@@ -240,7 +240,7 @@ En esta evaluación, "Híbrido" es la **unión** de los hallazgos SAST y DAST co
 **Experimentos de correlación** (sí aplican el motor de correlación):
 
 - App vulnerable (Flask, SAST con Bandit): 1 correlación confirmada, SQL injection en `/login`, confianza 0.884 (`data/experiments/results/hybrid_vulnerable_20260930_095950.json`).
-  Contra su ground truth de 9 vulnerabilidades (`data/experiments/correlation_evaluation_20260930_182802.json`, caso de estudio):
+  Contra su ground truth de 9 vulnerabilidades (`data/experiments/correlation_evaluation_vulnerable_app_20260930_230706.json`, caso de estudio):
 
   | Método | Precisión | Recall |
   |---|---|---|
@@ -252,6 +252,16 @@ En esta evaluación, "Híbrido" es la **unión** de los hallazgos SAST y DAST co
   La correlación confirmada es correcta, pero solo confirma 1 de las 2 vulnerabilidades que ambas técnicas detectaron. La otra, el modo debug (falla global de la aplicación), queda en 0.523 porque el correlador compara endpoints y esa falla no pertenece a ninguno. El desglose de ambas confianzas (valor, peso y aporte de cada factor) está en `data/experiments/figures/tabla_evaluacion_correlacion.md`.
 
   Pesos de la confianza (`CONFIDENCE_WEIGHTS` en `backend/correlation_engine.py`, decisión de diseño): endpoint 0.40, tipo 0.35, similitud semántica 0.10, Random Forest 0.10, severidad 0.05.
+- **VAmPI** (API REST vulnerable, Flask/OpenAPI; SAST con Bandit, DAST activo): ground truth de 9 vulnerabilidades tomadas de su documentación oficial, 8 de ellas de categorías propias de APIs (`data/experiments/correlation_evaluation_vampi_20260930_230706.json`):
+
+  | Método | Precisión | Recall |
+  |---|---|---|
+  | SAST (Bandit) | 0.286 | 0.222 (2 de 9) |
+  | DAST (escáner activo) | 0.100 | 0.111 (1 de 9) |
+  | Unión SAST+DAST | 0.176 | 0.333 (3 de 9) |
+  | Correlación (pares confirmados) | — (0 pares) | 0.000 |
+
+  Detectadas: inyección SQL y clave JWT débil (SAST) y falta de rate limiting (DAST). No se detectó ninguna vulnerabilidad de API1 (BOLA) ni de API3 (mass assignment, exposición excesiva de datos): los probes activos están pensados para formularios y rutas fijas, no para endpoints JSON con parámetros en la ruta. Ninguna vulnerabilidad fue detectada por ambas técnicas, así que el correlador no tuvo nada que confirmar. Semgrep no pudo ejecutarse en este equipo (bloqueado por una política de control de aplicaciones de Windows).
 - OWASP Juice Shop (SAST con Semgrep): 0 correlaciones. Es una ejecución distinta de la evaluación a escala (9 hallazgos SAST y 23 DAST; ver `data/experiments/EXPERIMENTAL_RESULTS_SUMMARY.md`). El modelo no correlaciona por *domain shift*: el vocabulario TF-IDF aprendido de descripciones sintéticas no coincide con el de Semgrep y el escáner HTTP. Reentrenar con salidas reales de las herramientas queda como trabajo futuro.
 
 ## Limitaciones y Trabajo Futuro
@@ -263,7 +273,7 @@ En esta evaluación, "Híbrido" es la **unión** de los hallazgos SAST y DAST co
 3. **La evaluación a escala no mide el correlador**: compara la unión de hallazgos SAST+DAST; el motor de correlación solo se evaluó en un caso de estudio (una aplicación).
 4. **Fallas globales**: el correlador compara endpoints, por lo que no confirma vulnerabilidades que afectan a toda la aplicación (p. ej. el modo debug).
 5. **Pesos por diseño**: los pesos de la fórmula de confianza y el umbral de 0.70 no se optimizaron empíricamente.
-6. **Cobertura OWASP parcial**: no hay comprobaciones para API3, API6, API7 ni API10, y la cobertura por categoría no se validó experimentalmente.
+6. **Cobertura OWASP parcial**: no hay comprobaciones para API3, API6, API7 ni API10. Sobre una API REST real (VAmPI), el sistema detectó 3 de 9 vulnerabilidades y ninguna de API1 ni API3: los probes activos no exploran endpoints JSON con parámetros en la ruta.
 
 ### Trabajo futuro
 
@@ -271,6 +281,7 @@ En esta evaluación, "Híbrido" es la **unión** de los hallazgos SAST y DAST co
 - Ampliar la evaluación del correlador a más aplicaciones con ground truth.
 - Tratar las vulnerabilidades globales sin depender de la similitud de endpoint.
 - Calibrar los pesos y el umbral de la fórmula de confianza con datos etiquetados.
+- Hacer el DAST consciente de la especificación OpenAPI: recorrer los endpoints declarados y probar BOLA, mass assignment y exposición de datos sobre endpoints JSON con parámetros.
 - Añadir comprobaciones para las categorías OWASP no cubiertas y validarlas por categoría.
 
 ## Consideraciones del Proyecto

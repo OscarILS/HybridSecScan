@@ -32,6 +32,35 @@ def test_dast_requires_endpoint_and_cwe():
     assert dast_matches({"url": "http://h:5000/", "cwe": "CWE-798"}, GT) == set()
 
 
+GT_MULTI = [
+    {
+        "id": "DEBUG_EXPOSURE",
+        "accepted_cwes": [200],
+        "endpoint": "/users/v1/_debug",
+        "locations": [
+            {"file": "api_views/users.py", "lines": [24, 26]},
+            {"file": "models/user_model.py", "lines": [58, 59]},
+        ],
+    },
+    {"id": "BOLA", "accepted_cwes": [639], "endpoint": "/books/v1/{book_title}", "locations": []},
+]
+
+
+def test_sast_locations_check_file_and_line():
+    hit = {"filename": r"x\vampi\models\user_model.py", "line_number": 58, "issue_cwe": {"id": 200}}
+    assert sast_matches(hit, GT_MULTI) == {"DEBUG_EXPOSURE"}
+    # Misma línea en otro archivo → no acierta
+    other = {"filename": r"x\vampi\api_views\books.py", "line_number": 58, "issue_cwe": {"id": 200}}
+    assert sast_matches(other, GT_MULTI) == set()
+
+
+def test_dast_endpoint_templates():
+    assert dast_matches({"url": "http://h/books/v1/bookTitle77", "cwe": "CWE-639"}, GT_MULTI) == {"BOLA"}
+    # El parámetro cubre un solo segmento
+    assert dast_matches({"url": "http://h/books/v1/a/b", "cwe": "CWE-639"}, GT_MULTI) == set()
+    assert dast_matches({"url": "http://h/users/v1/_debug", "cwe": "CWE-200"}, GT_MULTI) == {"DEBUG_EXPOSURE"}
+
+
 def test_metrics_precision_per_finding_recall_per_vulnerability():
     m = metrics([{"SECRET"}, {"SECRET"}, set(), {"SQLI"}], n_gt=3)
     assert m["correct_findings"] == 3 and m["incorrect_findings"] == 1

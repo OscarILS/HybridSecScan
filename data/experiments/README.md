@@ -82,18 +82,38 @@ python scripts/run_dast_docker_apps.py            # DAST activo contra las apps 
 
 Guardan en `results/` los hallazgos SAST y DAST y el reporte de correlación (`hybrid_*.json`).
 
-## Evaluación del motor de correlación (caso de estudio)
+## Evaluación del motor de correlación (casos de estudio)
 
 ```bash
-python scripts/run_correlation_evaluation.py --save
+python scripts/run_correlation_evaluation.py --save            # todas las aplicaciones
+python scripts/run_correlation_evaluation.py --app vampi
 ```
 
-La evaluación a escala mide la unión SAST+DAST; esta mide el propio correlador. Compara contra
-`ground_truth/vulnerable_app_ground_truth.json` (9 vulnerabilidades, tomadas de los comentarios
-`# VULNERABILIDAD N` de `ProgramasPruebas/vulnerable_app.py`) los hallazgos de SAST, DAST, su unión y los
-pares que el correlador confirma. Los criterios de acierto están en `matching_rules` del ground truth.
-Guarda `correlation_evaluation_*.json` y `figures/tabla_evaluacion_correlacion.md`.
-Es un caso de estudio con una sola aplicación: ilustra el comportamiento del correlador, no generaliza.
+La evaluación a escala mide la unión SAST+DAST; esta mide el propio correlador. Para cada aplicación compara
+contra su ground truth los hallazgos de SAST, DAST, su unión y los pares que el correlador confirma, y desglosa
+la detección por categoría OWASP API Top 10 (2023). Los criterios de acierto están en `matching_rules` de cada
+ground truth. Guarda `correlation_evaluation_<app>_*.json` y `figures/tabla_evaluacion_correlacion.md`.
+
+| Aplicación | Ground truth | Origen |
+|---|---|---|
+| `vulnerable_app` | `vulnerable_app_ground_truth.json` (9) | Comentarios `# VULNERABILIDAD N` de `ProgramasPruebas/vulnerable_app.py` |
+| `vampi` | `vampi_ground_truth.json` (9) | Lista oficial del README de [VAmPI](https://github.com/erev0s/VAmPI), commit `f16052d` |
+
+### Reproducir VAmPI
+
+```bash
+git clone https://github.com/erev0s/VAmPI.git data/experiments/test_apps/vampi
+cd data/experiments/test_apps/vampi && git checkout f16052dce83f05847133ec98f01c5193a41de7d8
+python -m venv .venv && .venv/Scripts/pip install -r requirements.txt
+.venv/Scripts/python app.py                     # http://127.0.0.1:5000, luego GET /createdb
+```
+
+SAST: `python -m bandit -r data/experiments/test_apps/vampi -x data/experiments/test_apps/vampi/.venv -f json
+-o data/experiments/results/sast_bandit_vampi_<fecha>.json`. DAST: `run_active_probe_scan("http://127.0.0.1:5000")`
+de `backend/dast_scanner.py`, guardado como `results/dast_active_vampi_<fecha>.json`. Los endpoints de los
+hallazgos SAST se obtienen del `operationId` de la especificación OpenAPI de VAmPI.
+
+Cada aplicación es un caso de estudio: ilustra el comportamiento del sistema, no generaliza.
 
 ## Referencias
 

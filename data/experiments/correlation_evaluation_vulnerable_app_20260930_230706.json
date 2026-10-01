@@ -1,7 +1,46 @@
 {
-  "application": "ProgramasPruebas/vulnerable_app.py",
+  "application": "App vulnerable propia (Flask)",
+  "app_key": "vulnerable_app",
   "ground_truth_file": "vulnerable_app_ground_truth.json",
   "ground_truth_n": 9,
+  "ground_truth": {
+    "VA_001": {
+      "name": "VULNERABILIDAD 1: secretos escritos en el código (SECRET_KEY, DATABASE_PASSWORD)",
+      "category": "API2:2023"
+    },
+    "VA_002": {
+      "name": "VULNERABILIDAD 2: consulta SQL construida con f-string a partir de parámetros del formulario",
+      "category": "API8:2023"
+    },
+    "VA_003": {
+      "name": "VULNERABILIDAD 3: os.system() con un comando recibido del usuario",
+      "category": "API8:2023"
+    },
+    "VA_004": {
+      "name": "VULNERABILIDAD 4: pickle.load() sobre un archivo subido por el usuario",
+      "category": "API8:2023"
+    },
+    "VA_005": {
+      "name": "VULNERABILIDAD 5: open() con una ruta recibida del usuario",
+      "category": "API8:2023"
+    },
+    "VA_006": {
+      "name": "VULNERABILIDAD 6: tempfile.mktemp() (condición de carrera en archivo temporal)",
+      "category": "API8:2023"
+    },
+    "VA_007": {
+      "name": "VULNERABILIDAD 7: validación con assert (se elimina con python -O)",
+      "category": "API8:2023"
+    },
+    "VA_008": {
+      "name": "VULNERABILIDAD 8: token de seguridad generado con random (no criptográfico)",
+      "category": "API2:2023"
+    },
+    "VA_009": {
+      "name": "VULNERABILIDAD 9: app.run(debug=True) expone el depurador de Werkzeug en toda la aplicación",
+      "category": "API8:2023"
+    }
+  },
   "sast_file": "sast_bandit_vulnerable_20260930_095345.json",
   "dast_file": "dast_active_vulnerable_20260930_095345.json",
   "threshold": 0.7,
@@ -78,7 +117,7 @@
   "correlations": [
     {
       "confidence": 0.8844,
-      "sast": "B608 línea 25",
+      "sast": "B608 vulnerable_app.py:25",
       "dast": "SQL Injection @ /login",
       "ground_truth": [
         "VA_002"
@@ -88,7 +127,7 @@
   "detected_by_both_pairs": [
     {
       "vulnerability": "VA_002",
-      "sast": "B608 línea 25 → /login",
+      "sast": "B608 vulnerable_app.py:25 → /login",
       "dast": "SQL Injection @ /login",
       "confidence": 0.8844,
       "confirmed": true,
@@ -124,7 +163,7 @@
     },
     {
       "vulnerability": "VA_009",
-      "sast": "B201 línea 81 → /token",
+      "sast": "B201 vulnerable_app.py:81 → /token",
       "dast": "Error Disclosure - Debug Mode @ /deserialize",
       "confidence": 0.5228,
       "confirmed": false,
@@ -158,5 +197,34 @@
         }
       }
     }
-  ]
+  ],
+  "by_owasp_category": {
+    "API2:2023": {
+      "total": 2,
+      "sast": 2,
+      "dast": 0,
+      "union": 2,
+      "correlation": 0,
+      "ids": [
+        "VA_001",
+        "VA_008"
+      ]
+    },
+    "API8:2023": {
+      "total": 7,
+      "sast": 6,
+      "dast": 3,
+      "union": 7,
+      "correlation": 1,
+      "ids": [
+        "VA_002",
+        "VA_003",
+        "VA_004",
+        "VA_005",
+        "VA_006",
+        "VA_007",
+        "VA_009"
+      ]
+    }
+  }
 }

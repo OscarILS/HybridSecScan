@@ -1360,10 +1360,11 @@ class HTTPSecurityScanner:
         try:
             r1 = self.session.get(base + "/token", timeout=self.timeout)
             r2 = self.session.get(base + "/token", timeout=self.timeout)
-            # Si dos tokens son iguales o muy similares → insecure random
+            # Si dos tokens son iguales → insecure random. Solo cuenta si el endpoint existe
+            # (HTTP 200): dos respuestas 404 idénticas no son tokens.
             t1 = r1.text.replace("Token: ", "").strip()
             t2 = r2.text.replace("Token: ", "").strip()
-            if t1 and t2 and t1 == t2:
+            if r1.status_code == 200 and r2.status_code == 200 and t1 and t2 and t1 == t2:
                 findings.append(
                     ScanFinding(
                         type="Insecure Random - Predictable Token",

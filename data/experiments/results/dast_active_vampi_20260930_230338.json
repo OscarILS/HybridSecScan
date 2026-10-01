@@ -1,0 +1,286 @@
+{
+  "scan_type": "DAST",
+  "tool": "HTTP Security Scanner (Active Probe)",
+  "zap_available": false,
+  "target_url": "http://127.0.0.1:5000",
+  "vulnerabilities": [
+    {
+      "id": "89c6ca31-e860-45d2-925a-968dd5cae02c",
+      "type": "Missing Security Header",
+      "alert": "Header ausente: Content-Security-Policy",
+      "severity": "HIGH",
+      "risk": "High",
+      "confidence": "High",
+      "url": "http://127.0.0.1:5000",
+      "parameter": "Content-Security-Policy",
+      "description": "El header HTTP \"Content-Security-Policy\" no está presente en la respuesta. Previene XSS e inyección de contenido.",
+      "solution": "Agregar el header \"Content-Security-Policy\" en la configuración del servidor.",
+      "evidence": "Header no encontrado. Headers presentes: ['Connection', 'Content-Length', 'Content-Type', 'Date', 'Server']",
+      "cwe": "CWE-693",
+      "cweid": "693",
+      "owasp_category": "API8:2023",
+      "source": "HTTP Scanner – Security Headers",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://127.0.0.1:5000",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Inspección de cabeceras de seguridad HTTP",
+        "response": "HTTP 200 — 5 headers recibidos",
+        "missing_header": "Content-Security-Policy"
+      }
+    },
+    {
+      "id": "32735e07-2032-4665-9e5c-6d96d1ded746",
+      "type": "Missing Security Header",
+      "alert": "Header ausente: X-Frame-Options",
+      "severity": "MEDIUM",
+      "risk": "Medium",
+      "confidence": "High",
+      "url": "http://127.0.0.1:5000",
+      "parameter": "X-Frame-Options",
+      "description": "El header HTTP \"X-Frame-Options\" no está presente en la respuesta. Previene ataques de clickjacking.",
+      "solution": "Agregar el header \"X-Frame-Options\" en la configuración del servidor.",
+      "evidence": "Header no encontrado. Headers presentes: ['Connection', 'Content-Length', 'Content-Type', 'Date', 'Server']",
+      "cwe": "CWE-1021",
+      "cweid": "1021",
+      "owasp_category": "API8:2023",
+      "source": "HTTP Scanner – Security Headers",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://127.0.0.1:5000",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Inspección de cabeceras de seguridad HTTP",
+        "response": "HTTP 200 — 5 headers recibidos",
+        "missing_header": "X-Frame-Options"
+      }
+    },
+    {
+      "id": "1490c928-c550-42ef-8738-6c33bb7f4dca",
+      "type": "Missing Security Header",
+      "alert": "Header ausente: X-Content-Type-Options",
+      "severity": "LOW",
+      "risk": "Low",
+      "confidence": "High",
+      "url": "http://127.0.0.1:5000",
+      "parameter": "X-Content-Type-Options",
+      "description": "El header HTTP \"X-Content-Type-Options\" no está presente en la respuesta. Previene MIME-type sniffing.",
+      "solution": "Agregar el header \"X-Content-Type-Options\" en la configuración del servidor.",
+      "evidence": "Header no encontrado. Headers presentes: ['Connection', 'Content-Length', 'Content-Type', 'Date', 'Server']",
+      "cwe": "CWE-693",
+      "cweid": "693",
+      "owasp_category": "API8:2023",
+      "source": "HTTP Scanner – Security Headers",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://127.0.0.1:5000",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Inspección de cabeceras de seguridad HTTP",
+        "response": "HTTP 200 — 5 headers recibidos",
+        "missing_header": "X-Content-Type-Options"
+      }
+    },
+    {
+      "id": "94c80263-d50a-4e27-b4a9-747e8cc01f4c",
+      "type": "Missing Security Header",
+      "alert": "Header ausente: Strict-Transport-Security",
+      "severity": "HIGH",
+      "risk": "High",
+      "confidence": "High",
+      "url": "http://127.0.0.1:5000",
+      "parameter": "Strict-Transport-Security",
+      "description": "El header HTTP \"Strict-Transport-Security\" no está presente en la respuesta. Fuerza conexiones HTTPS.",
+      "solution": "Agregar el header \"Strict-Transport-Security\" en la configuración del servidor.",
+      "evidence": "Header no encontrado. Headers presentes: ['Connection', 'Content-Length', 'Content-Type', 'Date', 'Server']",
+      "cwe": "CWE-319",
+      "cweid": "319",
+      "owasp_category": "API8:2023",
+      "source": "HTTP Scanner – Security Headers",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://127.0.0.1:5000",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Inspección de cabeceras de seguridad HTTP",
+        "response": "HTTP 200 — 5 headers recibidos",
+        "missing_header": "Strict-Transport-Security"
+      }
+    },
+    {
+      "id": "c535327f-154c-4ebb-80d4-4e86aac4bed0",
+      "type": "Missing Security Header",
+      "alert": "Header ausente: Referrer-Policy",
+      "severity": "LOW",
+      "risk": "Low",
+      "confidence": "High",
+      "url": "http://127.0.0.1:5000",
+      "parameter": "Referrer-Policy",
+      "description": "El header HTTP \"Referrer-Policy\" no está presente en la respuesta. Controla información del referrer.",
+      "solution": "Agregar el header \"Referrer-Policy\" en la configuración del servidor.",
+      "evidence": "Header no encontrado. Headers presentes: ['Connection', 'Content-Length', 'Content-Type', 'Date', 'Server']",
+      "cwe": "CWE-200",
+      "cweid": "200",
+      "owasp_category": "API8:2023",
+      "source": "HTTP Scanner – Security Headers",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://127.0.0.1:5000",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Inspección de cabeceras de seguridad HTTP",
+        "response": "HTTP 200 — 5 headers recibidos",
+        "missing_header": "Referrer-Policy"
+      }
+    },
+    {
+      "id": "19819728-e976-45d2-930c-a9a9e182af1b",
+      "type": "Missing Security Header",
+      "alert": "Header ausente: Permissions-Policy",
+      "severity": "LOW",
+      "risk": "Low",
+      "confidence": "High",
+      "url": "http://127.0.0.1:5000",
+      "parameter": "Permissions-Policy",
+      "description": "El header HTTP \"Permissions-Policy\" no está presente en la respuesta. Controla permisos del navegador.",
+      "solution": "Agregar el header \"Permissions-Policy\" en la configuración del servidor.",
+      "evidence": "Header no encontrado. Headers presentes: ['Connection', 'Content-Length', 'Content-Type', 'Date', 'Server']",
+      "cwe": "CWE-693",
+      "cweid": "693",
+      "owasp_category": "API8:2023",
+      "source": "HTTP Scanner – Security Headers",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://127.0.0.1:5000",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Inspección de cabeceras de seguridad HTTP",
+        "response": "HTTP 200 — 5 headers recibidos",
+        "missing_header": "Permissions-Policy"
+      }
+    },
+    {
+      "id": "f86f58f3-e422-4d0f-9f6b-761377a935ee",
+      "type": "Sensitive Endpoint Exposed",
+      "alert": "Endpoint sensible accesible: /openapi.json",
+      "severity": "MEDIUM",
+      "risk": "Medium",
+      "confidence": "High",
+      "url": "http://127.0.0.1:5000/openapi.json",
+      "parameter": "path",
+      "description": "Especificación OpenAPI pública. El endpoint /openapi.json devuelve HTTP 200 sin requerir autenticación.",
+      "solution": "Proteger /openapi.json con autenticación/autorización o deshabilitarlo.",
+      "evidence": "HTTP 200 en http://127.0.0.1:5000/openapi.json  |  Content-Type: application/json",
+      "cwe": "CWE-200",
+      "cweid": "200",
+      "owasp_category": "API9:2023",
+      "source": "HTTP Scanner – Endpoint Discovery",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://127.0.0.1:5000/openapi.json",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Descubrimiento de ruta sensible: /openapi.json",
+        "response": "HTTP 200 | Content-Type: application/json | Content-Length: 29537 bytes"
+      }
+    },
+    {
+      "id": "ad578c76-7007-4f6d-aa98-c7304d1127d6",
+      "type": "Missing Rate Limiting",
+      "alert": "Sin control de tasa (rate limiting) detectable",
+      "severity": "MEDIUM",
+      "risk": "Medium",
+      "confidence": "Medium",
+      "url": "http://127.0.0.1:5000",
+      "parameter": "HTTP responses",
+      "description": "Se enviaron 15 peticiones rápidas sin obtener respuesta 429 ni headers de rate limiting. La API puede ser vulnerable a abuso de recursos o ataques de fuerza bruta.",
+      "solution": "Implementar rate limiting por IP y por usuario. Devolver HTTP 429 con header Retry-After al superar el límite.",
+      "evidence": "15 requests. Códigos: [200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200]",
+      "cwe": "CWE-770",
+      "cweid": "770",
+      "owasp_category": "API4:2023",
+      "source": "HTTP Scanner – Rate Limiting",
+      "request_payload": {
+        "method": "GET (x15)",
+        "url": "http://127.0.0.1:5000",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Flood de peticiones: 15 GETs a ~20 req/s (delay=50ms)",
+        "response": "Todos respondieron sin HTTP 429. Códigos obtenidos: [200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200]. Headers de rate limit ausentes (X-RateLimit-*, Retry-After)."
+      }
+    },
+    {
+      "id": "7b12872d-be48-41f2-821e-01b274d34648",
+      "type": "Server Information Disclosure",
+      "alert": "Header Server expone información del servidor",
+      "severity": "LOW",
+      "risk": "Low",
+      "confidence": "High",
+      "url": "http://127.0.0.1:5000",
+      "parameter": "Server",
+      "description": "El header \"Server\" revela versión del servidor web (\"Werkzeug/2.2.3 Python/3.11.9\"). Facilita ataques dirigidos a versiones específicas.",
+      "solution": "Eliminar o suprimir el header \"Server\" en la configuración del servidor.",
+      "evidence": "Server: Werkzeug/2.2.3 Python/3.11.9",
+      "cwe": "CWE-200",
+      "cweid": "200",
+      "owasp_category": "API8:2023",
+      "source": "HTTP Scanner – Information Disclosure",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://127.0.0.1:5000",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Inspección de headers de respuesta que revelan información del servidor",
+        "response": "HTTP 200 | Header filtrado → Server: Werkzeug/2.2.3 Python/3.11.9"
+      }
+    },
+    {
+      "id": "e4487483-0fd4-4f35-b6ab-e7c3456e4203",
+      "type": "Insecure Transport",
+      "alert": "API accesible sin HTTPS sin redirección",
+      "severity": "HIGH",
+      "risk": "High",
+      "confidence": "High",
+      "url": "http://127.0.0.1:5000",
+      "parameter": "scheme",
+      "description": "La API acepta conexiones HTTP sin cifrar y no redirige a HTTPS. Los datos transmitidos son vulnerables a interceptación (MITM).",
+      "solution": "Forzar HTTPS. Configurar redirección 301 HTTP → HTTPS y habilitar HSTS.",
+      "evidence": "HTTP 200 desde http://127.0.0.1:5000 sin redirección HTTPS",
+      "cwe": "CWE-319",
+      "cweid": "319",
+      "owasp_category": "API8:2023",
+      "source": "HTTP Scanner – SSL/TLS",
+      "request_payload": {
+        "method": "GET",
+        "url": "http://127.0.0.1:5000",
+        "sent_headers": {
+          "User-Agent": "HybridSecScan/2.0 Security Scanner"
+        },
+        "probe": "Verificación de redirección HTTP → HTTPS (sin seguir redirects)",
+        "response": "HTTP 200 | Location: (sin Location header) | Sin redirección a HTTPS — tráfico transmitido en texto plano"
+      }
+    }
+  ],
+  "summary": {
+    "total_issues": 10,
+    "alerts_found": 10,
+    "passive_checks": 10,
+    "active_probes": 0,
+    "idor_checks": 0,
+    "auth_checks": 0,
+    "critical": 0,
+    "high": 3,
+    "medium": 3,
+    "low": 4
+  }
+}

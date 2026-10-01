@@ -1,0 +1,126 @@
+{
+  "application": "VAmPI (Vulnerable API)",
+  "version": "commit f16052dce83f05847133ec98f01c5193a41de7d8 (2026-04-07), modo vulnerable=1",
+  "source": "Lista 'List of Vulnerabilities' del README oficial de VAmPI (https://github.com/erev0s/VAmPI); ubicación en el código según los bloques 'if vuln:' del propio código fuente",
+  "last_updated": "2026-09-30",
+  "notes": "La categoría OWASP API Security Top 10 (2023) es una asignación de este proyecto según las definiciones de OWASP; VAmPI no la publica por vulnerabilidad.",
+  "matching_rules": {
+    "sast": "El hallazgo es correcto si su archivo y línea caen en una de las 'locations' de la vulnerabilidad y su CWE está en 'accepted_cwes'.",
+    "dast": "El hallazgo es correcto si su endpoint coincide con 'endpoint' ('{param}' acepta cualquier segmento; '*' = falla global) y su CWE está en 'accepted_cwes'.",
+    "correlation": "La correlación es correcta si su lado SAST y su lado DAST son correctos para la misma vulnerabilidad.",
+    "multiplicity": "Varios hallazgos pueden apuntar a la misma vulnerabilidad: la precisión cuenta hallazgos correctos; el recall cuenta vulnerabilidades encontradas al menos una vez."
+  },
+  "vulnerabilities": [
+    {
+      "id": "VAMPI_001",
+      "name": "SQLi Injection",
+      "type": "sql_injection",
+      "cwe_id": "CWE-89",
+      "accepted_cwes": [89],
+      "owasp_category": "API8:2023",
+      "locations": [{"file": "models/user_model.py", "lines": [72, 73]}],
+      "endpoint": "/users/v1/{username}",
+      "method": "GET",
+      "description": "get_user construye la consulta SQL con f-string a partir del username de la ruta"
+    },
+    {
+      "id": "VAMPI_002",
+      "name": "Unauthorized Password Change",
+      "type": "broken_object_level_authorization",
+      "cwe_id": "CWE-639",
+      "accepted_cwes": [639, 862, 863, 285, 284],
+      "owasp_category": "API1:2023",
+      "locations": [{"file": "api_views/users.py", "lines": [186, 190]}],
+      "endpoint": "/users/v1/{username}/password",
+      "method": "PUT",
+      "description": "update_password cambia la contraseña del usuario de la ruta, no la del dueño del token"
+    },
+    {
+      "id": "VAMPI_003",
+      "name": "Broken Object Level Authorization",
+      "type": "broken_object_level_authorization",
+      "cwe_id": "CWE-639",
+      "accepted_cwes": [639, 862, 863, 285, 284],
+      "owasp_category": "API1:2023",
+      "locations": [{"file": "api_views/books.py", "lines": [50, 58]}],
+      "endpoint": "/books/v1/{book_title}",
+      "method": "GET",
+      "description": "get_by_title devuelve el secreto de cualquier libro sin comprobar que pertenezca al usuario"
+    },
+    {
+      "id": "VAMPI_004",
+      "name": "Mass Assignment",
+      "type": "mass_assignment",
+      "cwe_id": "CWE-915",
+      "accepted_cwes": [915],
+      "owasp_category": "API3:2023",
+      "locations": [{"file": "api_views/users.py", "lines": [60, 66]}],
+      "endpoint": "/users/v1/register",
+      "method": "POST",
+      "description": "register_user acepta el campo 'admin' del cuerpo y permite registrarse como administrador"
+    },
+    {
+      "id": "VAMPI_005",
+      "name": "Excessive Data Exposure through debug endpoint",
+      "type": "excessive_data_exposure",
+      "cwe_id": "CWE-200",
+      "accepted_cwes": [200, 213, 359],
+      "owasp_category": "API3:2023",
+      "locations": [
+        {"file": "api_views/users.py", "lines": [24, 26]},
+        {"file": "models/user_model.py", "lines": [58, 59]}
+      ],
+      "endpoint": "/users/v1/_debug",
+      "method": "GET",
+      "description": "El endpoint de depuración devuelve contraseña y rol de todos los usuarios"
+    },
+    {
+      "id": "VAMPI_006",
+      "name": "User and Password Enumeration",
+      "type": "user_enumeration",
+      "cwe_id": "CWE-204",
+      "accepted_cwes": [204, 203],
+      "owasp_category": "API2:2023",
+      "locations": [{"file": "api_views/users.py", "lines": [101, 106]}],
+      "endpoint": "/users/v1/login",
+      "method": "POST",
+      "description": "login_user responde distinto si el usuario no existe o si la contraseña es incorrecta"
+    },
+    {
+      "id": "VAMPI_007",
+      "name": "RegexDOS (Denial of Service)",
+      "type": "regex_dos",
+      "cwe_id": "CWE-1333",
+      "accepted_cwes": [1333, 400, 185],
+      "owasp_category": "API4:2023",
+      "locations": [{"file": "api_views/users.py", "lines": [143, 146]}],
+      "endpoint": "/users/v1/{username}/email",
+      "method": "PUT",
+      "description": "update_email valida el correo con una expresión regular con retroceso catastrófico"
+    },
+    {
+      "id": "VAMPI_008",
+      "name": "Lack of Resources & Rate Limiting",
+      "type": "missing_rate_limiting",
+      "cwe_id": "CWE-770",
+      "accepted_cwes": [770, 307, 799],
+      "owasp_category": "API4:2023",
+      "locations": [],
+      "endpoint": "*",
+      "method": null,
+      "description": "Ningún endpoint limita la tasa de peticiones (ausencia de control: no tiene una línea de código propia)"
+    },
+    {
+      "id": "VAMPI_009",
+      "name": "JWT authentication bypass via weak signing key",
+      "type": "weak_jwt_signing_key",
+      "cwe_id": "CWE-321",
+      "accepted_cwes": [321, 798, 259, 1391, 347],
+      "owasp_category": "API2:2023",
+      "locations": [{"file": "config.py", "lines": [13, 13]}],
+      "endpoint": "*",
+      "method": null,
+      "description": "SECRET_KEY = 'random': clave de firma JWT débil y escrita en el código; permite forjar tokens"
+    }
+  ]
+}
