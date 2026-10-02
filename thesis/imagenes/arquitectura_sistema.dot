@@ -1,0 +1,88 @@
+// Arquitectura conceptual de HybridSecScan (capas, flujo principal numerado).
+// La versión detallada (componentes reales del código) está en componentes_implementacion.dot.
+// Regenerar:  dot -Tpng -Gdpi=300 thesis/imagenes/arquitectura_sistema.dot -o thesis/imagenes/arquitectura_sistema.png
+//
+// Diseño: cada capa es UNA caja (tabla HTML) en lugar de un grupo con título, y los títulos
+// de capa van a la izquierda o arriba sin flechas entrantes, así ninguna flecha atraviesa un título.
+// Tamaño pensado para A4: texto de 16 pt en <= 8.6 in de ancho -> >= 11 pt impreso a 15 cm.
+
+digraph Arquitectura {
+    graph [rankdir=TB, fontname="Helvetica", nodesep=0.25, ranksep=0.22,
+           splines=spline, bgcolor="white", pad=0.05, newrank=true];
+    node  [fontname="Helvetica", fontsize=16, shape=plain];
+    edge  [fontname="Helvetica", fontsize=16, color="#52514e", fontcolor="#0b0b0b",
+           penwidth=1.8, arrowsize=0.8];
+
+    // ── Capa 1: interfaz ────────────────────────────────────────────────────
+    ui [label=<
+      <TABLE BORDER="1" COLOR="#52514e" BGCOLOR="#f4f3ef" CELLBORDER="0" CELLPADDING="4" STYLE="rounded">
+        <TR><TD><B>Interfaz de usuario</B> (React + TypeScript)</TD></TR>
+      </TABLE>>];
+
+    // ── Capa 2: API REST ────────────────────────────────────────────────────
+    api [label=<
+      <TABLE BORDER="1" COLOR="#52514e" BGCOLOR="#f4f3ef" CELLBORDER="1" CELLSPACING="4" CELLPADDING="3" STYLE="rounded">
+        <TR>
+          <TD BORDER="0"><B>API REST</B><BR/><B>(FastAPI)</B></TD>
+          <TD PORT="sast" BGCOLOR="white" COLOR="#898781">SAST</TD>
+          <TD PORT="dast" BGCOLOR="white" COLOR="#898781">DAST</TD>
+          <TD BGCOLOR="white" COLOR="#898781">Híbrido</TD>
+          <TD BGCOLOR="white" COLOR="#898781">Autenticación<BR/>(JWT)</TD>
+          <TD BGCOLOR="white" COLOR="#898781">Reportes</TD>
+        </TR>
+      </TABLE>>];
+
+    // ── Capa 3: análisis (la celda inferior son los hallazgos que produce) ──
+    sast [label=<
+      <TABLE BORDER="1" COLOR="#52514e" BGCOLOR="#f4f3ef" CELLBORDER="0" CELLSPACING="3" CELLPADDING="3" STYLE="rounded">
+        <TR><TD><B>Análisis estático (SAST)</B><BR/>Bandit, Semgrep</TD></TR>
+        <TR><TD PORT="out" BORDER="1" STYLE="dashed" COLOR="#898781" BGCOLOR="white">Hallazgos SAST</TD></TR>
+      </TABLE>>];
+    dast [label=<
+      <TABLE BORDER="1" COLOR="#52514e" BGCOLOR="#f4f3ef" CELLBORDER="0" CELLSPACING="3" CELLPADDING="3" STYLE="rounded">
+        <TR><TD><B>Análisis dinámico (DAST)</B><BR/>OWASP ZAP / escáner HTTP</TD></TR>
+        <TR><TD PORT="out" BORDER="1" STYLE="dashed" COLOR="#898781" BGCOLOR="white">Hallazgos DAST</TD></TR>
+      </TABLE>>];
+
+    // ── Capa 4: motor de correlación (único color de acento) ────────────────
+    motor [label=<
+      <TABLE BORDER="2" COLOR="#2a78d6" BGCOLOR="#e8f1fc" CELLBORDER="0" CELLSPACING="2" CELLPADDING="3" STYLE="rounded">
+        <TR><TD COLSPAN="2"><FONT COLOR="#184f95"><B>Motor de correlación</B></FONT></TD></TR>
+        <TR>
+          <TD>Puntuación de<BR/>confianza ponderada<BR/>(5 factores,<BR/>umbral 0.70)</TD>
+          <TD>
+            <TABLE BORDER="1" COLOR="#2a78d6" BGCOLOR="white" CELLBORDER="0" CELLPADDING="3" STYLE="rounded">
+              <TR><TD>Clasificador<BR/>Random Forest<BR/><FONT COLOR="#184f95">aporta la<BR/>probabilidad</FONT></TD></TR>
+            </TABLE>
+          </TD>
+        </TR>
+      </TABLE>>];
+
+    h_corr [label=<
+      <TABLE BORDER="1" COLOR="#898781" BGCOLOR="white" CELLBORDER="0" CELLPADDING="3" STYLE="dashed">
+        <TR><TD>Hallazgos<BR/>correlacionados</TD></TR>
+      </TABLE>>];
+
+    // ── Capa 5: salidas (título a la izquierda) ─────────────────────────────
+    out [label=<
+      <TABLE BORDER="1" COLOR="#52514e" BGCOLOR="#f4f3ef" CELLBORDER="1" CELLSPACING="4" CELLPADDING="3" STYLE="rounded">
+        <TR>
+          <TD BORDER="0"><B>Salidas</B></TD>
+          <TD BGCOLOR="white" COLOR="#898781">Base de datos<BR/>(SQLite)</TD>
+          <TD PORT="rep" BGCOLOR="white" COLOR="#898781">Reportes<BR/>PDF / JSON</TD>
+        </TR>
+      </TABLE>>];
+
+    // ── Filas ───────────────────────────────────────────────────────────────
+    { rank=same; sast; dast; }
+    { rank=same; motor; h_corr; }
+
+    // ── Flujo principal numerado (1–4) ──────────────────────────────────────
+    ui          -> api;
+    api:sast:s  -> sast:n    [label=" (1) análisis SAST"];
+    api:dast:s  -> dast:n    [label=" (2) análisis DAST"];
+    sast:out:s  -> motor:n;
+    dast:out:s  -> motor:n;
+    motor       -> h_corr    [label="(3) correlación"];
+    h_corr:s    -> out:rep:n [xlabel="(4) reportes "];
+}

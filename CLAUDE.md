@@ -143,7 +143,7 @@ Real metrics from `data/models/metadata.json` (1,300 samples, 517 features):
 | Test       | 90.8%    | 85.7%     | 94.7%  | 0.900 | 0.955   |
 | Confusion  | TN=64    | FP=9      | FN=3   | TP=54 |         |
 
-The 9 numeric features include `module_match` (SAST file module vs DAST endpoint module), the top feature by Gini importance (~0.22). It is the signal that separates clean positives (category A) from hard negatives (category D); without it the two are indistinguishable and the model produced many false positives. Training uses the default 0.5 decision threshold and `class_weight='balanced'`, with no threshold tuning. **Never hardcode these values** — `correlation_engine.py` always reads them from `metadata.json` at load time. These synthetic-data metrics do not transfer to real tools (domain shift): on VAmPI/Juice Shop the correlator confirms 0 pairs.
+The 9 numeric features include `module_match` (SAST file module vs DAST endpoint module), the top feature by Gini importance (~0.22). It is the signal that separates clean positives (category A) from hard negatives (category D); without it the two are indistinguishable and the model produced many false positives. Training uses the default 0.5 decision threshold and `class_weight='balanced'`, with no threshold tuning. **Never hardcode these values** — `correlation_engine.py` always reads them from `metadata.json` at load time. These are synthetic-data metrics. On the real experiments (VAmPI, Juice Shop) the correlator confirms 0 pairs — mainly because SAST and DAST detect different vulnerabilities (no same-type pair to confirm, and file paths don't map to endpoints), not because of TF-IDF domain shift (a secondary factor).
 
 ## DAST Scanner
 

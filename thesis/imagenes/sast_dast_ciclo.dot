@@ -1,0 +1,34 @@
+// SAST frente a DAST (conceptual): qué analiza cada técnica, cómo y qué reporta. Sin datos numéricos.
+// Regenerar:  dot -Tpng -Gdpi=300 thesis/imagenes/sast_dast_ciclo.dot -o thesis/imagenes/sast_dast_ciclo.png
+
+digraph SastDast {
+    graph [rankdir=TB, fontname="Helvetica", nodesep=0.9, ranksep=0.35,
+           bgcolor="white", pad=0.05, newrank=true];
+    node  [fontname="Helvetica", fontsize=16, shape=box, style="rounded,filled",
+           fillcolor="#f4f3ef", color="#52514e", penwidth=1.2, margin="0.15,0.08"];
+    edge  [fontname="Helvetica", fontsize=16, color="#52514e", fontcolor="#0b0b0b",
+           penwidth=1.8, arrowsize=0.8];
+
+    // ── Objeto analizado ────────────────────────────────────────────────────
+    codigo [label=<<B>Código fuente</B>>, fillcolor="white"];
+    app    [label=<<B>Aplicación desplegada</B>>, fillcolor="white"];
+
+    // ── Técnica ─────────────────────────────────────────────────────────────
+    sast [label=<<B>SAST</B><BR/>caja blanca,<BR/>sin ejecutar>];
+    dast [label=<<B>DAST</B><BR/>caja negra,<BR/>solicitudes HTTP>];
+
+    // ── Lo que reporta cada hallazgo ────────────────────────────────────────
+    r_sast [label=<<B>Reporta</B><BR/>archivo, línea, regla>, style="rounded,dashed",
+            fillcolor="white", color="#898781"];
+    r_dast [label=<<B>Reporta</B><BR/>URL, endpoint, respuesta HTTP>, style="rounded,dashed",
+            fillcolor="white", color="#898781"];
+
+    { rank=same; codigo; app; }
+    { rank=same; sast; dast; }
+    { rank=same; r_sast; r_dast; }
+
+    codigo -> sast [label=" analizado por"];
+    sast -> r_sast;
+    app    -> dast [label=" analizada por"];
+    dast -> r_dast;
+}

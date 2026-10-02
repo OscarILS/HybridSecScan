@@ -231,8 +231,9 @@ La validación se realizó en dos niveles:
 Matriz de confusión (test, n = 130): TN = 64, FP = 9, FN = 3, TP = 54. La feature más
 importante (Gini ≈ 0.22) es `module_match` (¿el archivo SAST y el endpoint DAST son del
 mismo componente?); es la que separa los positivos limpios de los negativos difíciles del
-dataset. **Estas métricas son sobre el dataset sintético y no se trasladan a herramientas
-reales**: por el *domain shift*, el correlador confirma 0 pares en VAmPI y en Juice Shop.
+dataset. **Estas métricas son sobre el dataset sintético.** En los experimentos reales el correlador confirma
+0 pares, principalmente porque SAST y DAST detectan vulnerabilidades distintas (no hay un mismo hallazgo que
+ambas confirmen); el *domain shift* del TF-IDF es un factor secundario (ver "Experimentos de correlación").
 
 **Evaluación a escala en 4 aplicaciones** (fuente: `data/experiments/scale_evaluation_20260929_203402.json`).
 En esta evaluación, "Híbrido" es la **unión** de los hallazgos SAST y DAST comparada contra el ground truth; **no aplica el motor de correlación**, así que mide la cobertura combinada de ambas técnicas, no el correlador:
@@ -267,12 +268,12 @@ En esta evaluación, "Híbrido" es la **unión** de los hallazgos SAST y DAST co
   | Método | Precisión | Recall |
   |---|---|---|
   | SAST (Bandit) | 0.286 | 0.222 (2 de 9) |
-  | DAST (escáner activo) | 0.100 | 0.111 (1 de 9) |
-  | Unión SAST+DAST | 0.176 | 0.333 (3 de 9) |
+  | DAST (escáner activo) | 0.182 | 0.222 (2 de 9) |
+  | Unión SAST+DAST | 0.222 | 0.444 (4 de 9) |
   | Correlación (pares confirmados) | — (0 pares) | 0.000 |
 
-  Detectadas: inyección SQL y clave JWT débil (SAST) y falta de rate limiting (DAST). No se detectó ninguna vulnerabilidad de API1 (BOLA) ni de API3 (mass assignment, exposición excesiva de datos): los probes activos están pensados para formularios y rutas fijas, no para endpoints JSON con parámetros en la ruta. Ninguna vulnerabilidad fue detectada por ambas técnicas, así que el correlador no tuvo nada que confirmar. Semgrep no pudo ejecutarse en este equipo (bloqueado por una política de control de aplicaciones de Windows).
-- OWASP Juice Shop (SAST con Semgrep): 0 correlaciones. Es una ejecución distinta de la evaluación a escala (9 hallazgos SAST y 23 DAST; ver `data/experiments/EXPERIMENTAL_RESULTS_SUMMARY.md`). El modelo no correlaciona por *domain shift*: el vocabulario TF-IDF aprendido de descripciones sintéticas no coincide con el de Semgrep y el escáner HTTP. Reentrenar con salidas reales de las herramientas queda como trabajo futuro.
+  Detectadas: inyección SQL y clave JWT débil (SAST); falta de rate limiting y exposición excesiva de datos en el endpoint de debug (DAST; esta última de categoría **API3**, vía la comprobación guiada por OpenAPI). No se detectó ninguna vulnerabilidad de API1 (BOLA) ni el *mass assignment* de API3: los probes activos están pensados para formularios y rutas fijas, no para endpoints JSON con parámetros en la ruta. Ninguna vulnerabilidad fue detectada por ambas técnicas, así que el correlador no tuvo nada que confirmar. Semgrep no pudo ejecutarse en este equipo (bloqueado por una política de control de aplicaciones de Windows).
+- OWASP Juice Shop (SAST con Semgrep): 0 correlaciones. Es una ejecución distinta de la evaluación a escala (9 hallazgos SAST y 23 DAST; ver `data/experiments/EXPERIMENTAL_RESULTS_SUMMARY.md`). La causa no es el *domain shift* sino la falta de solapamiento: ningún par SAST-DAST comparte tipo (0 de 207) y las rutas de archivo no coinciden con los endpoints, así que ningún par alcanza el umbral de 0.70 (par de mayor confianza: 0.434). El *domain shift* del TF-IDF es un factor secundario. Re-confirmado con el modelo corregido (F1 0.900): sigue dando 0 correlaciones.
 
 ## Limitaciones y Trabajo Futuro
 
@@ -283,7 +284,7 @@ En esta evaluación, "Híbrido" es la **unión** de los hallazgos SAST y DAST co
 3. **La evaluación a escala no mide el correlador**: compara la unión de hallazgos SAST+DAST; el motor de correlación solo se evaluó en un caso de estudio (una aplicación).
 4. **Fallas globales**: el correlador compara endpoints, por lo que no confirma vulnerabilidades que afectan a toda la aplicación (p. ej. el modo debug).
 5. **Pesos por diseño**: los pesos de la fórmula de confianza y el umbral de 0.70 no se optimizaron empíricamente.
-6. **Cobertura OWASP parcial**: no hay comprobaciones para API3, API6, API7 ni API10. Sobre una API REST real (VAmPI), el sistema detectó 3 de 9 vulnerabilidades y ninguna de API1 ni API3: los probes activos no exploran endpoints JSON con parámetros en la ruta.
+6. **Cobertura OWASP parcial**: hay comprobaciones para API1, API2, API3 (exposición de datos, vía OpenAPI), API4, API5, API8 y API9, pero no para API6, API7 ni API10. Sobre una API REST real (VAmPI), el sistema detectó 4 de 9 vulnerabilidades: ninguna de API1 (BOLA) y, de API3, solo la exposición de datos del endpoint de debug (no el *mass assignment*). Los probes activos no exploran endpoints JSON con parámetros en la ruta.
 
 ### Trabajo futuro
 

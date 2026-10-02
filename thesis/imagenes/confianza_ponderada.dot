@@ -1,0 +1,51 @@
+// Suma ponderada genérica: k criterios s_i con pesos w_i -> C -> decisión C > umbral.
+// Notación genérica; los pesos concretos del sistema están en motor_correlacion.dot.
+// Regenerar:  dot -Tpng -Gdpi=300 thesis/imagenes/confianza_ponderada.dot -o thesis/imagenes/confianza_ponderada.png
+
+digraph Ponderada {
+    graph [rankdir=TB, fontname="Helvetica", nodesep=0.3, ranksep=0.4,
+           splines=spline, bgcolor="white", pad=0.05, newrank=true];
+    node  [fontname="Helvetica", fontsize=18, shape=box, style="rounded,filled",
+           fillcolor="#f4f3ef", color="#52514e", penwidth=1.2, margin="0.12,0.06"];
+    edge  [fontname="Helvetica", fontsize=16, color="#52514e", fontcolor="#0b0b0b",
+           penwidth=1.8, arrowsize=0.8];
+
+    // ── Criterios ───────────────────────────────────────────────────────────
+    s1 [label=<s<SUB>1</SUB>>];
+    s2 [label=<s<SUB>2</SUB>>];
+    sd [label="…", shape=plaintext, style=""];
+    sk [label=<s<SUB>k</SUB>>];
+
+    // ── Ponderación ─────────────────────────────────────────────────────────
+    node [shape=circle, style="filled", fillcolor="white", margin="0.02", fixedsize=true, width=0.75];
+    m1 [label=<× w<SUB>1</SUB>>];
+    m2 [label=<× w<SUB>2</SUB>>];
+    md [label="…", shape=plaintext, style=""];
+    mk [label=<× w<SUB>k</SUB>>];
+
+    // ── Suma ────────────────────────────────────────────────────────────────
+    sum [label="Σ", fontsize=26, width=0.7];
+    node [fixedsize=false, width=0];
+    c [label=<<B>C</B> = Σ w<SUB>i</SUB> · s<SUB>i</SUB><BR/><FONT POINT-SIZE="16">con i = 1, …, k</FONT>>, shape=box,
+       style="rounded,filled", fillcolor="white", margin="0.15,0.08"];
+
+    // ── Decisión (único color de acento) ────────────────────────────────────
+    dec [label=<<B>C &gt; umbral</B>>, shape=diamond, style="filled", fillcolor="#e8f1fc",
+         color="#2a78d6", penwidth=2, fontcolor="#184f95", margin="0.05,0.02"];
+    si [label=<<B>Correlacionado</B>>, shape=box, style="rounded,filled",
+        fillcolor="#e8f1fc", color="#2a78d6", penwidth=2, margin="0.15,0.08"];
+    no [label=<<B>No correlacionado</B>>, shape=box, style="rounded,dashed",
+        fillcolor="white", color="#898781", margin="0.15,0.08"];
+
+    // ── Filas ───────────────────────────────────────────────────────────────
+    { rank=same; s1; s2; sd; sk; }
+    { rank=same; m1; m2; md; mk; }
+    { rank=same; si; no; }
+
+    // ── Flujo ───────────────────────────────────────────────────────────────
+    s1 -> m1;  s2 -> m2;  sd -> md [style=invis];  sk -> mk;
+    m1 -> sum; m2 -> sum; md -> sum [style=invis]; mk -> sum;
+    sum -> c -> dec;
+    dec -> si [label=" sí"];
+    dec -> no [label=" no"];
+}

@@ -1,0 +1,84 @@
+// Diagrama de componentes de HybridSecScan.
+// Solo incluye componentes que existen en el código (verificado en backend/main.py,
+// backend/routers/, backend/dast_scanner.py, backend/correlation_engine.py y frontend/src/).
+// Regenerar:  dot -Tpng -Gdpi=300 thesis/imagenes/componentes_implementacion.dot -o thesis/imagenes/componentes_implementacion.png
+
+digraph HybridSecScan {
+    graph [rankdir=TB, fontname="Helvetica", fontsize=15, nodesep=0.25, ranksep=0.45,
+           splines=spline, bgcolor="white", pad=0.25, newrank=true, compound=true];
+    node  [fontname="Helvetica", fontsize=12, shape=box, style="rounded,filled",
+           fillcolor="#ffffff", color="#52514e", penwidth=1.2, margin="0.14,0.07"];
+    edge  [fontname="Helvetica", fontsize=10, color="#52514e", fontcolor="#52514e", arrowsize=0.7];
+
+    // ── 1. Presentación ─────────────────────────────────────────────────────
+    subgraph cluster_frontend {
+        label="Frontend — React 19 + TypeScript (Vite)";
+        style="rounded,filled"; fillcolor="#e8f1fc"; color="#2a78d6"; fontcolor="#1c5cab";
+        app  [label="App.tsx\nescaneos SAST / DAST / híbrido\ny descarga de reportes"];
+        dash [label="ResearchDashboard.tsx\nmétricas de investigación"];
+    }
+
+    // ── 2. API ──────────────────────────────────────────────────────────────
+    subgraph cluster_api {
+        label="API REST — FastAPI (backend/main.py)";
+        style="rounded,filled"; fillcolor="#f4f3ef"; color="#52514e"; fontcolor="#0b0b0b";
+        r_sast [label="Router SAST\nPOST /upload/\nPOST /scan/sast"];
+        r_dast [label="Router DAST\nPOST /scan/dast\n+ validador SSRF"];
+        r_hyb  [label="Router Híbrido\nPOST /scan/hybrid"];
+        r_rep  [label="Router Reportes\nGET /download/pdf/{id}\nGET /download/json/{id}"];
+        r_auth [label="Router Autenticación\n/auth/register · /auth/login\n/auth/me (JWT)"];
+        r_main [label="main.py\nGET /scan-results\nGET /api/model-metrics\nGET /api/scale-evaluation"];
+    }
+
+    // ── 3. Análisis y correlación ───────────────────────────────────────────
+    subgraph cluster_tools {
+        label="Herramientas de análisis";
+        style="rounded,filled"; fillcolor="#e9f7f1"; color="#1baf7a"; fontcolor="#0f6e4c";
+        bandit  [label="Bandit\n(SAST)"];
+        semgrep [label="Semgrep\n(SAST)"];
+        zap     [label="OWASP ZAP\n(daemon, opcional)", style="rounded,filled,dashed"];
+        http    [label="Escáner HTTP\n(respaldo de ZAP)"];
+    }
+
+    subgraph cluster_corr {
+        label="Motor de correlación";
+        style="rounded,filled"; fillcolor="#f1effb"; color="#4a3aa7"; fontcolor="#4a3aa7";
+        corr [label="VulnerabilityCorrelator\nconfianza ponderada, umbral 0.70\nendpoint 0.40 · tipo 0.35 · semántica 0.10\nRandom Forest 0.10 · severidad 0.05"];
+        rf   [label="Random Forest\nrf_correlator_v1.pkl"];
+    }
+
+    // ── 4. Persistencia y reportes ──────────────────────────────────────────
+    subgraph cluster_data {
+        label="Persistencia y reportes";
+        style="rounded,filled"; fillcolor="#fff6e0"; color="#c98500"; fontcolor="#8a5c00";
+        db     [label="SQLite\nhybridsecscan.db\n(ScanResult, User)", shape=cylinder, style="filled"];
+        pdfgen [label="pdf_generator.py\nPDF / JSON"];
+        meta   [label="metadata.json\nscale_evaluation_*.json", shape=note, style="filled"];
+    }
+
+    // ── Filas ───────────────────────────────────────────────────────────────
+    { rank=same; app; dash; }
+    { rank=same; r_sast; r_dast; r_hyb; r_rep; r_auth; r_main; }
+    { rank=same; bandit; semgrep; zap; http; corr; }
+    { rank=same; db; pdfgen; meta; }
+
+    // ── Flujos ──────────────────────────────────────────────────────────────
+    app  -> { r_sast r_dast r_hyb r_rep r_main };
+    dash -> r_main;
+
+    r_sast -> bandit;
+    r_sast -> semgrep;
+    r_dast -> zap  [label=" 1.º"];
+    r_dast -> http [label=" 2.º"];
+    r_hyb  -> corr;
+    corr   -> rf   [label=" probabilidad"];
+
+    r_rep  -> pdfgen;
+    r_main -> meta;
+    r_auth -> db   [ltail=cluster_api, penwidth=1.8, label=" todos los routers\n leen y guardan"];
+
+    // Alineación vertical (aristas invisibles)
+    rf -> pdfgen [style=invis];
+    zap -> http  [style=invis];  // ZAP a la izquierda del escáner HTTP: evita el cruce
+    http -> db   [style=invis];
+}

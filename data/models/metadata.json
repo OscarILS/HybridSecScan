@@ -24,7 +24,7 @@
     "n_val_samples": 130,
     "n_test_samples": 130,
     "n_features": 517,
-    "trained_at": "2026-10-01T14:20:36.853591"
+    "trained_at": "2026-10-02T00:40:08.391655"
   },
   "features": {
     "tfidf": 500,

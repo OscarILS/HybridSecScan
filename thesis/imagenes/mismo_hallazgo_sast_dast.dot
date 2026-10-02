@@ -1,0 +1,36 @@
+// Un mismo problema visto por SAST y DAST: VA_002 (inyección SQL) de la app vulnerable propia.
+// Datos: data/experiments/figures/tabla_evaluacion_correlacion.md, verificados contra
+// sast_bandit_vulnerable_20260930_095345.json, dast_active_vulnerable_20260930_095345.json
+// y vulnerable_app_ground_truth.json.
+// Regenerar:  dot -Tpng -Gdpi=300 thesis/imagenes/mismo_hallazgo_sast_dast.dot -o thesis/imagenes/mismo_hallazgo_sast_dast.png
+
+digraph MismoHallazgo {
+    graph [rankdir=LR, fontname="Helvetica", nodesep=0.3, ranksep=0.45,
+           bgcolor="white", pad=0.05];
+    node  [fontname="Helvetica", fontsize=16, shape=plain];
+    edge  [color="#52514e", penwidth=1.8, arrowsize=0.9];
+
+    sast [label=<
+      <TABLE BORDER="1" COLOR="#52514e" BGCOLOR="#f4f3ef" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" STYLE="rounded">
+        <TR><TD COLSPAN="2" ALIGN="CENTER"><B>Hallazgo SAST</B><BR/><B>(Bandit)</B></TD></TR>
+        <TR><TD ALIGN="LEFT">Regla:</TD><TD ALIGN="LEFT"><B>B608</B></TD></TR>
+        <TR><TD ALIGN="LEFT">Archivo:</TD><TD ALIGN="LEFT">vulnerable_app.py</TD></TR>
+        <TR><TD ALIGN="LEFT">Línea:</TD><TD ALIGN="LEFT">25</TD></TR>
+      </TABLE>>];
+
+    va [label=<
+      <TABLE BORDER="2" COLOR="#2a78d6" BGCOLOR="#e8f1fc" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" STYLE="rounded">
+        <TR><TD><FONT COLOR="#184f95"><B>Vulnerabilidad</B><BR/><B>VA_002</B></FONT></TD></TR>
+        <TR><TD>Inyección SQL</TD></TR>
+      </TABLE>>];
+
+    dast [label=<
+      <TABLE BORDER="1" COLOR="#52514e" BGCOLOR="#f4f3ef" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" STYLE="rounded">
+        <TR><TD COLSPAN="2" ALIGN="CENTER"><B>Hallazgo DAST</B></TD></TR>
+        <TR><TD ALIGN="LEFT">Tipo:</TD><TD ALIGN="LEFT"><B>SQL Injection</B></TD></TR>
+        <TR><TD ALIGN="LEFT">Endpoint:</TD><TD ALIGN="LEFT">/login</TD></TR>
+      </TABLE>>];
+
+    sast -> va;
+    va -> dast [dir=back];
+}

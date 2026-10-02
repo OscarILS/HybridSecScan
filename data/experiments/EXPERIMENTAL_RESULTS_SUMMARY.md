@@ -79,18 +79,22 @@ hallazgos combinados fueron verdaderos positivos).
 
 **Interpretación de 0 correlaciones ML:**
 
-Las 0 correlaciones con el modelo ML reflejan un **domain shift** entre los datos de entrenamiento y la ejecución real:
+La causa principal **no** es el domain shift, sino la **falta de solapamiento**: SAST y DAST no detectaron
+ninguna vulnerabilidad en común. De los 9 × 23 = 207 pares posibles, **0 comparten tipo de vulnerabilidad**, y
+las rutas de archivo de SAST (`.ts`) no coinciden con los endpoints HTTP de DAST. La confianza de correlación
+pondera endpoint (40%) y tipo (35%); si ninguno de los dos coincide, ningún par llega al umbral de 0.70.
 
-- El modelo fue entrenado con **descripciones sintéticas** (e.g., "SQL injection in user query via string formatting")
-- El vectorizador TF-IDF aprendió este vocabulario sintético
-- Las descripciones reales de Semgrep ("Dangerous use of res.sendFile without validation") y del HTTP Scanner ("Content-Security-Policy header not set") **no comparten vocabulario** con el training set
-- Las 500 features TF-IDF resultan ≈0 para datos reales → el modelo no discrimina
+El par de mayor confianza (0.434) lo ilustra: similitud de endpoint 0.375 (→0.15), tipo 0.571 por ser tipos
+*relacionados*, no iguales (→0.20), semántica 0.16 (→0.016), Random Forest 0.18 (→0.018) y severidad 1.0
+(→0.05). El *domain shift* del TF-IDF solo afecta a los términos semántico y ML, que juntos pesan el 20% del
+score; aunque fueran perfectos, el par no alcanzaría 0.70.
 
-El resultado se re-confirmó con el modelo corregido (F1 0.900 en sintético): sobre Juice Shop sigue dando
-**0 correlaciones**, con una confianza máxima de par de **0.434** (umbral 0.70). Es decir, mejorar el modelo en
-el dominio sintético **no** mejora la correlación sobre datos reales: el cuello de botella es el *domain shift*,
-no la calidad del modelo. Este hallazgo es académicamente válido y motiva el fine-tuning con datos reales de
-herramientas; se documenta como **trabajo futuro**.
+Esto se re-confirmó con el modelo corregido (F1 0.900 en sintético): mejorar el modelo **no** cambia el
+resultado (siguen 0 correlaciones), porque el cuello de botella no es la calidad del modelo sino que ambas
+técnicas detectan vulnerabilidades distintas. Es la otra cara de la **cobertura complementaria**: SAST y DAST
+se complementan precisamente porque ven cosas distintas, y por eso rara vez hay un mismo hallazgo que ambas
+confirmen. El domain shift sí limitaría la correlación cuando sí hay solapamiento, y se documenta como riesgo y
+trabajo futuro (fine-tuning con salidas reales).
 
 **Cobertura complementaria (hallazgo principal):**
 
@@ -133,18 +137,24 @@ Matriz de confusión (Test Set, n=130):
 La feature más importante del modelo es `module_match` (¿el archivo SAST y el endpoint
 DAST son del mismo componente?): es la que separa los positivos limpios de los negativos
 difíciles. Umbral de decisión por defecto (0.5) y `class_weight='balanced'`. **Estas
-métricas son sobre el test sintético; no se trasladan a herramientas reales** (ver *Domain
-Shift*): el correlador confirma 0 pares en VAmPI y en Juice Shop.
+métricas son sobre el test sintético.** En los experimentos reales el correlador confirma 0 pares, pero
+principalmente por falta de solapamiento entre SAST y DAST (ver arriba), no por la calidad del modelo.
 
 ---
 
-## Análisis de causa raíz — Domain Shift
+## Análisis de causa raíz
 
-El gap entre datos de entrenamiento y datos reales es un problema conocido en ML aplicado a seguridad:
+**Causa principal de las 0 correlaciones — falta de solapamiento.** El correlador solo puede confirmar un
+hallazgo si SAST y DAST detectan la *misma* vulnerabilidad. En Juice Shop no hay ningún par con el mismo tipo
+(0 de 207) y las rutas de archivo no se mapean a endpoints HTTP, así que las dos señales de mayor peso
+(endpoint 40%, tipo 35%) nunca coinciden. Es inherente al enfoque: SAST y DAST aportan cobertura complementaria
+*porque* ven capas distintas, y por eso el solapamiento confirmable es escaso.
 
-1. **Datos de entrenamiento:** 1,300 pares sintéticos con descripciones en formato estandarizado
-2. **Datos reales:** Semgrep genera descripciones técnicas de código; HTTP Scanner genera descripciones de observaciones HTTP
-3. **Consecuencia:** El TF-IDF (500 de 517 features) no encuentra vocabulario común → features ≈ 0
+**Factor secundario — domain shift del TF-IDF.** El modelo se entrenó con descripciones sintéticas; las reales
+de Semgrep y del escáner HTTP no comparten vocabulario, así que las 500 features TF-IDF resultan ≈0 para datos
+reales. Esto degrada los términos semántico y ML (20% del score), pero no es lo que provoca las 0
+correlaciones: incluso con esos términos perfectos, sin coincidencia de endpoint ni de tipo el par no alcanza
+el umbral.
 
 **Solución para trabajo futuro:**
 - Reentrenar incluyendo outputs reales de Semgrep y HTTP Scanner como datos positivos/negativos etiquetados
@@ -155,7 +165,7 @@ El gap entre datos de entrenamiento y datos reales es un problema conocido en ML
 
 ## Conclusión experimental
 
-En OWASP Juice Shop, SAST y DAST producen hallazgos de capas distintas (código fuente frente a comportamiento HTTP), por lo que su combinación amplía la cobertura: 32 hallazgos frente a 9 de SAST solo. Son hallazgos sin verificar; la exactitud de cada método contra el ground truth se reporta en la evaluación a escala. El motor de correlación no encontró correlaciones en esta aplicación por el domain shift entre el dataset sintético y las descripciones reales, lo que motiva reentrenar con datos reales como trabajo futuro.
+En OWASP Juice Shop, SAST y DAST producen hallazgos de capas distintas (código fuente frente a comportamiento HTTP), por lo que su combinación amplía la cobertura: 32 hallazgos frente a 9 de SAST solo. Son hallazgos sin verificar; la exactitud de cada método contra el ground truth se reporta en la evaluación a escala. El motor de correlación no encontró correlaciones en esta aplicación porque SAST y DAST detectaron vulnerabilidades distintas (ningún par comparte tipo y las rutas no coinciden con los endpoints); el domain shift del TF-IDF es un factor secundario. Reentrenar con datos reales y correlacionar a nivel de componente (no solo de endpoint) quedan como trabajo futuro.
 
 ---
 

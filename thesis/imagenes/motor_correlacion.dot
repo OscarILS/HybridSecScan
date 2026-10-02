@@ -1,0 +1,64 @@
+// Flujo del motor de correlación (conceptual): pares SAST x DAST -> 5 factores ponderados
+// -> suma C -> decisión C > 0.70. Pesos y umbral tomados de CONFIDENCE_WEIGHTS y
+// correlate_vulnerabilities (backend/correlation_engine.py); la figura no nombra código.
+// Regenerar:  dot -Tpng -Gdpi=300 thesis/imagenes/motor_correlacion.dot -o thesis/imagenes/motor_correlacion.png
+
+digraph Motor {
+    graph [rankdir=TB, fontname="Helvetica", nodesep=0.18, ranksep=0.48,
+           splines=spline, bgcolor="white", pad=0.05, newrank=true];
+    node  [fontname="Helvetica", fontsize=16, shape=plain];
+    edge  [fontname="Helvetica", fontsize=16, color="#52514e", fontcolor="#0b0b0b",
+           penwidth=1.8, arrowsize=0.8];
+
+    // ── Entradas ────────────────────────────────────────────────────────────
+    sast [label=<
+      <TABLE BORDER="1" COLOR="#52514e" BGCOLOR="#f4f3ef" CELLBORDER="0" CELLPADDING="5" STYLE="rounded">
+        <TR><TD><B>Hallazgos SAST</B></TD></TR>
+      </TABLE>>];
+    dast [label=<
+      <TABLE BORDER="1" COLOR="#52514e" BGCOLOR="#f4f3ef" CELLBORDER="0" CELLPADDING="5" STYLE="rounded">
+        <TR><TD><B>Hallazgos DAST</B></TD></TR>
+      </TABLE>>];
+
+    // ── Generación de pares ─────────────────────────────────────────────────
+    par [label=<
+      <TABLE BORDER="1" COLOR="#52514e" BGCOLOR="white" CELLBORDER="0" CELLPADDING="5" STYLE="rounded">
+        <TR><TD>Para cada par (hallazgo SAST, hallazgo DAST)<BR/>se calcula cada factor con valor entre 0 y 1</TD></TR>
+      </TABLE>>];
+
+    // ── Factores (valor en [0, 1] y peso) ───────────────────────────────────
+    node [shape=box, style="rounded,filled", fillcolor="#f4f3ef", color="#52514e",
+          penwidth=1.2, margin="0.08,0.06"];
+    f_end [label=<Similitud de<BR/>endpoint<BR/><B>peso 0.40</B>>];
+    f_tip [label=<Coincidencia<BR/>de tipo<BR/><B>peso 0.35</B>>];
+    f_sem [label=<Similitud<BR/>semántica<BR/><B>peso 0.10</B>>];
+    f_rf  [label=<Probabilidad<BR/>Random Forest<BR/><B>peso 0.10</B>>];
+    f_sev [label=<Similitud de<BR/>severidad<BR/><B>peso 0.05</B>>];
+
+    // ── Suma ponderada ──────────────────────────────────────────────────────
+    suma [label=<<B>Suma ponderada</B><BR/>C = Σ peso<SUB>i</SUB> × factor<SUB>i</SUB>   (0 a 1)>,
+          fillcolor="white"];
+
+    // ── Decisión (único color de acento) ────────────────────────────────────
+    dec [label=<<B>C &gt; 0.70</B>>, shape=diamond, style="filled", fillcolor="#e8f1fc",
+         color="#2a78d6", penwidth=2, fontcolor="#184f95", margin="0.05,0.02"];
+
+    si [label=<<B>Correlación confirmada</B><BR/>(detectada por ambas técnicas)>,
+        fillcolor="#e8f1fc", color="#2a78d6", penwidth=2, fontcolor="#0b0b0b"];
+    no [label=<<B>No confirmada</B><BR/>(el par se descarta)>,
+        style="rounded,dashed", fillcolor="white", color="#898781"];
+
+    // ── Filas ───────────────────────────────────────────────────────────────
+    { rank=same; sast; dast; }
+    { rank=same; f_end; f_tip; f_sem; f_rf; f_sev; }
+    { rank=same; si; no; }
+
+    // ── Flujo ───────────────────────────────────────────────────────────────
+    sast -> par;
+    dast -> par;
+    par -> { f_end f_tip f_sem f_rf f_sev };
+    { f_end f_tip f_sem f_rf f_sev } -> suma;
+    suma -> dec;
+    dec -> si [label=" sí"];
+    dec -> no [label=" no"];
+}

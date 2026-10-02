@@ -1,0 +1,53 @@
+// Esquema genérico de un Random Forest (clasificación binaria). Sin datos del proyecto.
+// Regenerar:  dot -Tpng -Gdpi=300 thesis/imagenes/random_forest.dot -o thesis/imagenes/random_forest.png
+
+digraph RandomForest {
+    graph [rankdir=TB, fontname="Helvetica", nodesep=0.3, ranksep=0.42,
+           splines=spline, bgcolor="white", pad=0.05, newrank=true];
+    node  [fontname="Helvetica", fontsize=16, shape=box, style="rounded,filled",
+           fillcolor="#f4f3ef", color="#52514e", penwidth=1.2, margin="0.12,0.06"];
+    edge  [fontname="Helvetica", fontsize=16, color="#52514e", fontcolor="#0b0b0b",
+           penwidth=1.8, arrowsize=0.8];
+
+    datos [label=<<B>Conjunto de entrenamiento</B>>, fillcolor="white"];
+
+    // ── Muestras bootstrap ──────────────────────────────────────────────────
+    b1 [label=<Muestra<BR/>bootstrap 1>];
+    b2 [label=<Muestra<BR/>bootstrap 2>];
+    bd [label="…", shape=plaintext, style=""];
+    bT [label=<Muestra<BR/>bootstrap T>];
+
+    // ── Árboles ─────────────────────────────────────────────────────────────
+    a1 [label=<<B>Árbol 1</B>>, fillcolor="white"];
+    a2 [label=<<B>Árbol 2</B>>, fillcolor="white"];
+    ad [label="…", shape=plaintext, style=""];
+    aT [label=<<B>Árbol T</B>>, fillcolor="white"];
+    nota [label=<Subconjunto aleatorio<BR/>de atributos<BR/>en cada nodo>, style="rounded,dashed",
+          fillcolor="white", color="#898781", fontcolor="#52514e"];
+
+    // ── Agregación y decisión ───────────────────────────────────────────────
+    prom [label=<<B>Promedio de probabilidades</B><BR/>P = (p<SUB>1</SUB> + p<SUB>2</SUB> + … + p<SUB>T</SUB>) / T>,
+          fillcolor="white"];
+    dec [label=<<B>P &gt; 0.5</B>>, shape=diamond, style="filled", fillcolor="#e8f1fc",
+         color="#2a78d6", penwidth=2, fontcolor="#184f95", margin="0.05,0.02"];
+    pos [label=<<B>Clase positiva</B>>, fillcolor="#e8f1fc", color="#2a78d6", penwidth=2];
+    neg [label=<<B>Clase negativa</B>>, style="rounded,dashed", fillcolor="white", color="#898781"];
+
+    // ── Filas ───────────────────────────────────────────────────────────────
+    { rank=same; b1; b2; bd; bT; }
+    { rank=same; a1; a2; ad; aT; nota; }
+    { rank=same; pos; neg; }
+
+    // ── Flujo ───────────────────────────────────────────────────────────────
+    datos -> { b1 b2 bT };
+    datos -> bd [style=invis];
+    b1 -> a1;  b2 -> a2;  bd -> ad [style=invis];  bT -> aT;
+    aT -> nota [style=dashed, arrowhead=none, color="#898781", minlen=1];
+    a1 -> prom [label=<p<SUB>1</SUB> >];
+    a2 -> prom [label=<p<SUB>2</SUB> >];
+    ad -> prom [style=invis];
+    aT -> prom [label=<p<SUB>T</SUB> >];
+    prom -> dec;
+    dec -> pos [label=" sí"];
+    dec -> neg [label=" no"];
+}
