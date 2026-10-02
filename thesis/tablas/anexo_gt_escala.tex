@@ -1,0 +1,36 @@
+\begin{table}[htbp]
+\centering
+\caption{Vulnerabilidades de referencia de la evaluación a escala}
+\label{tab:anexo_gt_escala}
+\small
+\begin{tabular}{|p{1.7cm}|p{1.4cm}|p{2.6cm}|p{1.3cm}|p{1.5cm}|p{4.6cm}|}
+\hline
+\textbf{Aplicación} & \textbf{ID} & \textbf{Tipo} & \textbf{CWE} & \textbf{Categoría OWASP 2023} & \textbf{Archivo / endpoint} \\
+\hline
+OWASP Juice Shop & JS\_001 & sql\_\allowbreak{}injection & CWE-89 & API8:2023 & \texttt{routes/\allowbreak{}login.ts} \newline \texttt{/\allowbreak{}rest/\allowbreak{}user/\allowbreak{}login} \\
+ & JS\_002 & broken\_\allowbreak{}access\_\allowbreak{}control & CWE-639 & API1:2023 & \texttt{routes/\allowbreak{}basket.ts} \newline \texttt{/\allowbreak{}rest/\allowbreak{}basket/\allowbreak{}:id} \\
+ & JS\_003 & xss & CWE-79 & API8:2023 & \texttt{routes/\allowbreak{}search.ts} \newline \texttt{/\allowbreak{}rest/\allowbreak{}products/\allowbreak{}search} \\
+ & JS\_004 & sensitive\_\allowbreak{}data\_\allowbreak{}exposure & CWE-200 & API3:2023 & \texttt{ftp/\allowbreak{}} \newline \texttt{/\allowbreak{}ftp} \\
+ & JS\_005 & jwt\_\allowbreak{}manipulation & CWE-287 & API2:2023 & \texttt{lib/\allowbreak{}insecurity.ts} \newline \texttt{/\allowbreak{}rest/\allowbreak{}user/\allowbreak{}whoami} \\
+\hline
+DVWA & DVWA\_001 & sql\_\allowbreak{}injection & CWE-89 & API8:2023 & \texttt{vulnerabilities/\allowbreak{}sqli/\allowbreak{}source/\allowbreak{}low.php} \newline \texttt{/\allowbreak{}vulnerabilities/\allowbreak{}sqli/\allowbreak{}} \\
+ & DVWA\_002 & xss & CWE-79 & API8:2023 & \texttt{vulnerabilities/\allowbreak{}xss\_r/\allowbreak{}source/\allowbreak{}low.php} \newline \texttt{/\allowbreak{}vulnerabilities/\allowbreak{}xss\_r/\allowbreak{}} \\
+ & DVWA\_003 & command\_\allowbreak{}injection & CWE-78 & API8:2023 & \texttt{vulnerabilities/\allowbreak{}exec/\allowbreak{}source/\allowbreak{}low.php} \newline \texttt{/\allowbreak{}vulnerabilities/\allowbreak{}exec/\allowbreak{}} \\
+ & DVWA\_004 & file\_\allowbreak{}inclusion & CWE-98 & API8:2023 & \texttt{vulnerabilities/\allowbreak{}fi/\allowbreak{}source/\allowbreak{}low.php} \newline \texttt{/\allowbreak{}vulnerabilities/\allowbreak{}fi/\allowbreak{}} \\
+ & DVWA\_005 & csrf & CWE-352 & API8:2023 & \texttt{vulnerabilities/\allowbreak{}csrf/\allowbreak{}source/\allowbreak{}low.php} \newline \texttt{/\allowbreak{}vulnerabilities/\allowbreak{}csrf/\allowbreak{}} \\
+\hline
+NodeGoat & NG\_001 & nosql\_\allowbreak{}injection & CWE-943 & API8:2023 & \texttt{app/\allowbreak{}routes/\allowbreak{}session.js} \newline \texttt{/\allowbreak{}login} \\
+ & NG\_002 & insecure\_\allowbreak{}deserialization & CWE-502 & API8:2023 & \texttt{app/\allowbreak{}routes/\allowbreak{}profile.js} \newline \texttt{/\allowbreak{}profile} \\
+ & NG\_003 & sensitive\_\allowbreak{}data\_\allowbreak{}exposure & CWE-798 & API2:2023 & \texttt{config/\allowbreak{}env/\allowbreak{}development.js} \newline \texttt{/\allowbreak{}} \\
+ & NG\_004 & xss & CWE-79 & API8:2023 & \texttt{app/\allowbreak{}views/\allowbreak{}memos.html} \newline \texttt{/\allowbreak{}memos} \\
+ & NG\_005 & broken\_\allowbreak{}access\_\allowbreak{}control & CWE-639 & API1:2023 & \texttt{app/\allowbreak{}routes/\allowbreak{}allocations.js} \newline \texttt{/\allowbreak{}allocations/\allowbreak{}:id} \\
+\hline
+OWASP WebGoat & WG\_001 & sql\_\allowbreak{}injection & CWE-89 & API8:2023 & \texttt{src/\allowbreak{}main/\allowbreak{}java/\allowbreak{}org/\allowbreak{}owasp/\allowbreak{}webgoat/\allowbreak{}lessons/\allowbreak{}sqlinjection/\allowbreak{}introduction/\allowbreak{}SqlInjectionLesson5a.java} \newline \texttt{/\allowbreak{}WebGoat/\allowbreak{}SqlInjection/\allowbreak{}attack5a} \\
+ & WG\_002 & xss & CWE-79 & API8:2023 & \texttt{src/\allowbreak{}main/\allowbreak{}java/\allowbreak{}org/\allowbreak{}owasp/\allowbreak{}webgoat/\allowbreak{}lessons/\allowbreak{}xss/\allowbreak{}CrossSiteScriptingLesson5a.java} \newline \texttt{/\allowbreak{}WebGoat/\allowbreak{}CrossSiteScripting/\allowbreak{}attack5a} \\
+ & WG\_003 & broken\_\allowbreak{}authentication & CWE-287 & API2:2023 & \texttt{src/\allowbreak{}main/\allowbreak{}java/\allowbreak{}org/\allowbreak{}owasp/\allowbreak{}webgoat/\allowbreak{}lessons/\allowbreak{}authentication/\allowbreak{}AuthenticationBypass.java} \newline \texttt{/\allowbreak{}WebGoat/\allowbreak{}auth/\allowbreak{}login} \\
+ & WG\_004 & path\_\allowbreak{}traversal & CWE-22 & API8:2023 & \texttt{src/\allowbreak{}main/\allowbreak{}java/\allowbreak{}org/\allowbreak{}owasp/\allowbreak{}webgoat/\allowbreak{}lessons/\allowbreak{}pathtraversal/\allowbreak{}PathTraversal.java} \newline \texttt{/\allowbreak{}WebGoat/\allowbreak{}PathTraversal/\allowbreak{}profiles} \\
+ & WG\_005 & xxe & CWE-611 & API8:2023 & \texttt{src/\allowbreak{}main/\allowbreak{}java/\allowbreak{}org/\allowbreak{}owasp/\allowbreak{}webgoat/\allowbreak{}lessons/\allowbreak{}xxe/\allowbreak{}XXE.java} \newline \texttt{/\allowbreak{}WebGoat/\allowbreak{}XXE/\allowbreak{}attack} \\
+\hline
+\end{tabular}
+\end{table}
+\begin{flushleft}\textit{Nota}. Fuente: archivos *\_ground\_truth.json.\end{flushleft}
