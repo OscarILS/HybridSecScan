@@ -1,0 +1,21 @@
+{
+  "holdout_seed": 7777,
+  "n_samples": 1300,
+  "n_positives": 600,
+  "model_version": "1.0.0",
+  "model_trained_at": "2026-10-01T14:20:41.132965",
+  "metrics": {
+    "accuracy": 0.8815,
+    "precision": 0.8168,
+    "recall": 0.9583,
+    "f1_score": 0.8819,
+    "roc_auc": 0.9568
+  },
+  "confusion_matrix": {
+    "TN": 571,
+    "FP": 129,
+    "FN": 25,
+    "TP": 575
+  },
+  "note": "Muestra sintética independiente (misma distribución, semilla distinta). Mide generalización dentro del dominio sintético, no transferencia a herramientas reales."
+}

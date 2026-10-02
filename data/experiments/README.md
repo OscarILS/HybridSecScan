@@ -82,6 +82,17 @@ python scripts/run_dast_docker_apps.py            # DAST activo contra las apps 
 
 Guardan en `results/` los hallazgos SAST y DAST y el reporte de correlación (`hybrid_*.json`).
 
+## Evaluación sobre un conjunto de prueba nuevo e independiente
+
+```bash
+python scripts/evaluate_holdout.py --seed 7777 --save
+```
+
+El modelo se entrenó con la muestra de semilla 42. Este script genera una muestra fresca con otra semilla
+(misma distribución sintética, 1,300 pares que el modelo nunca vio) y reporta las métricas. Mide la
+generalización **dentro del dominio sintético** (resultado vigente: F1 ≈ 0.88, ROC-AUC ≈ 0.96), no la
+transferencia a herramientas reales. Guarda `holdout_evaluation_*.json`.
+
 ## Evaluación del motor de correlación (casos de estudio)
 
 ```bash

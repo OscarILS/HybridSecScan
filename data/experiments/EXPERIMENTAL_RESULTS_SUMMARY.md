@@ -86,7 +86,11 @@ Las 0 correlaciones con el modelo ML reflejan un **domain shift** entre los dato
 - Las descripciones reales de Semgrep ("Dangerous use of res.sendFile without validation") y del HTTP Scanner ("Content-Security-Policy header not set") **no comparten vocabulario** con el training set
 - Las 500 features TF-IDF resultan ≈0 para datos reales → el modelo no discrimina
 
-Este hallazgo es académicamente válido: motiva el fine-tuning del modelo con datos reales de herramientas. Se documenta como **trabajo futuro**.
+El resultado se re-confirmó con el modelo corregido (F1 0.900 en sintético): sobre Juice Shop sigue dando
+**0 correlaciones**, con una confianza máxima de par de **0.434** (umbral 0.70). Es decir, mejorar el modelo en
+el dominio sintético **no** mejora la correlación sobre datos reales: el cuello de botella es el *domain shift*,
+no la calidad del modelo. Este hallazgo es académicamente válido y motiva el fine-tuning con datos reales de
+herramientas; se documenta como **trabajo futuro**.
 
 **Cobertura complementaria (hallazgo principal):**
 
