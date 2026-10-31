@@ -1,0 +1,547 @@
+{
+  "analysis_type": "EXPLORATORIO / POST-HOC",
+  "exploratory_warning": "Diseñado después de observar module_match=0 en real_pairs_evaluation_20261030_211257, sobre las mismas apps (Flask y VAmPI). No es validación independiente. No modifica modelo, umbrales, pesos, datos ni resultados previos.",
+  "generated_at": "2026-10-30T23:37:36",
+  "git_commit": "e90821a5b416bc2e91b5ece4cff24aeab3c2713a",
+  "environment": {
+    "python": "3.11.9",
+    "sklearn": "1.9.0"
+  },
+  "model": {
+    "version": "1.0.0",
+    "trained_at_pkl": "2026-10-02T00:40:12.658587",
+    "trained_at_metadata": "2026-10-02T00:40:08.391655",
+    "n_features": 517,
+    "module_match_feature_index": 511
+  },
+  "thresholds": {
+    "classifier": 0.5,
+    "correlation": 0.7,
+    "ml_weight": 0.1
+  },
+  "excluded": {
+    "juice_shop": "Sin ground truth en la Tarea 3."
+  },
+  "regression_check": {
+    "status": "OK",
+    "detail": "modo file reproduce real_pairs_evaluation_20261030_211257"
+  },
+  "totals": {
+    "n_pairs": 221,
+    "n_positives": 2,
+    "n_negatives": 219,
+    "file": {
+      "confusion_matrix_threshold_0.5": {
+        "TN": 219,
+        "FP": 0,
+        "FN": 2,
+        "TP": 0
+      },
+      "fpr": 0.0,
+      "n_confirmed": 1,
+      "corr_precision": 1.0,
+      "corr_recall": 0.0556
+    },
+    "mapped_endpoint": {
+      "confusion_matrix_threshold_0.5": {
+        "TN": 219,
+        "FP": 0,
+        "FN": 1,
+        "TP": 1
+      },
+      "fpr": 0.0,
+      "n_confirmed": 1,
+      "corr_precision": 1.0,
+      "corr_recall": 0.0556
+    }
+  },
+  "per_app": [
+    {
+      "app_key": "vulnerable_app",
+      "application": "App vulnerable propia (Flask)",
+      "sources": {
+        "ground_truth_file": "vulnerable_app_ground_truth.json",
+        "sast_file": "sast_bandit_vulnerable_20260930_095345.json",
+        "dast_file": "dast_active_vulnerable_20260930_095345.json"
+      },
+      "n_sast_findings": 12,
+      "n_dast_findings": 12,
+      "n_gt": 9,
+      "file_mode_reference": {
+        "confusion_matrix_threshold_0.5": {
+          "TN": 142,
+          "FP": 0,
+          "FN": 2,
+          "TP": 0
+        },
+        "false_positive_rate_on_negatives": 0.0,
+        "positive_pairs": [
+          {
+            "ground_truth": [
+              "VA_002"
+            ],
+            "sast": "B608 vulnerable_app.py:25 → /login",
+            "dast": "SQL Injection @ /login",
+            "rf_probability": 0.472525,
+            "predicted_positive": false,
+            "module_match": 0
+          },
+          {
+            "ground_truth": [
+              "VA_009"
+            ],
+            "sast": "B201 vulnerable_app.py:81 → /token",
+            "dast": "Error Disclosure - Debug Mode @ /deserialize",
+            "rf_probability": 0.252235,
+            "predicted_positive": false,
+            "module_match": 0
+          }
+        ],
+        "probability_summary": {
+          "positives": {
+            "n": 2,
+            "min": 0.252235,
+            "median": 0.36238,
+            "mean": 0.36238,
+            "max": 0.472525
+          },
+          "negatives": {
+            "n": 142,
+            "min": 0.102033,
+            "median": 0.20332,
+            "mean": 0.201231,
+            "max": 0.293656
+          }
+        },
+        "module_match_distribution": {
+          "positives": {
+            "module_match=1": 0,
+            "module_match=0": 2
+          },
+          "negatives": {
+            "module_match=1": 0,
+            "module_match=0": 142
+          }
+        }
+      },
+      "A_classifier_mapped": {
+        "n_pairs": 144,
+        "n_positives": 2,
+        "n_negatives": 142,
+        "confusion_matrix_threshold_0.5": {
+          "TN": 142,
+          "FP": 0,
+          "FN": 1,
+          "TP": 1
+        },
+        "false_positive_rate_on_negatives": 0.0,
+        "positive_pairs": [
+          {
+            "ground_truth": [
+              "VA_002"
+            ],
+            "sast": "B608 vulnerable_app.py:25 → /login",
+            "dast": "SQL Injection @ /login",
+            "rf_probability_mapped": 0.725609,
+            "predicted_positive": true,
+            "module_match_mapped": 1
+          },
+          {
+            "ground_truth": [
+              "VA_009"
+            ],
+            "sast": "B201 vulnerable_app.py:81 → /token",
+            "dast": "Error Disclosure - Debug Mode @ /deserialize",
+            "rf_probability_mapped": 0.252235,
+            "predicted_positive": false,
+            "module_match_mapped": 0
+          }
+        ],
+        "probability_summary_mapped": {
+          "positives": {
+            "n": 2,
+            "min": 0.252235,
+            "median": 0.488922,
+            "mean": 0.488922,
+            "max": 0.725609
+          },
+          "negatives": {
+            "n": 142,
+            "min": 0.102033,
+            "median": 0.204228,
+            "mean": 0.202864,
+            "max": 0.425731
+          }
+        },
+        "module_match_distribution_mapped": {
+          "positives": {
+            "module_match=1": 1,
+            "module_match=0": 1
+          },
+          "negatives": {
+            "module_match=1": 1,
+            "module_match=0": 141
+          }
+        }
+      },
+      "B_pairwise_comparison": {
+        "pairs_module_match_changed": 2,
+        "positive_pairs_prob_by_mode": [
+          {
+            "ground_truth": [
+              "VA_002"
+            ],
+            "sast": "B608 vulnerable_app.py:25 → /login",
+            "dast": "SQL Injection @ /login",
+            "module_match_file": 0,
+            "module_match_mapped": 1,
+            "rf_file": 0.472525,
+            "rf_mapped": 0.725609,
+            "delta_rf": 0.253084
+          },
+          {
+            "ground_truth": [
+              "VA_009"
+            ],
+            "sast": "B201 vulnerable_app.py:81 → /token",
+            "dast": "Error Disclosure - Debug Mode @ /deserialize",
+            "module_match_file": 0,
+            "module_match_mapped": 0,
+            "rf_file": 0.252235,
+            "rf_mapped": 0.252235,
+            "delta_rf": 0.0
+          }
+        ]
+      },
+      "C_negatives_now_module_match_1": [
+        {
+          "sast": "B301 vulnerable_app.py:42 → /deserialize",
+          "dast": "Error Disclosure - Debug Mode @ /deserialize",
+          "ground_truth": null,
+          "module_match_file": 0,
+          "module_match_mapped": 1,
+          "rf_file": 0.193815,
+          "rf_mapped": 0.425731,
+          "predicted_positive_mapped": false
+        }
+      ],
+      "D_correlation_engine": {
+        "file": {
+          "confirmed_pairs": [
+            {
+              "sast": "B608 vulnerable_app.py:25 → /login",
+              "dast": "SQL Injection @ /login",
+              "confidence": 0.867384,
+              "ground_truth": [
+                "VA_002"
+              ],
+              "corresponds_to_gt": true,
+              "factors": {
+                "endpoint": {
+                  "weight": 0.4,
+                  "value": 1.0,
+                  "contribution": 0.4
+                },
+                "type": {
+                  "weight": 0.35,
+                  "value": 1.0,
+                  "contribution": 0.35
+                },
+                "semantic": {
+                  "weight": 0.1,
+                  "value": 0.368,
+                  "contribution": 0.0368,
+                  "method": "embeddings"
+                },
+                "ml": {
+                  "weight": 0.1,
+                  "value": 0.4725,
+                  "contribution": 0.0473,
+                  "source": "random_forest"
+                },
+                "severity": {
+                  "weight": 0.05,
+                  "value": 0.6667,
+                  "contribution": 0.0333
+                }
+              }
+            }
+          ],
+          "correlation_metrics": {
+            "n_confirmed": 1,
+            "correct": 1,
+            "vulnerabilities_confirmed": [
+              "VA_002"
+            ],
+            "precision": 1.0,
+            "recall": 0.1111
+          }
+        },
+        "mapped_endpoint": {
+          "confirmed_pairs": [
+            {
+              "sast": "B608 vulnerable_app.py:25 → /login",
+              "dast": "SQL Injection @ /login",
+              "confidence": 0.892696,
+              "ground_truth": [
+                "VA_002"
+              ],
+              "corresponds_to_gt": true,
+              "factors": {
+                "endpoint": {
+                  "weight": 0.4,
+                  "value": 1.0,
+                  "contribution": 0.4
+                },
+                "type": {
+                  "weight": 0.35,
+                  "value": 1.0,
+                  "contribution": 0.35
+                },
+                "semantic": {
+                  "weight": 0.1,
+                  "value": 0.368,
+                  "contribution": 0.0368,
+                  "method": "embeddings"
+                },
+                "ml": {
+                  "weight": 0.1,
+                  "value": 0.7256,
+                  "contribution": 0.0726,
+                  "source": "random_forest"
+                },
+                "severity": {
+                  "weight": 0.05,
+                  "value": 0.6667,
+                  "contribution": 0.0333
+                }
+              }
+            }
+          ],
+          "correlation_metrics": {
+            "n_confirmed": 1,
+            "correct": 1,
+            "vulnerabilities_confirmed": [
+              "VA_002"
+            ],
+            "precision": 1.0,
+            "recall": 0.1111
+          }
+        }
+      },
+      "E_va002_va009": [
+        {
+          "ground_truth": "VA_002",
+          "sast": "B608 vulnerable_app.py:25 → /login",
+          "dast": "SQL Injection @ /login",
+          "conf_file": 0.867384,
+          "conf_mapped": 0.892696,
+          "confirmed_file": true,
+          "confirmed_mapped": true,
+          "decision_changes_file_to_mapped": false,
+          "rf_file": 0.472525,
+          "rf_mapped": 0.725609,
+          "conf_file_without_rf": 0.820132,
+          "conf_mapped_without_rf": 0.820135,
+          "confirmed_file_without_rf": true,
+          "confirmed_mapped_without_rf": true,
+          "rf_suppression_changes_decision_file": false,
+          "rf_suppression_changes_decision_mapped": false
+        },
+        {
+          "ground_truth": "VA_009",
+          "sast": "B201 vulnerable_app.py:81 → /token",
+          "dast": "Error Disclosure - Debug Mode @ /deserialize",
+          "conf_file": 0.506666,
+          "conf_mapped": 0.506664,
+          "confirmed_file": false,
+          "confirmed_mapped": false,
+          "decision_changes_file_to_mapped": false,
+          "rf_file": 0.252235,
+          "rf_mapped": 0.252235,
+          "conf_file_without_rf": 0.481442,
+          "conf_mapped_without_rf": 0.48144,
+          "confirmed_file_without_rf": false,
+          "confirmed_mapped_without_rf": false,
+          "rf_suppression_changes_decision_file": false,
+          "rf_suppression_changes_decision_mapped": false
+        }
+      ],
+      "F_sast_without_mapped_endpoint": {
+        "n_sast_without_mapped_endpoint": 4,
+        "findings": [
+          {
+            "index": 0,
+            "endpoint": "/unknown_line_7",
+            "sast": "B403 vulnerable_app.py:7"
+          },
+          {
+            "index": 1,
+            "endpoint": "/unknown_line_8",
+            "sast": "B404 vulnerable_app.py:8"
+          },
+          {
+            "index": 2,
+            "endpoint": "/unknown_line_15",
+            "sast": "B105 vulnerable_app.py:15"
+          },
+          {
+            "index": 3,
+            "endpoint": "/unknown_line_16",
+            "sast": "B105 vulnerable_app.py:16"
+          }
+        ]
+      }
+    },
+    {
+      "app_key": "vampi",
+      "application": "VAmPI (API REST vulnerable)",
+      "sources": {
+        "ground_truth_file": "vampi_ground_truth.json",
+        "sast_file": "sast_bandit_vampi_20260930_230153.json",
+        "dast_file": "dast_active_vampi_20261001_003241.json"
+      },
+      "n_sast_findings": 7,
+      "n_dast_findings": 11,
+      "n_gt": 9,
+      "file_mode_reference": {
+        "confusion_matrix_threshold_0.5": {
+          "TN": 77,
+          "FP": 0,
+          "FN": 0,
+          "TP": 0
+        },
+        "false_positive_rate_on_negatives": 0.0,
+        "positive_pairs": [],
+        "probability_summary": {
+          "positives": {
+            "n": 0,
+            "min": null,
+            "median": null,
+            "mean": null,
+            "max": null
+          },
+          "negatives": {
+            "n": 77,
+            "min": 0.094143,
+            "median": 0.165746,
+            "mean": 0.16943,
+            "max": 0.263827
+          }
+        },
+        "module_match_distribution": {
+          "positives": {
+            "module_match=1": 0,
+            "module_match=0": 0
+          },
+          "negatives": {
+            "module_match=1": 0,
+            "module_match=0": 77
+          }
+        }
+      },
+      "A_classifier_mapped": {
+        "n_pairs": 77,
+        "n_positives": 0,
+        "n_negatives": 77,
+        "confusion_matrix_threshold_0.5": {
+          "TN": 77,
+          "FP": 0,
+          "FN": 0,
+          "TP": 0
+        },
+        "false_positive_rate_on_negatives": 0.0,
+        "positive_pairs": [],
+        "probability_summary_mapped": {
+          "positives": {
+            "n": 0,
+            "min": null,
+            "median": null,
+            "mean": null,
+            "max": null
+          },
+          "negatives": {
+            "n": 77,
+            "min": 0.094143,
+            "median": 0.165746,
+            "mean": 0.16943,
+            "max": 0.263827
+          }
+        },
+        "module_match_distribution_mapped": {
+          "positives": {
+            "module_match=1": 0,
+            "module_match=0": 0
+          },
+          "negatives": {
+            "module_match=1": 0,
+            "module_match=0": 77
+          }
+        }
+      },
+      "B_pairwise_comparison": {
+        "pairs_module_match_changed": 0,
+        "positive_pairs_prob_by_mode": []
+      },
+      "C_negatives_now_module_match_1": [],
+      "D_correlation_engine": {
+        "file": {
+          "confirmed_pairs": [],
+          "correlation_metrics": {
+            "n_confirmed": 0,
+            "correct": 0,
+            "vulnerabilities_confirmed": [],
+            "precision": null,
+            "recall": 0.0
+          }
+        },
+        "mapped_endpoint": {
+          "confirmed_pairs": [],
+          "correlation_metrics": {
+            "n_confirmed": 0,
+            "correct": 0,
+            "vulnerabilities_confirmed": [],
+            "precision": null,
+            "recall": 0.0
+          }
+        }
+      },
+      "E_va002_va009": [],
+      "F_sast_without_mapped_endpoint": {
+        "n_sast_without_mapped_endpoint": 6,
+        "findings": [
+          {
+            "index": 0,
+            "endpoint": "/unknown_line_122",
+            "sast": "B105 users.py:122"
+          },
+          {
+            "index": 1,
+            "endpoint": "/unknown_line_124",
+            "sast": "B105 users.py:124"
+          },
+          {
+            "index": 3,
+            "endpoint": "/unknown_line_17",
+            "sast": "B104 app.py:17"
+          },
+          {
+            "index": 4,
+            "endpoint": "/unknown_line_13",
+            "sast": "B105 config.py:13"
+          },
+          {
+            "index": 5,
+            "endpoint": "/unknown_line_72",
+            "sast": "B608 user_model.py:72"
+          },
+          {
+            "index": 6,
+            "endpoint": "/unknown_line_86",
+            "sast": "B311 user_model.py:86"
+          }
+        ]
+      }
+    }
+  ]
+}
