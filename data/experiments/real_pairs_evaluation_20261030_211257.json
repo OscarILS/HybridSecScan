@@ -1,0 +1,207 @@
+{
+  "generated_at": "2026-10-30T21:12:57",
+  "description": "Evaluación del Random Forest entrenado sobre pares reales SAST-DAST etiquetados con ground truth.",
+  "environment": {
+    "python": "3.11.9",
+    "sklearn": "1.9.0"
+  },
+  "model": {
+    "version": "1.0.0",
+    "trained_at_pkl": "2026-10-02T00:40:12.658587",
+    "trained_at_metadata": "2026-10-02T00:40:08.391655",
+    "n_features": 517,
+    "threshold": 0.5
+  },
+  "excluded": {
+    "juice_shop": "La ejecución de la Tarea 3 de Juice Shop no tiene ground truth; se excluye."
+  },
+  "consistency_check": [
+    {
+      "id": "VA_002",
+      "expected_rf": 0.472,
+      "observed_rf": 0.472525,
+      "ml_factor_value": 0.4725,
+      "total_confidence": 0.867384,
+      "n_candidate_pairs": 1,
+      "passed": true
+    },
+    {
+      "id": "VA_009",
+      "expected_rf": 0.25,
+      "observed_rf": 0.252235,
+      "ml_factor_value": 0.2522,
+      "total_confidence": 0.506666,
+      "n_candidate_pairs": 1,
+      "passed": true
+    }
+  ],
+  "synthetic_holdout_reference": {
+    "source": "holdout_evaluation_20261001_223335.json",
+    "FP": 129,
+    "n_negatives": 700,
+    "false_positive_rate": 0.184286
+  },
+  "totals": {
+    "n_pairs": 221,
+    "n_positives": 2,
+    "n_negatives": 219,
+    "confusion_matrix_threshold_0.5": {
+      "TN": 219,
+      "FP": 0,
+      "FN": 2,
+      "TP": 0
+    },
+    "false_positive_rate_on_negatives": 0.0
+  },
+  "per_app": [
+    {
+      "app_key": "vulnerable_app",
+      "application": "App vulnerable propia (Flask)",
+      "sources": {
+        "ground_truth_file": "vulnerable_app_ground_truth.json",
+        "sast_file": "sast_bandit_vulnerable_20260930_095345.json",
+        "dast_file": "dast_active_vulnerable_20260930_095345.json"
+      },
+      "n_sast_findings": 12,
+      "n_dast_findings": 12,
+      "expected_dims": {
+        "sast": 12,
+        "dast": 12
+      },
+      "dims_match_expected": true,
+      "n_pairs": 144,
+      "n_positives": 2,
+      "n_negatives": 142,
+      "confusion_matrix_threshold_0.5": {
+        "TN": 142,
+        "FP": 0,
+        "FN": 2,
+        "TP": 0
+      },
+      "false_positive_rate_on_negatives": 0.0,
+      "positive_pairs": [
+        {
+          "ground_truth": [
+            "VA_002"
+          ],
+          "sast": "B608 vulnerable_app.py:25 → /login",
+          "dast": "SQL Injection @ /login",
+          "rf_probability": 0.472525,
+          "predicted_positive": false,
+          "module_match": 0
+        },
+        {
+          "ground_truth": [
+            "VA_009"
+          ],
+          "sast": "B201 vulnerable_app.py:81 → /token",
+          "dast": "Error Disclosure - Debug Mode @ /deserialize",
+          "rf_probability": 0.252235,
+          "predicted_positive": false,
+          "module_match": 0
+        }
+      ],
+      "probability_summary": {
+        "positives": {
+          "n": 2,
+          "min": 0.252235,
+          "median": 0.36238,
+          "mean": 0.36238,
+          "max": 0.472525
+        },
+        "negatives": {
+          "n": 142,
+          "min": 0.102033,
+          "median": 0.20332,
+          "mean": 0.201231,
+          "max": 0.293656
+        }
+      },
+      "module_match_distribution": {
+        "positives": {
+          "module_match=1": 0,
+          "module_match=0": 2
+        },
+        "negatives": {
+          "module_match=1": 0,
+          "module_match=0": 142
+        }
+      },
+      "complementary_metrics": {
+        "note": "n_positives=2; con tan pocos positivos estas métricas son inestables.",
+        "precision": null,
+        "recall": 0.0,
+        "f1": null
+      },
+      "ambiguities": {
+        "sast_findings_matching_multiple_vulns": [],
+        "dast_findings_matching_multiple_vulns": [],
+        "pairs_matching_multiple_vulns": []
+      }
+    },
+    {
+      "app_key": "vampi",
+      "application": "VAmPI (API REST vulnerable)",
+      "sources": {
+        "ground_truth_file": "vampi_ground_truth.json",
+        "sast_file": "sast_bandit_vampi_20260930_230153.json",
+        "dast_file": "dast_active_vampi_20261001_003241.json"
+      },
+      "n_sast_findings": 7,
+      "n_dast_findings": 11,
+      "expected_dims": {
+        "sast": 7,
+        "dast": 11
+      },
+      "dims_match_expected": true,
+      "n_pairs": 77,
+      "n_positives": 0,
+      "n_negatives": 77,
+      "confusion_matrix_threshold_0.5": {
+        "TN": 77,
+        "FP": 0,
+        "FN": 0,
+        "TP": 0
+      },
+      "false_positive_rate_on_negatives": 0.0,
+      "positive_pairs": [],
+      "probability_summary": {
+        "positives": {
+          "n": 0,
+          "min": null,
+          "median": null,
+          "mean": null,
+          "max": null
+        },
+        "negatives": {
+          "n": 77,
+          "min": 0.094143,
+          "median": 0.165746,
+          "mean": 0.16943,
+          "max": 0.263827
+        }
+      },
+      "module_match_distribution": {
+        "positives": {
+          "module_match=1": 0,
+          "module_match=0": 0
+        },
+        "negatives": {
+          "module_match=1": 0,
+          "module_match=0": 77
+        }
+      },
+      "complementary_metrics": {
+        "note": "n_positives=0; con tan pocos positivos estas métricas son inestables.",
+        "precision": null,
+        "recall": null,
+        "f1": null
+      },
+      "ambiguities": {
+        "sast_findings_matching_multiple_vulns": [],
+        "dast_findings_matching_multiple_vulns": [],
+        "pairs_matching_multiple_vulns": []
+      }
+    }
+  ]
+}
