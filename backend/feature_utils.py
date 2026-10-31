@@ -38,8 +38,24 @@ def module_of_endpoint(endpoint: str) -> str:
     return segments[-1].lower() if segments else ""
 
 
-def module_match(file_path: str, endpoint: str) -> int:
-    """1 si el archivo SAST y el endpoint DAST se refieren al mismo módulo; 0 si no."""
-    a = module_of_file(file_path)
+def module_match(sast_ref: str, endpoint: str, mode: str = "file") -> int:
+    """1 si el hallazgo SAST y el endpoint DAST se refieren al mismo módulo; 0 si no.
+
+    mode="file" (por defecto; comportamiento ORIGINAL e inalterado): compara el
+    nombre de archivo del hallazgo SAST (`sast_ref` = file_path) contra el último
+    segmento del endpoint DAST. Es el único modo que usan el entrenamiento
+    (train_ml_model.py) y el motor (correlation_engine.py); ambos llaman sin `mode`.
+
+    mode="mapped_endpoint" (opción exploratoria; NO se usa por defecto): compara el
+    módulo del endpoint MAPEADO del hallazgo SAST (`sast_ref` = endpoint mapeado)
+    contra el del endpoint DAST. El motor nunca invoca este modo; lo usa únicamente
+    scripts/evaluate_module_match_mapped.py.
+    """
+    if mode == "file":
+        a = module_of_file(sast_ref)
+    elif mode == "mapped_endpoint":
+        a = module_of_endpoint(sast_ref)
+    else:
+        raise ValueError(f"module_match: modo desconocido {mode!r}")
     b = module_of_endpoint(endpoint)
     return int(bool(a) and a == b)
